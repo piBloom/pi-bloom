@@ -55,5 +55,5 @@ RUN echo 'export BLOOM_GARDEN_DIR=/var/lib/bloom/Garden' >> /var/lib/bloom/.bash
 
 # Labels
 LABEL com.github.containers.toolbox="false"
-LABEL bloom.version="0.1.0"
+LABEL bloom.version="0.0.1"
 LABEL description="Bloom — Pi-native AI companion OS"
