@@ -9,8 +9,4 @@ COPY dist/ ./dist/
 
 VOLUME /data/auth
 
-ENV BLOOM_CHANNELS_HOST=127.0.0.1
-ENV BLOOM_CHANNELS_PORT=18800
-ENV BLOOM_AUTH_DIR=/data/auth
-
 CMD ["node", "dist/transport.js"]

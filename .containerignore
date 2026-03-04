@@ -1,0 +1,11 @@
+.git
+node_modules
+dist
+os
+bridges
+docs
+.claude
+.omc
+*.md
+!persona/**/*.md
+!skills/**/*.md

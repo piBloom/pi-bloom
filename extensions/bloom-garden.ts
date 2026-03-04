@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { type ExtensionAPI, truncateHead } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 function getGardenDir(): string {
@@ -31,7 +31,7 @@ const GARDEN_DIRS = [
 	"Archive",
 	"Bloom/Persona",
 	"Bloom/Skills",
-	"Bloom/evolutions",
+	"Bloom/Evolutions",
 ];
 
 const PERSONA_FILES = ["SOUL.md", "BODY.md", "FACULTY.md", "SKILL.md"];
@@ -138,12 +138,14 @@ export default function (pi: ExtensionAPI) {
 
 		const versions = readBlueprintVersions(gardenDir);
 		const updates = Object.keys(versions.updatesAvailable);
-		if (updates.length > 0) {
-			ctx.ui.setWidget("bloom-updates", [
-				`${updates.length} blueprint update(s) available — /garden update-blueprints`,
-			]);
+		if (ctx.hasUI) {
+			if (updates.length > 0) {
+				ctx.ui.setWidget("bloom-updates", [
+					`${updates.length} blueprint update(s) available — /garden update-blueprints`,
+				]);
+			}
+			ctx.ui.setStatus("bloom-garden", `Garden: ${gardenDir}`);
 		}
-		ctx.ui.setStatus("bloom-garden", `Garden: ${gardenDir}`);
 	});
 
 	pi.registerTool({
@@ -170,7 +172,9 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			return {
-				content: [{ type: "text" as const, text: lines.join("\n") }],
+				content: [
+					{ type: "text" as const, text: truncateHead(lines.join("\n"), { maxLines: 2000, maxBytes: 50000 }).content },
+				],
 				details: {},
 			};
 		},

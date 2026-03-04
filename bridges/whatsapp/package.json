@@ -9,6 +9,7 @@
 		"start": "node dist/transport.js"
 	},
 	"dependencies": {
+		"@hapi/boom": "^10.0.1",
 		"baileys": "^6.7.16"
 	},
 	"devDependencies": {

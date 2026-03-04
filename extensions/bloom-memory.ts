@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { StringEnum } from "@mariozechner/pi-ai";
+import { type ExtensionAPI, truncateHead } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
 function nowIso(): string {
@@ -183,6 +184,18 @@ function walkFiles(dir: string, callback: (filepath: string, raw: string) => voi
 	}
 }
 
+function truncate(text: string): string {
+	return truncateHead(text, { maxLines: 2000, maxBytes: 50000 }).content;
+}
+
+function errorResult(message: string) {
+	return {
+		content: [{ type: "text" as const, text: message }],
+		details: {},
+		isError: true,
+	};
+}
+
 export default function (pi: ExtensionAPI) {
 	pi.on("session_start", () => {
 		buildIndex(getGardenDir());
@@ -251,9 +264,9 @@ export default function (pi: ExtensionAPI) {
 				});
 			} catch (err: unknown) {
 				if ((err as NodeJS.ErrnoException).code === "EEXIST") {
-					throw new Error(`object already exists: ${params.type}/${params.slug}`);
+					return errorResult(`object already exists: ${params.type}/${params.slug}`);
 				}
-				throw err;
+				return errorResult(`failed to create object: ${(err as Error).message}`);
 			}
 
 			index.set(`${params.type}/${params.slug}`, {
@@ -292,11 +305,11 @@ export default function (pi: ExtensionAPI) {
 			const gardenDir = getGardenDir();
 			const filepath = findObject(gardenDir, params.type, params.slug);
 			if (!filepath) {
-				throw new Error(`object not found: ${params.type}/${params.slug}`);
+				return errorResult(`object not found: ${params.type}/${params.slug}`);
 			}
 			const raw = fs.readFileSync(filepath, "utf-8");
 			return {
-				content: [{ type: "text" as const, text: raw }],
+				content: [{ type: "text" as const, text: truncate(raw) }],
 				details: {},
 			};
 		},
@@ -313,11 +326,12 @@ export default function (pi: ExtensionAPI) {
 				description: "Text pattern to search for",
 			}),
 		}),
-		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
 			const gardenDir = getGardenDir();
 			const matches: string[] = [];
 
 			for (const paraDir of PARA_DIRS) {
+				if (signal?.aborted) break;
 				walkFiles(path.join(gardenDir, paraDir), (filepath, raw) => {
 					if (!raw.includes(params.pattern)) return;
 					const { data } = parseFrontmatter(raw);
@@ -331,7 +345,7 @@ export default function (pi: ExtensionAPI) {
 
 			const text = matches.length > 0 ? matches.join("\n") : "No matches found";
 			return {
-				content: [{ type: "text" as const, text }],
+				content: [{ type: "text" as const, text: truncate(text) }],
 				details: {},
 			};
 		},
@@ -358,8 +372,8 @@ export default function (pi: ExtensionAPI) {
 			const pathA = findObject(gardenDir, a.type, a.slug);
 			const pathB = findObject(gardenDir, b.type, b.slug);
 
-			if (!pathA) throw new Error(`object not found: ${params.ref_a}`);
-			if (!pathB) throw new Error(`object not found: ${params.ref_b}`);
+			if (!pathA) return errorResult(`object not found: ${params.ref_a}`);
+			if (!pathB) return errorResult(`object not found: ${params.ref_b}`);
 
 			function addLink(fp: string, linkRef: string): void {
 				const raw = fs.readFileSync(fp, "utf-8");
@@ -395,18 +409,14 @@ export default function (pi: ExtensionAPI) {
 		promptGuidelines: ["Use memory_list to show all objects of a type, or filter by status, area, para category, etc."],
 		parameters: Type.Object({
 			type: Type.Optional(Type.String({ description: "Object type to filter by" })),
-			para: Type.Optional(
-				Type.String({
-					description: "PARA category to filter by (Inbox, Projects, Areas, Resources, Archive)",
-				}),
-			),
+			para: Type.Optional(StringEnum(["Inbox", "Projects", "Areas", "Resources", "Archive"] as const)),
 			filters: Type.Optional(
 				Type.Record(Type.String(), Type.String(), {
 					description: "Frontmatter field filters",
 				}),
 			),
 		}),
-		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
 			const gardenDir = getGardenDir();
 			const filters = params.filters ?? {};
 			const results: string[] = [];
@@ -416,6 +426,7 @@ export default function (pi: ExtensionAPI) {
 				: PARA_DIRS.map((d) => path.join(gardenDir, d));
 
 			for (const dir of dirsToSearch) {
+				if (signal?.aborted) break;
 				walkFiles(dir, (_filepath, raw) => {
 					const { data } = parseFrontmatter(raw);
 					const type = String(data.type ?? "note");
@@ -446,7 +457,7 @@ export default function (pi: ExtensionAPI) {
 
 			const text = results.length > 0 ? results.join("\n") : "No objects found";
 			return {
-				content: [{ type: "text" as const, text }],
+				content: [{ type: "text" as const, text: truncate(text) }],
 				details: {},
 			};
 		},
@@ -468,7 +479,7 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
 			const gardenDir = getGardenDir();
 			const oldPath = findObject(gardenDir, params.type, params.slug);
-			if (!oldPath) throw new Error(`object not found: ${params.type}/${params.slug}`);
+			if (!oldPath) return errorResult(`object not found: ${params.type}/${params.slug}`);
 
 			const raw = fs.readFileSync(oldPath, "utf-8");
 			const { data, content } = parseFrontmatter(raw);
@@ -533,7 +544,8 @@ export default function (pi: ExtensionAPI) {
 		promptSnippet: "Force rebuild the Garden index",
 		promptGuidelines: ["Use garden_reindex after external file changes to update the index."],
 		parameters: Type.Object({}),
-		async execute(_toolCallId, _params, _signal, _onUpdate, _ctx) {
+		async execute(_toolCallId, _params, signal, _onUpdate, _ctx) {
+			if (signal?.aborted) return errorResult("aborted");
 			buildIndex(getGardenDir());
 			return {
 				content: [
@@ -560,11 +572,7 @@ export default function (pi: ExtensionAPI) {
 					description: "Date in YYYY-MM-DD format (default: today)",
 				}),
 			),
-			origin: Type.Optional(
-				Type.String({
-					description: "Origin: 'pi' (default) or 'user'",
-				}),
-			),
+			origin: Type.Optional(StringEnum(["pi", "user"] as const)),
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
 			const gardenDir = getGardenDir();
@@ -640,7 +648,7 @@ export default function (pi: ExtensionAPI) {
 
 			const text = parts.length > 0 ? parts.join("\n\n---\n\n") : `No journal entries for ${date}`;
 			return {
-				content: [{ type: "text" as const, text }],
+				content: [{ type: "text" as const, text: truncate(text) }],
 				details: {},
 			};
 		},

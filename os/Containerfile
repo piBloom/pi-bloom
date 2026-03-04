@@ -23,7 +23,7 @@ RUN npm install -g @mariozechner/pi-coding-agent
 
 # Install Bloom Pi package
 COPY . /usr/local/share/bloom/
-RUN cd /usr/local/share/bloom && npm install --production 2>/dev/null || true
+RUN cd /usr/local/share/bloom && npm install --omit=dev
 
 # Configure Pi settings defaults in /usr (immutable layer)
 RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
@@ -35,7 +35,6 @@ COPY os/sysconfig/bloom-bash_profile /usr/local/share/bloom/skel/.bash_profile
 
 # tmpfiles.d for /var directory structure (created at boot)
 COPY os/sysconfig/bloom-tmpfiles.conf /usr/lib/tmpfiles.d/bloom.conf
-RUN systemd-tmpfiles --create
 
 # Install persona files
 RUN mkdir -p /usr/local/share/bloom/persona
@@ -47,10 +46,14 @@ COPY bridges/whatsapp/quadlet/ /usr/share/containers/systemd/
 COPY os/sysconfig/bloom-greeting.sh /usr/local/bin/bloom-greeting.sh
 RUN chmod +x /usr/local/bin/bloom-greeting.sh
 
-# Validate bootc image
-RUN bootc container lint
+# bootc installation config
+COPY os/bootc/config.toml /usr/lib/bootc/install/config.toml
 
 # Labels
+LABEL containers.bootc 1
 LABEL com.github.containers.toolbox="false"
 LABEL bloom.version="0.0.1"
 LABEL description="Bloom — Pi-native AI companion OS"
+
+# Validate bootc image (must be after all labels)
+RUN bootc container lint

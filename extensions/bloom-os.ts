@@ -1,7 +1,8 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { StringEnum } from "@mariozechner/pi-ai";
+import { type ExtensionAPI, truncateHead } from "@mariozechner/pi-coding-agent";
+import { Type } from "@sinclair/typebox";
 
 const execAsync = promisify(execFile);
 
@@ -30,6 +31,10 @@ function guardBloom(name: string): string | null {
 	return null;
 }
 
+function truncate(text: string): string {
+	return truncateHead(text, { maxLines: 2000, maxBytes: 50000 }).content;
+}
+
 function errorResult(message: string) {
 	return {
 		content: [{ type: "text" as const, text: message }],
@@ -44,15 +49,11 @@ export default function (pi: ExtensionAPI) {
 		label: "OS Image Status",
 		description: "Shows the current Fedora bootc OS image status, pending updates, and rollback availability.",
 		promptSnippet: "bootc_status — show OS image version and update status",
-		promptGuidelines: [
-			"Use bootc_status when the user asks about OS version, update status, or system health",
-		],
+		promptGuidelines: ["Use bootc_status when the user asks about OS version, update status, or system health"],
 		parameters: Type.Object({}),
 		async execute(_toolCallId, _params, signal, _onUpdate, _ctx) {
 			const result = await run("bootc", ["status"], signal);
-			const text = result.exitCode === 0
-				? result.stdout
-				: `Error running bootc status:\n${result.stderr}`;
+			const text = truncate(result.exitCode === 0 ? result.stdout : `Error running bootc status:\n${result.stderr}`);
 			return {
 				content: [{ type: "text", text }],
 				details: { exitCode: result.exitCode },
@@ -71,7 +72,9 @@ export default function (pi: ExtensionAPI) {
 			"Staging requires user confirmation. Updates apply on next reboot.",
 		],
 		parameters: Type.Object({
-			check_only: Type.Optional(Type.Boolean({ description: "If true, only check for updates without staging", default: true })),
+			check_only: Type.Optional(
+				Type.Boolean({ description: "If true, only check for updates without staging", default: true }),
+			),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
 			const checkOnly = params.check_only !== false;
@@ -79,9 +82,7 @@ export default function (pi: ExtensionAPI) {
 			const cmd = checkOnly ? "bootc" : "sudo";
 			const fullArgs = checkOnly ? args : ["bootc", ...args];
 			const result = await run(cmd, fullArgs, signal);
-			const text = result.exitCode === 0
-				? result.stdout || "No output."
-				: `Error:\n${result.stderr}`;
+			const text = truncate(result.exitCode === 0 ? result.stdout || "No output." : `Error:\n${result.stderr}`);
 			return {
 				content: [{ type: "text", text }],
 				details: { exitCode: result.exitCode, checkOnly },
@@ -95,16 +96,10 @@ export default function (pi: ExtensionAPI) {
 		label: "Container Status",
 		description: "Lists running Bloom containers and their health status.",
 		promptSnippet: "container_status — list running bloom-* containers",
-		promptGuidelines: [
-			"Use container_status to check running Bloom containers and their health",
-		],
+		promptGuidelines: ["Use container_status to check running Bloom containers and their health"],
 		parameters: Type.Object({}),
 		async execute(_toolCallId, _params, signal, _onUpdate, _ctx) {
-			const result = await run(
-				"podman",
-				["ps", "--format", "json", "--filter", "name=bloom-"],
-				signal,
-			);
+			const result = await run("podman", ["ps", "--format", "json", "--filter", "name=bloom-"], signal);
 			if (result.exitCode !== 0) {
 				return errorResult(`Error listing containers:\n${result.stderr}`);
 			}
@@ -131,7 +126,7 @@ export default function (pi: ExtensionAPI) {
 			} catch {
 				text = result.stdout;
 			}
-			return { content: [{ type: "text", text }], details: {} };
+			return { content: [{ type: "text", text: truncate(text) }], details: {} };
 		},
 	});
 
@@ -152,14 +147,10 @@ export default function (pi: ExtensionAPI) {
 			if (guard) return errorResult(guard);
 			const n = String(params.lines ?? 50);
 			const unit = `${params.service}.service`;
-			const result = await run(
-				"journalctl",
-				["-u", unit, "--no-pager", "-n", n],
-				signal,
+			const result = await run("journalctl", ["-u", unit, "--no-pager", "-n", n], signal);
+			const text = truncate(
+				result.exitCode === 0 ? result.stdout || "(no log output)" : `Error fetching logs:\n${result.stderr}`,
 			);
-			const text = result.exitCode === 0
-				? result.stdout || "(no log output)"
-				: `Error fetching logs:\n${result.stderr}`;
 			return {
 				content: [{ type: "text", text }],
 				details: { exitCode: result.exitCode },
@@ -179,12 +170,7 @@ export default function (pi: ExtensionAPI) {
 		],
 		parameters: Type.Object({
 			service: Type.String({ description: "Service name (e.g. bloom-whatsapp)" }),
-			action: Type.Union([
-				Type.Literal("start"),
-				Type.Literal("stop"),
-				Type.Literal("restart"),
-				Type.Literal("status"),
-			]),
+			action: StringEnum(["start", "stop", "restart", "status"] as const),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
 			const guard = guardBloom(params.service);
@@ -192,11 +178,9 @@ export default function (pi: ExtensionAPI) {
 			const unit = `${params.service}.service`;
 			const readOnly = params.action === "status";
 			const cmd = readOnly ? "systemctl" : "sudo";
-			const args = readOnly
-				? [params.action, unit]
-				: ["systemctl", params.action, unit];
+			const args = readOnly ? [params.action, unit] : ["systemctl", params.action, unit];
 			const result = await run(cmd, args, signal);
-			const text = result.stdout || result.stderr || `systemctl ${params.action} completed.`;
+			const text = truncate(result.stdout || result.stderr || `systemctl ${params.action} completed.`);
 			return {
 				content: [{ type: "text", text }],
 				details: { exitCode: result.exitCode },
@@ -225,9 +209,9 @@ export default function (pi: ExtensionAPI) {
 				return errorResult(`daemon-reload failed:\n${reload.stderr}`);
 			}
 			const start = await run("sudo", ["systemctl", "start", unit], signal);
-			const text = start.exitCode === 0
-				? `Started ${unit} successfully.`
-				: `Failed to start ${unit}:\n${start.stderr}`;
+			const text = truncate(
+				start.exitCode === 0 ? `Started ${unit} successfully.` : `Failed to start ${unit}:\n${start.stderr}`,
+			);
 			return {
 				content: [{ type: "text", text }],
 				details: { exitCode: start.exitCode },
