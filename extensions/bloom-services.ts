@@ -139,6 +139,21 @@ function tailscaleRootlessPreflightError(): string | null {
 	].join("\n");
 }
 
+function tailscaleAuthConfigured(): boolean {
+	const direct = process.env.TS_AUTHKEY?.trim();
+	if (direct) return true;
+	const envPath = join(os.homedir(), ".config", "bloom", "tailscale.env");
+	if (!existsSync(envPath)) return false;
+	try {
+		const raw = readFileSync(envPath, "utf-8");
+		return raw
+			.split("\n")
+			.some((line) => line.trim().startsWith("TS_AUTHKEY=") && line.trim().length > "TS_AUTHKEY=".length);
+	} catch {
+		return false;
+	}
+}
+
 function resolveRepoDir(ctx: ExtensionContext): string {
 	let current = ctx.cwd;
 	for (let i = 0; i < 6; i++) {
@@ -463,8 +478,10 @@ export default function (pi: ExtensionAPI) {
 				}
 
 				const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+				const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
 				const skillDir = join(getGardenDir(), "Bloom", "Skills", params.name);
 				mkdirSync(systemdDir, { recursive: true });
+				mkdirSync(userSystemdDir, { recursive: true });
 				mkdirSync(skillDir, { recursive: true });
 
 				const networkDest = join(systemdDir, "bloom.network");
@@ -475,7 +492,8 @@ export default function (pi: ExtensionAPI) {
 				for (const name of readdirSync(quadletSrc)) {
 					const src = join(quadletSrc, name);
 					if (!statSync(src).isFile()) continue;
-					writeFileSync(join(systemdDir, name), readFileSync(src));
+					const destDir = name.endsWith(".socket") ? userSystemdDir : systemdDir;
+					writeFileSync(join(destDir, name), readFileSync(src));
 				}
 				writeFileSync(join(skillDir, "SKILL.md"), readFileSync(skillSrc));
 
@@ -492,10 +510,16 @@ export default function (pi: ExtensionAPI) {
 				const daemonReload = await run("systemctl", ["--user", "daemon-reload"], signal);
 				if (daemonReload.exitCode !== 0) return errorResult(`daemon-reload failed:\n${daemonReload.stderr}`);
 
-				const socketUnit = join(systemdDir, `bloom-${params.name}.socket`);
-				if (start) {
-					const target = existsSync(socketUnit) ? `bloom-${params.name}.socket` : `bloom-${params.name}`;
-					const startRes = await run("systemctl", ["--user", "enable", "--now", target], signal);
+				const socketUnit = join(userSystemdDir, `bloom-${params.name}.socket`);
+				let startSkippedNote: string | null = null;
+				const shouldStart = start && (params.name !== "tailscale" || tailscaleAuthConfigured());
+				if (start && !shouldStart && params.name === "tailscale") {
+					startSkippedNote =
+						"Tailscale installed but not auto-started (TS_AUTHKEY is not configured). Configure auth first, then run: systemctl --user start bloom-tailscale.service";
+				}
+				if (shouldStart) {
+					const target = existsSync(socketUnit) ? `bloom-${params.name}.socket` : `bloom-${params.name}.service`;
+					const startRes = await run("systemctl", ["--user", "start", target], signal);
 					if (startRes.exitCode !== 0) {
 						return errorResult(`Failed to start ${target}:\n${startRes.stderr}`);
 					}
@@ -510,7 +534,14 @@ export default function (pi: ExtensionAPI) {
 					content: [
 						{
 							type: "text" as const,
-							text: sourceNote ? `Installed ${ref} successfully.\n${sourceNote}` : `Installed ${ref} successfully.`,
+							text:
+								sourceNote && startSkippedNote
+									? `Installed ${ref} successfully.\n${sourceNote}\n${startSkippedNote}`
+									: sourceNote
+										? `Installed ${ref} successfully.\n${sourceNote}`
+										: startSkippedNote
+											? `Installed ${ref} successfully.\n${startSkippedNote}`
+											: `Installed ${ref} successfully.`,
 						},
 					],
 					details: {
@@ -519,9 +550,11 @@ export default function (pi: ExtensionAPI) {
 						installSource,
 						sourceNote,
 						start,
+						startSkippedNote,
 						manifestUpdated: updateManifest,
 						installedTo: {
 							systemdDir,
+							userSystemdDir,
 							skillDir,
 						},
 					},
@@ -553,15 +586,16 @@ export default function (pi: ExtensionAPI) {
 			const timeoutSec = Math.max(10, Math.round(params.start_timeout_sec ?? 120));
 			const cleanup = params.cleanup ?? false;
 			const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+			const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
 			const containerDef = join(systemdDir, `bloom-${params.name}.container`);
-			const socketDef = join(systemdDir, `bloom-${params.name}.socket`);
+			const socketDef = join(userSystemdDir, `bloom-${params.name}.socket`);
 			if (!existsSync(containerDef)) {
 				return errorResult(`Service not installed: ${containerDef} not found.`);
 			}
 
 			const socketMode = existsSync(socketDef);
 			const serviceUnit = `bloom-${params.name}`;
-			const startUnit = socketMode ? `${serviceUnit}.socket` : serviceUnit;
+			const startUnit = socketMode ? `${serviceUnit}.socket` : `${serviceUnit}.service`;
 
 			const reload = await run("systemctl", ["--user", "daemon-reload"], signal);
 			if (reload.exitCode !== 0) return errorResult(`daemon-reload failed:\n${reload.stderr}`);

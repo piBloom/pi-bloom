@@ -975,14 +975,29 @@ export default function (pi: ExtensionAPI) {
 		return errors;
 	}
 
-	function hasTagOrDigest(ref: string): boolean {
+function hasTagOrDigest(ref: string): boolean {
 		if (ref.includes("@")) return true;
 		const lastSlash = ref.lastIndexOf("/");
 		const tail = ref.slice(lastSlash + 1);
 		return tail.includes(":");
-	}
+}
 
-	function findLocalServicePackage(name: string): { serviceDir: string; quadletDir: string; skillPath: string } | null {
+function tailscaleAuthConfigured(): boolean {
+	const direct = process.env.TS_AUTHKEY?.trim();
+	if (direct) return true;
+	const envPath = join(os.homedir(), ".config", "bloom", "tailscale.env");
+	if (!existsSync(envPath)) return false;
+	try {
+		const raw = readFileSync(envPath, "utf-8");
+		return raw
+			.split("\n")
+			.some((line) => line.trim().startsWith("TS_AUTHKEY=") && line.trim().length > "TS_AUTHKEY=".length);
+	} catch {
+		return false;
+	}
+}
+
+function findLocalServicePackage(name: string): { serviceDir: string; quadletDir: string; skillPath: string } | null {
 		const candidates = [
 			join(repoDir, "services", name),
 			`/usr/local/share/bloom/services/${name}`,
@@ -1046,8 +1061,10 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+			const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
 			const skillDir = join(gardenDir, "Bloom", "Skills", name);
 			mkdirSync(systemdDir, { recursive: true });
+			mkdirSync(userSystemdDir, { recursive: true });
 			mkdirSync(skillDir, { recursive: true });
 
 			const networkDest = join(systemdDir, "bloom.network");
@@ -1067,7 +1084,8 @@ export default function (pi: ExtensionAPI) {
 			for (const fileName of readdirSync(quadletSrc)) {
 				const src = join(quadletSrc, fileName);
 				if (!statSync(src).isFile()) continue;
-				writeFileSync(join(systemdDir, fileName), readFileSync(src));
+				const destDir = fileName.endsWith(".socket") ? userSystemdDir : systemdDir;
+				writeFileSync(join(destDir, fileName), readFileSync(src));
 			}
 			writeFileSync(join(skillDir, "SKILL.md"), readFileSync(skillSrc));
 
@@ -1335,6 +1353,7 @@ export default function (pi: ExtensionAPI) {
 			let needsReload = false;
 
 			const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+			const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
 
 			// Pass 1: install missing enabled services if requested
 			for (const [name, svc] of serviceEntries) {
@@ -1403,8 +1422,8 @@ export default function (pi: ExtensionAPI) {
 			for (const [name, svc] of serviceEntries) {
 				const unit = `bloom-${name}`;
 				const containerDef = join(systemdDir, `${unit}.container`);
-				const socketDef = join(systemdDir, `${unit}.socket`);
-				const startTarget = existsSync(socketDef) ? `${unit}.socket` : unit;
+				const socketDef = join(userSystemdDir, `${unit}.socket`);
+				const startTarget = existsSync(socketDef) ? `${unit}.socket` : `${unit}.service`;
 
 				if (svc.enabled) {
 					if (!existsSync(containerDef)) {
@@ -1412,13 +1431,20 @@ export default function (pi: ExtensionAPI) {
 						continue;
 					}
 
+					if (name === "tailscale" && !tailscaleAuthConfigured()) {
+						lines.push(
+							"Skipped starting bloom-tailscale.service (TS_AUTHKEY not configured). Configure auth, then start it manually.",
+						);
+						continue;
+					}
+
 					if (dryRun) {
-						lines.push(`[dry-run] enable --now ${startTarget}`);
+						lines.push(`[dry-run] start ${startTarget}`);
 						startedCount += 1;
 						continue;
 					}
 
-					const start = await run("systemctl", ["--user", "enable", "--now", startTarget], signal);
+					const start = await run("systemctl", ["--user", "start", startTarget], signal);
 					if (start.exitCode !== 0) {
 						errors.push(`${name}: failed to start ${startTarget}: ${start.stderr || start.stdout}`);
 					} else {
@@ -1429,16 +1455,16 @@ export default function (pi: ExtensionAPI) {
 				}
 
 				if (dryRun) {
-					lines.push(`[dry-run] disable --now ${unit}.socket (if present)`);
-					lines.push(`[dry-run] disable --now ${unit}`);
+					lines.push(`[dry-run] stop ${unit}.socket (if present)`);
+					lines.push(`[dry-run] stop ${unit}.service`);
 					stoppedCount += 1;
 					continue;
 				}
 
-				await run("systemctl", ["--user", "disable", "--now", `${unit}.socket`], signal);
-				await run("systemctl", ["--user", "disable", "--now", unit], signal);
+				await run("systemctl", ["--user", "stop", `${unit}.socket`], signal);
+				await run("systemctl", ["--user", "stop", `${unit}.service`], signal);
 				stoppedCount += 1;
-				lines.push(`Stopped ${unit} (disabled)`);
+				lines.push(`Stopped ${unit}`);
 			}
 
 			if (manifestChanged && !dryRun) {

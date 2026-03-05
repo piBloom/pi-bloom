@@ -19,8 +19,8 @@ Environment=PGID=%G
 Environment=STGUIADDRESS=0.0.0.0:8384
 PodmanArgs=--memory=256m
 
-# Use Syncthing CLI against local API for health status
-HealthCmd=syncthing cli --home /var/syncthing/config show system > /dev/null || exit 1
+# Health endpoint does not require API key and is stable for container checks
+HealthCmd=curl -sf http://127.0.0.1:8384/rest/noauth/health > /dev/null || exit 1
 HealthInterval=30s
 HealthRetries=3
 HealthTimeout=10s
