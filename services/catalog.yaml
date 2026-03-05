@@ -1,0 +1,37 @@
+version: 1
+registry_default: ghcr.io/pibloom
+source_repo: https://github.com/pibloom/pi-bloom
+services:
+  whisper:
+    version: "0.1.0"
+    category: media
+    artifact: ghcr.io/pibloom/bloom-svc-whisper
+    image: docker.io/fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030
+    optional: true
+    preflight:
+      commands: [oras, podman, systemctl]
+  whatsapp:
+    version: "0.1.0"
+    category: communication
+    artifact: ghcr.io/pibloom/bloom-svc-whatsapp
+    image: ghcr.io/alexradunet/bloom-whatsapp:latest
+    optional: true
+    preflight:
+      commands: [oras, podman, systemctl]
+  tailscale:
+    version: "0.1.0"
+    category: networking
+    artifact: ghcr.io/pibloom/bloom-svc-tailscale
+    image: docker.io/tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1
+    optional: true
+    preflight:
+      commands: [oras, podman, systemctl]
+      rootless_subids: true
+  syncthing:
+    version: "0.1.0"
+    category: sync
+    artifact: ghcr.io/pibloom/bloom-svc-syncthing
+    image: docker.io/syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643
+    optional: true
+    preflight:
+      commands: [oras, podman, systemctl]

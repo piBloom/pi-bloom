@@ -28,7 +28,7 @@
 	},
 	"scripts": {
 		"build": "rm -rf dist && tsc --build",
-		"check": "npx @biomejs/biome check AGENTS.md CLAUDE.md guardrails.yaml .containerignore biome.json justfile package.json tsconfig.json .github/workflows docs extensions skills services/README.md services/examples services/tailscale services/whisper services/whatsapp/SKILL.md services/whatsapp/src services/syncthing os/Containerfile os/bootc os/sysconfig",
-		"check:fix": "npx @biomejs/biome check --write AGENTS.md CLAUDE.md guardrails.yaml .containerignore biome.json justfile package.json tsconfig.json .github/workflows docs extensions skills services/README.md services/examples services/tailscale services/whisper services/whatsapp/SKILL.md services/whatsapp/src services/syncthing os/Containerfile os/bootc os/sysconfig"
+		"check": "npx @biomejs/biome check AGENTS.md CLAUDE.md guardrails.yaml .containerignore biome.json justfile package.json tsconfig.json .github/workflows docs extensions skills services/README.md services/catalog.yaml services/examples services/tailscale services/whisper services/whatsapp/SKILL.md services/whatsapp/src services/syncthing os/Containerfile os/bootc os/sysconfig",
+		"check:fix": "npx @biomejs/biome check --write AGENTS.md CLAUDE.md guardrails.yaml .containerignore biome.json justfile package.json tsconfig.json .github/workflows docs extensions skills services/README.md services/catalog.yaml services/examples services/tailscale services/whisper services/whatsapp/SKILL.md services/whatsapp/src services/syncthing os/Containerfile os/bootc os/sysconfig"
 	}
 }

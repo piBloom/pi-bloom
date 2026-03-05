@@ -46,6 +46,7 @@ For multi-device code contribution and PR flow, see `docs/fleet-pr-workflow.md`,
 ## Services (OCI Packages)
 
 Modular capabilities packaged as OCI artifacts, installed via `oras` from GHCR.
+Canonical metadata for automation lives in `services/catalog.yaml`.
 
 | Service | Category | Port | Image |
 |---------|----------|------|-------|
@@ -72,3 +73,9 @@ Or for development:
 ```bash
 pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-audit.ts -e ./extensions/bloom-os.ts -e ./extensions/bloom-services.ts -e ./extensions/bloom-objects.ts -e ./extensions/bloom-journal.ts -e ./extensions/bloom-garden.ts -e ./extensions/bloom-channels.ts -e ./extensions/bloom-topics.ts
 ```
+
+## Setup & Deployment Docs
+
+- OS build/deploy/install: `docs/quick_deploy.md`
+- First-boot setup flow: `docs/pibloom-setup.md`
+- Fleet PR bootstrap: `docs/fleet-bootstrap-checklist.md`

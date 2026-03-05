@@ -1,5 +1,15 @@
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
+import {
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+	statSync,
+	writeFileSync,
+} from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
@@ -105,7 +115,7 @@ async function inferRepoUrl(repoDir: string, signal?: AbortSignal): Promise<stri
 		}
 	}
 
-	return "https://github.com/piBloom/pi-bloom.git";
+	return "https://github.com/pibloom/pi-bloom.git";
 }
 
 export default function (pi: ExtensionAPI) {
@@ -339,6 +349,8 @@ export default function (pi: ExtensionAPI) {
 	const bloomDir = join(os.homedir(), ".bloom");
 	const statusFile = join(bloomDir, "update-status.json");
 	const repoDir = join(bloomDir, "pi-bloom");
+	const defaultServiceRegistry =
+		process.env.BLOOM_SERVICE_REGISTRY?.trim() || process.env.BLOOM_REGISTRY?.trim() || "ghcr.io/pibloom";
 
 	pi.registerTool({
 		name: "update_status",
@@ -860,6 +872,221 @@ export default function (pi: ExtensionAPI) {
 		writeFileSync(manifestPath, yaml.dump(manifest));
 	}
 
+	interface ServiceCatalogEntry {
+		version?: string;
+		category?: string;
+		artifact?: string;
+		image?: string;
+		optional?: boolean;
+		preflight?: {
+			commands?: string[];
+			rootless_subids?: boolean;
+		};
+	}
+
+	function loadServiceCatalog(): Record<string, ServiceCatalogEntry> {
+		const candidates = [
+			join(repoDir, "services", "catalog.yaml"),
+			"/usr/local/share/bloom/services/catalog.yaml",
+			join(process.cwd(), "services", "catalog.yaml"),
+		];
+		for (const candidate of candidates) {
+			if (!existsSync(candidate)) continue;
+			try {
+				const raw = readFileSync(candidate, "utf-8");
+				const doc = (yaml.load(raw) as { services?: Record<string, ServiceCatalogEntry> } | null) ?? {};
+				if (doc.services && typeof doc.services === "object") return doc.services;
+			} catch {
+				// ignore and continue
+			}
+		}
+		return {};
+	}
+
+	function hasSubidRange(filePath: string, username: string): boolean {
+		if (!existsSync(filePath)) return false;
+		try {
+			return readFileSync(filePath, "utf-8")
+				.split("\n")
+				.some((line) => line.trim().startsWith(`${username}:`));
+		} catch {
+			return false;
+		}
+	}
+
+	function commandCheckArgs(cmd: string): string[] {
+		switch (cmd) {
+			case "oras":
+				return ["version"];
+			case "podman":
+			case "systemctl":
+				return ["--version"];
+			default:
+				return ["--version"];
+		}
+	}
+
+	function commandMissingError(stderr: string): boolean {
+		return /ENOENT|not found|No such file/i.test(stderr);
+	}
+
+	async function commandExists(cmd: string, signal?: AbortSignal): Promise<boolean> {
+		if (!/^[a-zA-Z0-9._+-]+$/.test(cmd)) return false;
+		const check = await run(cmd, commandCheckArgs(cmd), signal);
+		if (check.exitCode === 0) return true;
+		return !commandMissingError(check.stderr || check.stdout);
+	}
+
+	async function servicePreflightErrors(
+		name: string,
+		entry: ServiceCatalogEntry | undefined,
+		signal?: AbortSignal,
+	): Promise<string[]> {
+		const errors: string[] = [];
+		const commands = entry?.preflight?.commands ?? ["oras", "podman", "systemctl"];
+		for (const command of commands) {
+			const ok = await commandExists(command, signal);
+			if (!ok) errors.push(`missing command: ${command}`);
+		}
+
+		if (entry?.preflight?.rootless_subids) {
+			const user = os.userInfo().username;
+			const hasSubuid = hasSubidRange("/etc/subuid", user);
+			const hasSubgid = hasSubidRange("/etc/subgid", user);
+			if (!hasSubuid || !hasSubgid) {
+				errors.push(
+					`rootless subuid/subgid mappings missing for ${user} (fix: sudo usermod --add-subuids 100000-165535 ${user} && sudo usermod --add-subgids 100000-165535 ${user})`,
+				);
+			}
+		}
+
+		// Fallback guard for known services even if catalog not loaded.
+		if (name === "tailscale" && !entry?.preflight?.rootless_subids) {
+			const user = os.userInfo().username;
+			const hasSubuid = hasSubidRange("/etc/subuid", user);
+			const hasSubgid = hasSubidRange("/etc/subgid", user);
+			if (!hasSubuid || !hasSubgid) {
+				errors.push(
+					`rootless subuid/subgid mappings missing for ${user} (fix: sudo usermod --add-subuids 100000-165535 ${user} && sudo usermod --add-subgids 100000-165535 ${user})`,
+				);
+			}
+		}
+
+		return errors;
+	}
+
+	function hasTagOrDigest(ref: string): boolean {
+		if (ref.includes("@")) return true;
+		const lastSlash = ref.lastIndexOf("/");
+		const tail = ref.slice(lastSlash + 1);
+		return tail.includes(":");
+	}
+
+	function findLocalServicePackage(name: string): { serviceDir: string; quadletDir: string; skillPath: string } | null {
+		const candidates = [
+			join(repoDir, "services", name),
+			`/usr/local/share/bloom/services/${name}`,
+			join(process.cwd(), "services", name),
+		];
+		for (const serviceDir of candidates) {
+			const quadletDir = join(serviceDir, "quadlet");
+			const skillPath = join(serviceDir, "SKILL.md");
+			if (existsSync(quadletDir) && existsSync(skillPath)) {
+				return { serviceDir, quadletDir, skillPath };
+			}
+		}
+		return null;
+	}
+
+	async function installServicePackage(
+		name: string,
+		version: string,
+		registry: string,
+		entry: ServiceCatalogEntry | undefined,
+		signal?: AbortSignal,
+	): Promise<{ ok: boolean; source: "oci" | "local"; ref: string; note?: string }> {
+		const artifactBase = entry?.artifact?.trim() || `${registry}/bloom-svc-${name}`;
+		const ref = hasTagOrDigest(artifactBase) ? artifactBase : `${artifactBase}:${version}`;
+		const tempDir = mkdtempSync(join(os.tmpdir(), `bloom-manifest-${name}-`));
+
+		try {
+			let source: "oci" | "local" = "oci";
+			const pull = await run("oras", ["pull", ref, "-o", tempDir], signal);
+			if (pull.exitCode !== 0) {
+				const localPackage = findLocalServicePackage(name);
+				if (!localPackage) {
+					return {
+						ok: false,
+						source,
+						ref,
+						note: `Failed to pull ${ref}: ${pull.stderr || pull.stdout}`,
+					};
+				}
+
+				const localTempQuadlet = join(tempDir, "quadlet");
+				mkdirSync(localTempQuadlet, { recursive: true });
+				for (const fileName of readdirSync(localPackage.quadletDir)) {
+					const src = join(localPackage.quadletDir, fileName);
+					if (!statSync(src).isFile()) continue;
+					writeFileSync(join(localTempQuadlet, fileName), readFileSync(src));
+				}
+				writeFileSync(join(tempDir, "SKILL.md"), readFileSync(localPackage.skillPath));
+				source = "local";
+			}
+
+			const quadletSrc = join(tempDir, "quadlet");
+			const skillSrc = join(tempDir, "SKILL.md");
+			if (!existsSync(quadletSrc) || !existsSync(skillSrc)) {
+				return {
+					ok: false,
+					source,
+					ref,
+					note: `Service package for ${name} missing quadlet/ or SKILL.md`,
+				};
+			}
+
+			const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+			const skillDir = join(gardenDir, "Bloom", "Skills", name);
+			mkdirSync(systemdDir, { recursive: true });
+			mkdirSync(skillDir, { recursive: true });
+
+			const networkDest = join(systemdDir, "bloom.network");
+			if (!existsSync(networkDest)) {
+				const networkCandidates = [
+					"/usr/share/containers/systemd/bloom.network",
+					"/usr/local/share/bloom/os/sysconfig/bloom.network",
+					join(repoDir, "os", "sysconfig", "bloom.network"),
+				];
+				for (const candidate of networkCandidates) {
+					if (!existsSync(candidate)) continue;
+					writeFileSync(networkDest, readFileSync(candidate));
+					break;
+				}
+			}
+
+			for (const fileName of readdirSync(quadletSrc)) {
+				const src = join(quadletSrc, fileName);
+				if (!statSync(src).isFile()) continue;
+				writeFileSync(join(systemdDir, fileName), readFileSync(src));
+			}
+			writeFileSync(join(skillDir, "SKILL.md"), readFileSync(skillSrc));
+
+			const tokenDir = join(os.homedir(), ".config", "bloom", "channel-tokens");
+			mkdirSync(tokenDir, { recursive: true });
+			const tokenPath = join(tokenDir, name);
+			const tokenEnvPath = join(tokenDir, `${name}.env`);
+			if (!existsSync(tokenPath)) {
+				const token = randomBytes(32).toString("hex");
+				writeFileSync(tokenPath, `${token}\n`);
+				writeFileSync(tokenEnvPath, `BLOOM_CHANNEL_TOKEN=${token}\n`);
+			}
+
+			return { ok: true, source, ref };
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	}
+
 	async function detectRunningServices(signal?: AbortSignal): Promise<Map<string, { image: string; state: string }>> {
 		const result = await run("podman", ["ps", "-a", "--format", "json", "--filter", "name=bloom-"], signal);
 		const detected = new Map<string, { image: string; state: string }>();
@@ -1052,6 +1279,193 @@ export default function (pi: ExtensionAPI) {
 					},
 				],
 				details: {},
+			};
+		},
+	});
+
+	pi.registerTool({
+		name: "manifest_apply",
+		label: "Apply Manifest",
+		description:
+			"Apply desired service state from manifest: install/start enabled services and stop disabled services.",
+		promptSnippet: "manifest_apply — apply manifest desired service state",
+		promptGuidelines: [
+			"Use manifest_apply to enact desired service state from manifest.yaml.",
+			"Prefer install_missing=true for first-time setup on fresh devices.",
+		],
+		parameters: Type.Object({
+			install_missing: Type.Optional(
+				Type.Boolean({
+					description: "Install missing services from OCI artifacts before applying state",
+					default: true,
+				}),
+			),
+			registry: Type.Optional(
+				Type.String({ description: "Registry namespace for service artifacts", default: defaultServiceRegistry }),
+			),
+			allow_latest: Type.Optional(
+				Type.Boolean({ description: "Allow installing latest when manifest version is missing", default: false }),
+			),
+			dry_run: Type.Optional(Type.Boolean({ description: "Preview actions without mutating system", default: false })),
+		}),
+		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+			const manifest = loadManifest();
+			const serviceEntries = Object.entries(manifest.services).sort(([a], [b]) => a.localeCompare(b));
+			if (serviceEntries.length === 0) {
+				return errorResult("Manifest has no services. Use manifest_set_service first.");
+			}
+
+			const installMissing = params.install_missing ?? true;
+			const registry = params.registry ?? defaultServiceRegistry;
+			const allowLatest = params.allow_latest ?? false;
+			const dryRun = params.dry_run ?? false;
+
+			if (!dryRun) {
+				const denied = await requireConfirmation(ctx, `Apply manifest to ${serviceEntries.length} service(s)`);
+				if (denied) return errorResult(denied);
+			}
+
+			const catalog = loadServiceCatalog();
+			const lines: string[] = [];
+			const errors: string[] = [];
+			let installedCount = 0;
+			let startedCount = 0;
+			let stoppedCount = 0;
+			let manifestChanged = false;
+			let needsReload = false;
+
+			const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
+
+			// Pass 1: install missing enabled services if requested
+			for (const [name, svc] of serviceEntries) {
+				if (!svc.enabled) continue;
+
+				const unit = `bloom-${name}`;
+				const containerDef = join(systemdDir, `${unit}.container`);
+				if (existsSync(containerDef)) continue;
+
+				if (!installMissing) {
+					errors.push(`${name}: missing unit ${containerDef} (set install_missing=true to auto-install)`);
+					continue;
+				}
+
+				const catalogEntry = catalog[name];
+				const version = svc.version?.trim() || catalogEntry?.version || "latest";
+				if (version === "latest" && !allowLatest) {
+					errors.push(`${name}: refused auto-install with version=latest (set explicit version or allow_latest=true)`);
+					continue;
+				}
+
+				const preflight = await servicePreflightErrors(name, catalogEntry, signal);
+				if (preflight.length > 0) {
+					errors.push(`${name}: preflight failed — ${preflight.join("; ")}`);
+					continue;
+				}
+
+				if (dryRun) {
+					lines.push(`[dry-run] install ${name}@${version}`);
+					installedCount += 1;
+					continue;
+				}
+
+				const install = await installServicePackage(name, version, registry, catalogEntry, signal);
+				if (!install.ok) {
+					errors.push(`${name}: install failed — ${install.note ?? "unknown error"}`);
+					continue;
+				}
+
+				installedCount += 1;
+				needsReload = true;
+				lines.push(
+					install.source === "oci"
+						? `Installed ${name} from ${install.ref}`
+						: `Installed ${name} from bundled local package (OCI ref: ${install.ref})`,
+				);
+
+				if (!svc.version) {
+					manifest.services[name].version = version;
+					manifestChanged = true;
+				}
+				if ((!svc.image || svc.image === "unknown") && catalogEntry?.image) {
+					manifest.services[name].image = catalogEntry.image;
+					manifestChanged = true;
+				}
+			}
+
+			if (needsReload && !dryRun) {
+				const reload = await run("systemctl", ["--user", "daemon-reload"], signal);
+				if (reload.exitCode !== 0) {
+					return errorResult(`manifest_apply: daemon-reload failed:\n${reload.stderr || reload.stdout}`);
+				}
+			}
+
+			// Pass 2: enforce desired runtime state
+			for (const [name, svc] of serviceEntries) {
+				const unit = `bloom-${name}`;
+				const containerDef = join(systemdDir, `${unit}.container`);
+				const socketDef = join(systemdDir, `${unit}.socket`);
+				const startTarget = existsSync(socketDef) ? `${unit}.socket` : unit;
+
+				if (svc.enabled) {
+					if (!existsSync(containerDef)) {
+						errors.push(`${name}: cannot start, unit not installed`);
+						continue;
+					}
+
+					if (dryRun) {
+						lines.push(`[dry-run] enable --now ${startTarget}`);
+						startedCount += 1;
+						continue;
+					}
+
+					const start = await run("systemctl", ["--user", "enable", "--now", startTarget], signal);
+					if (start.exitCode !== 0) {
+						errors.push(`${name}: failed to start ${startTarget}: ${start.stderr || start.stdout}`);
+					} else {
+						startedCount += 1;
+						lines.push(`Started ${startTarget}`);
+					}
+					continue;
+				}
+
+				if (dryRun) {
+					lines.push(`[dry-run] disable --now ${unit}.socket (if present)`);
+					lines.push(`[dry-run] disable --now ${unit}`);
+					stoppedCount += 1;
+					continue;
+				}
+
+				await run("systemctl", ["--user", "disable", "--now", `${unit}.socket`], signal);
+				await run("systemctl", ["--user", "disable", "--now", unit], signal);
+				stoppedCount += 1;
+				lines.push(`Stopped ${unit} (disabled)`);
+			}
+
+			if (manifestChanged && !dryRun) {
+				saveManifest(manifest);
+			}
+
+			const summary = [
+				`Manifest apply complete (${dryRun ? "dry-run" : "live"}).`,
+				`Installed: ${installedCount}`,
+				`Started/enabled: ${startedCount}`,
+				`Stopped/disabled: ${stoppedCount}`,
+				`Errors: ${errors.length}`,
+				"",
+				...(lines.length > 0 ? ["Actions:", ...lines, ""] : []),
+				...(errors.length > 0 ? ["Errors:", ...errors] : []),
+			].join("\n");
+
+			return {
+				content: [{ type: "text" as const, text: truncate(summary) }],
+				details: {
+					installed: installedCount,
+					started: startedCount,
+					stopped: stoppedCount,
+					errors,
+					dryRun,
+				},
+				isError: errors.length > 0,
 			};
 		},
 	});

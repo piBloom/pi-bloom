@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -36,15 +37,22 @@ const PERSONA_FILES = ["SOUL.md", "BODY.md", "FACULTY.md", "SKILL.md"];
 interface BlueprintVersions {
 	packageVersion: string;
 	seeded: Record<string, string>;
+	seededHashes: Record<string, string>;
 	updatesAvailable: Record<string, string>;
 }
 
 function readBlueprintVersions(gardenDir: string): BlueprintVersions {
 	const fp = path.join(gardenDir, "Bloom", "blueprint-versions.json");
 	try {
-		return JSON.parse(fs.readFileSync(fp, "utf-8")) as BlueprintVersions;
+		const parsed = JSON.parse(fs.readFileSync(fp, "utf-8")) as Partial<BlueprintVersions>;
+		return {
+			packageVersion: parsed.packageVersion ?? "0.0.0",
+			seeded: parsed.seeded ?? {},
+			seededHashes: parsed.seededHashes ?? {},
+			updatesAvailable: parsed.updatesAvailable ?? {},
+		};
 	} catch {
-		return { packageVersion: "0.0.0", seeded: {}, updatesAvailable: {} };
+		return { packageVersion: "0.0.0", seeded: {}, seededHashes: {}, updatesAvailable: {} };
 	}
 }
 
@@ -62,27 +70,60 @@ function ensureGarden(gardenDir: string): void {
 	}
 }
 
+function hashContent(content: string): string {
+	return createHash("sha256").update(content).digest("hex");
+}
+
+function blueprintDestPath(gardenDir: string, key: string): string {
+	if (key.startsWith("persona/")) {
+		return path.join(gardenDir, "Bloom", "Persona", key.replace(/^persona\//, ""));
+	}
+	if (key.startsWith("skills/")) {
+		return path.join(gardenDir, "Bloom", "Skills", key.replace(/^skills\//, ""));
+	}
+	if (key === "guardrails.yaml") {
+		return path.join(gardenDir, "Bloom", "guardrails.yaml");
+	}
+	return path.join(gardenDir, key);
+}
+
 function seedFile(src: string, dest: string, key: string, version: string, versions: BlueprintVersions): void {
 	if (!fs.existsSync(src)) return;
 
+	const srcContent = fs.readFileSync(src, "utf-8");
+	const srcHash = hashContent(srcContent);
+
 	if (!fs.existsSync(dest)) {
 		fs.mkdirSync(path.dirname(dest), { recursive: true });
-		fs.copyFileSync(src, dest);
+		fs.writeFileSync(dest, srcContent);
 		versions.seeded[key] = version;
+		versions.seededHashes[key] = srcHash;
+		delete versions.updatesAvailable[key];
 		return;
 	}
 
-	const seededVersion = versions.seeded[key];
-	if (!seededVersion || seededVersion === version) return;
-
-	const srcContent = fs.readFileSync(src, "utf-8");
 	const destContent = fs.readFileSync(dest, "utf-8");
+	const destHash = hashContent(destContent);
+	const previousSeedHash = versions.seededHashes[key];
 
-	if (srcContent === destContent) {
+	if (destHash === srcHash) {
 		versions.seeded[key] = version;
-	} else {
-		versions.updatesAvailable[key] = version;
+		versions.seededHashes[key] = srcHash;
+		delete versions.updatesAvailable[key];
+		return;
 	}
+
+	// If the destination file was never modified by the user since our last seed,
+	// apply the updated blueprint automatically.
+	if (previousSeedHash && destHash === previousSeedHash) {
+		fs.writeFileSync(dest, srcContent);
+		versions.seeded[key] = version;
+		versions.seededHashes[key] = srcHash;
+		delete versions.updatesAvailable[key];
+		return;
+	}
+
+	versions.updatesAvailable[key] = version;
 }
 
 function seedBlueprints(gardenDir: string, packageDir: string): void {
@@ -201,14 +242,15 @@ export default function (pi: ExtensionAPI) {
 					}
 					for (const [key, version] of updates) {
 						const src = path.join(packageDir, key);
-						const destKey = key.replace(/^persona\//, "Bloom/Persona/").replace(/^skills\//, "Bloom/Skills/");
-						const dest = path.join(gardenDir, destKey);
-						if (fs.existsSync(src)) {
-							fs.copyFileSync(src, dest);
-							versions.seeded[key] = version;
-						}
+						const dest = blueprintDestPath(gardenDir, key);
+						if (!fs.existsSync(src)) continue;
+						const srcContent = fs.readFileSync(src, "utf-8");
+						fs.mkdirSync(path.dirname(dest), { recursive: true });
+						fs.writeFileSync(dest, srcContent);
+						versions.seeded[key] = version;
+						versions.seededHashes[key] = hashContent(srcContent);
+						delete versions.updatesAvailable[key];
 					}
-					versions.updatesAvailable = {};
 					writeBlueprintVersions(gardenDir, versions);
 					ctx.ui.notify(`Updated ${updates.length} blueprint(s)`, "info");
 					break;

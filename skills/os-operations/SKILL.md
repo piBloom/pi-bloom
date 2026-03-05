@@ -32,6 +32,7 @@ Prefer Bloom extension tools over raw shell commands:
 - `container_logs` — recent logs for a Bloom service
 - `systemd_control` — start/stop/restart/status for Bloom user services
 - `container_deploy` — `daemon-reload` + start for a Bloom Quadlet unit
+- `manifest_show` / `manifest_sync` / `manifest_set_service` / `manifest_apply` — declarative service state management
 
 ## Standard Triage Flow
 

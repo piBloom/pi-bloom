@@ -29,6 +29,9 @@ function resolvePackageRoot(): string {
 
 const packageRoot = resolvePackageRoot();
 const defaultNetworkPath = join(packageRoot, "os", "sysconfig", "bloom.network");
+const defaultServiceRegistry =
+	process.env.BLOOM_SERVICE_REGISTRY?.trim() || process.env.BLOOM_REGISTRY?.trim() || "ghcr.io/pibloom";
+const defaultSourceRepo = process.env.BLOOM_SOURCE_REPO?.trim() || "https://github.com/pibloom/pi-bloom";
 
 async function run(
 	cmd: string,
@@ -78,6 +81,20 @@ function extractDigest(text: string): string | null {
 	return match ? match[0].toLowerCase() : null;
 }
 
+function commandMissingError(text: string): boolean {
+	return /ENOENT|not found|No such file/i.test(text);
+}
+
+async function ensureCommand(name: string, args: string[], signal?: AbortSignal): Promise<string | null> {
+	const check = await run(name, args, signal);
+	if (check.exitCode === 0) return null;
+	const output = `${check.stderr || ""}\n${check.stdout || ""}`;
+	if (commandMissingError(output)) {
+		return `Required command not found: ${name}`;
+	}
+	return null;
+}
+
 async function resolveArtifactDigest(ref: string, signal?: AbortSignal): Promise<string | null> {
 	const resolve = await run("oras", ["resolve", ref], signal);
 	if (resolve.exitCode === 0) {
@@ -92,6 +109,34 @@ async function resolveArtifactDigest(ref: string, signal?: AbortSignal): Promise
 	}
 
 	return null;
+}
+
+function hasSubidRange(filePath: string, username: string): boolean {
+	if (!existsSync(filePath)) return false;
+	try {
+		return readFileSync(filePath, "utf-8")
+			.split("\n")
+			.some((line) => line.trim().startsWith(`${username}:`));
+	} catch {
+		return false;
+	}
+}
+
+function tailscaleRootlessPreflightError(): string | null {
+	const user = os.userInfo().username;
+	const hasSubuid = hasSubidRange("/etc/subuid", user);
+	const hasSubgid = hasSubidRange("/etc/subgid", user);
+	if (hasSubuid && hasSubgid) return null;
+
+	return [
+		`Rootless Podman prerequisite missing for user "${user}":`,
+		`- /etc/subuid entry present: ${hasSubuid ? "yes" : "no"}`,
+		`- /etc/subgid entry present: ${hasSubgid ? "yes" : "no"}`,
+		"",
+		"Fix (requires sudo), then log out and back in:",
+		`sudo usermod --add-subuids 100000-165535 ${user}`,
+		`sudo usermod --add-subgids 100000-165535 ${user}`,
+	].join("\n");
 }
 
 function resolveRepoDir(ctx: ExtensionContext): string {
@@ -243,7 +288,7 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			name: Type.String({ description: "Service name (e.g. whisper)" }),
 			version: Type.Optional(Type.String({ description: "Tag to publish", default: "latest" })),
-			registry: Type.Optional(Type.String({ description: "Registry namespace", default: "ghcr.io/alexradunet" })),
+			registry: Type.Optional(Type.String({ description: "Registry namespace", default: defaultServiceRegistry })),
 			also_latest: Type.Optional(Type.Boolean({ description: "Also publish latest tag", default: true })),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
@@ -256,7 +301,7 @@ export default function (pi: ExtensionAPI) {
 			if (!existsSync(quadletDir)) return errorResult(`Missing quadlet directory: ${quadletDir}`);
 			if (!existsSync(join(serviceDir, "SKILL.md"))) return errorResult(`Missing SKILL.md in ${serviceDir}`);
 
-			const registry = params.registry ?? "ghcr.io/alexradunet";
+			const registry = params.registry ?? defaultServiceRegistry;
 			const version = params.version ?? "latest";
 			const tags = new Set<string>([version]);
 			if ((params.also_latest ?? true) && version !== "latest") tags.add("latest");
@@ -275,7 +320,7 @@ export default function (pi: ExtensionAPI) {
 					"--annotation",
 					`org.opencontainers.image.title=bloom-${params.name}`,
 					"--annotation",
-					"org.opencontainers.image.source=https://github.com/piBloom/pi-bloom",
+					`org.opencontainers.image.source=${defaultSourceRepo}`,
 					"--annotation",
 					`org.opencontainers.image.version=${tag}`,
 					...quadletFiles,
@@ -310,7 +355,7 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			name: Type.String({ description: "Service name (e.g. whisper)" }),
 			version: Type.Optional(Type.String({ description: "Version tag to install", default: "latest" })),
-			registry: Type.Optional(Type.String({ description: "Registry namespace", default: "ghcr.io/alexradunet" })),
+			registry: Type.Optional(Type.String({ description: "Registry namespace", default: defaultServiceRegistry })),
 			start: Type.Optional(Type.Boolean({ description: "Enable/start service after install", default: true })),
 			update_manifest: Type.Optional(
 				Type.Boolean({ description: "Update manifest.yaml with installed version", default: true }),
@@ -329,7 +374,7 @@ export default function (pi: ExtensionAPI) {
 			const guard = validateServiceName(params.name);
 			if (guard) return errorResult(guard);
 
-			const registry = params.registry ?? "ghcr.io/alexradunet";
+			const registry = params.registry ?? defaultServiceRegistry;
 			const version = params.version ?? "latest";
 			const start = params.start ?? true;
 			const updateManifest = params.update_manifest ?? true;
@@ -338,10 +383,25 @@ export default function (pi: ExtensionAPI) {
 			const expectedDigest = params.expected_digest?.trim().toLowerCase();
 			const ref = `${registry}/bloom-svc-${params.name}:${version}`;
 
+			if (params.name === "tailscale" && start) {
+				const rootlessError = tailscaleRootlessPreflightError();
+				if (rootlessError) return errorResult(rootlessError);
+			}
+
 			if (version === "latest" && !allowLatest) {
 				return errorResult(
 					"Refusing non-immutable install: version=latest. Use a semver tag (e.g. 0.1.0) or set allow_latest=true explicitly.",
 				);
+			}
+
+			const commandChecks: Array<[string, string[]]> = [
+				["oras", ["version"]],
+				["podman", ["--version"]],
+				["systemctl", ["--version"]],
+			];
+			for (const [command, args] of commandChecks) {
+				const missing = await ensureCommand(command, args, signal);
+				if (missing) return errorResult(missing);
 			}
 
 			const tempDir = join(tmpdir(), `bloom-svc-${params.name}-${Date.now()}`);
@@ -363,8 +423,28 @@ export default function (pi: ExtensionAPI) {
 					}
 				}
 
+				let installSource: "oci" | "local" = "oci";
+				let sourceNote: string | null = null;
 				const pull = await run("oras", ["pull", ref, "-o", tempDir], signal);
-				if (pull.exitCode !== 0) return errorResult(`Failed to pull ${ref}:\n${pull.stderr}`);
+				if (pull.exitCode !== 0) {
+					const localServiceDir = join(packageRoot, "services", params.name);
+					const localQuadlet = join(localServiceDir, "quadlet");
+					const localSkill = join(localServiceDir, "SKILL.md");
+					if (!existsSync(localQuadlet) || !existsSync(localSkill)) {
+						return errorResult(`Failed to pull ${ref}:\n${pull.stderr || pull.stdout}`);
+					}
+
+					const localTempQuadlet = join(tempDir, "quadlet");
+					mkdirSync(localTempQuadlet, { recursive: true });
+					for (const name of readdirSync(localQuadlet)) {
+						const src = join(localQuadlet, name);
+						if (!statSync(src).isFile()) continue;
+						writeFileSync(join(localTempQuadlet, name), readFileSync(src));
+					}
+					writeFileSync(join(tempDir, "SKILL.md"), readFileSync(localSkill));
+					installSource = "local";
+					sourceNote = `OCI pull failed for ${ref}; installed bundled local service package from ${localServiceDir}.`;
+				}
 
 				const quadletSrc = join(tempDir, "quadlet");
 				const skillSrc = join(tempDir, "SKILL.md");
@@ -427,10 +507,17 @@ export default function (pi: ExtensionAPI) {
 				}
 
 				return {
-					content: [{ type: "text" as const, text: `Installed ${ref} successfully.` }],
+					content: [
+						{
+							type: "text" as const,
+							text: sourceNote ? `Installed ${ref} successfully.\n${sourceNote}` : `Installed ${ref} successfully.`,
+						},
+					],
 					details: {
 						ref,
 						resolvedDigest: resolvedDigest ?? null,
+						installSource,
+						sourceNote,
 						start,
 						manifestUpdated: updateManifest,
 						installedTo: {

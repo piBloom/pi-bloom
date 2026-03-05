@@ -52,6 +52,10 @@ RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
 COPY os/sysconfig/bloom-sysusers.conf /usr/lib/sysusers.d/bloom.conf
 RUN systemd-sysusers
 
+# Rootless Podman prerequisite: subordinate UID/GID ranges for user namespaces
+RUN printf "bloom:100000:65536\n" >> /etc/subuid && \
+    printf "bloom:100000:65536\n" >> /etc/subgid
+
 ARG PI_CODING_AGENT_VERSION=0.55.4
 ARG BIOME_VERSION=2.4.5
 ARG TYPESCRIPT_VERSION=5.9.3

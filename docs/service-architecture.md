@@ -142,12 +142,23 @@ services/{name}/
 └── SKILL.md                      # Skill file (frontmatter + API docs)
 ```
 
+### Service Catalog
+
+`services/catalog.yaml` is the declarative metadata index for install automation:
+
+- default service versions
+- OCI artifact references (`bloom-svc-*`)
+- runtime image references
+- preflight requirements (for example rootless subuid/subgid for Tailscale)
+
+The `manifest_apply` tool uses this catalog to auto-install missing services and enforce preflight checks.
+
 ### OCI Annotations
 
 ```
 org.opencontainers.image.title       = bloom-{name}
 org.opencontainers.image.description = Human-readable description
-org.opencontainers.image.source      = https://github.com/piBloom/pi-bloom
+org.opencontainers.image.source      = https://github.com/pibloom/pi-bloom
 org.opencontainers.image.version     = 1.0.0
 dev.bloom.service.category           = media | communication | networking | sync
 dev.bloom.service.port               = 9000
@@ -168,7 +179,7 @@ stateDiagram-v2
     Running --> Removed: systemctl --user stop + remove files
 
     note right of Available
-        ghcr.io/alexradunet/bloom-svc-{name}
+        ghcr.io/pibloom/bloom-svc-{name}
     end note
 
     note right of Installed

@@ -13,10 +13,12 @@ Follow `docs/supply-chain.md` for reproducibility and verification policy.
 
 Service packages are hosted at:
 ```
-ghcr.io/alexradunet/bloom-svc-{name}:<version>
+ghcr.io/pibloom/bloom-svc-{name}:<version>
 ```
 
 Use immutable semver tags (for example `0.1.0`) for installs. `latest` is mutable and should be explicit only for development.
+
+Service metadata defaults (version, artifact ref, preflight requirements) are tracked in `services/catalog.yaml`.
 
 ## Lifecycle Tools
 
@@ -26,6 +28,11 @@ Bloom exposes service lifecycle tools:
 - `service_publish` — publish service package to OCI registry
 - `service_install` — install service package from OCI artifact
 - `service_test` — run a local smoke test on installed units
+
+Related declarative tools:
+
+- `manifest_set_service` — declare desired service state in `~/Garden/Bloom/manifest.yaml`
+- `manifest_apply` — apply desired state (install missing, start enabled, stop disabled)
 
 ## End-to-End Example (Scaffold → Test → Publish → Install)
 
@@ -57,7 +64,7 @@ Reference packages:
 
 ```bash
 mkdir -p /tmp/bloom-svc
-oras pull ghcr.io/alexradunet/bloom-svc-{name}:{version} -o /tmp/bloom-svc/
+oras pull ghcr.io/pibloom/bloom-svc-{name}:{version} -o /tmp/bloom-svc/
 cp /tmp/bloom-svc/quadlet/* ~/.config/containers/systemd/
 [ -f ~/.config/containers/systemd/bloom.network ] || cp /usr/local/share/bloom/os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network
 mkdir -p ~/Garden/Bloom/Skills/{name}
@@ -70,6 +77,11 @@ else
 fi
 rm -rf /tmp/bloom-svc
 ```
+
+Notes:
+
+- `service_install` is registry-first. If OCI pull fails but the service package exists in the local Bloom bundle, it may install from the bundled copy as a fallback.
+- For `tailscale`, ensure rootless Podman subuid/subgid mappings exist for user `bloom` (`/etc/subuid`, `/etc/subgid`).
 
 ## Remove a Service
 
@@ -103,7 +115,7 @@ journalctl --user -u bloom-{name} -n 50
 ## Browse Available Versions
 
 ```bash
-oras repo tags ghcr.io/alexradunet/bloom-svc-{name}
+oras repo tags ghcr.io/pibloom/bloom-svc-{name}
 ```
 
 ## Backup and Restore (oras v1.3.0+)
@@ -111,13 +123,13 @@ oras repo tags ghcr.io/alexradunet/bloom-svc-{name}
 Backup a service package locally before making changes:
 
 ```bash
-oras backup ghcr.io/alexradunet/bloom-svc-{name}:latest -o ~/Garden/Bloom/backups/
+oras backup ghcr.io/pibloom/bloom-svc-{name}:latest -o ~/Garden/Bloom/backups/
 ```
 
 Restore a previously backed-up service:
 
 ```bash
-oras restore ~/Garden/Bloom/backups/bloom-svc-{name}/ --to ghcr.io/alexradunet/bloom-svc-{name}:rollback
+oras restore ~/Garden/Bloom/backups/bloom-svc-{name}/ --to ghcr.io/pibloom/bloom-svc-{name}:rollback
 ```
 
 ## Service Dependencies
@@ -145,7 +157,7 @@ image: docker.io/fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934
 ---
 ```
 
-OCI artifacts use semver tags: `ghcr.io/alexradunet/bloom-svc-whisper:0.1.0`
+OCI artifacts use semver tags: `ghcr.io/pibloom/bloom-svc-whisper:0.1.0`
 
 ### Check Installed Version
 
@@ -154,7 +166,7 @@ The manifest at `~/Garden/Bloom/manifest.yaml` tracks installed service versions
 ### Pin a Service Version
 
 ```bash
-oras pull ghcr.io/alexradunet/bloom-svc-{name}:0.1.0 -o /tmp/bloom-svc/
+oras pull ghcr.io/pibloom/bloom-svc-{name}:0.1.0 -o /tmp/bloom-svc/
 ```
 
 Then update the manifest with `manifest_set_service` to record the pinned version.
@@ -164,7 +176,7 @@ Then update the manifest with `manifest_set_service` to record the pinned versio
 For higher assurance, resolve and pin the OCI artifact digest before install:
 
 ```bash
-oras resolve ghcr.io/alexradunet/bloom-svc-{name}:{version}
+oras resolve ghcr.io/pibloom/bloom-svc-{name}:{version}
 # => sha256:...
 ```
 
