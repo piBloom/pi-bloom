@@ -49,10 +49,10 @@ graph TB
             wa[bloom-whatsapp<br/>Baileys Bridge]
             whisper[bloom-whisper<br/>faster-whisper :9000]
             tailscale[bloom-tailscale<br/>Tailscale VPN]
+            syncthing[bloom-syncthing<br/>Garden sync :8384]
         end
 
         subgraph "System Services"
-            syncthing[Syncthing<br/>:8384]
             systemd[systemd --user]
         end
     end
@@ -65,6 +65,7 @@ graph TB
     systemd -->|manages| wa
     systemd -->|manages| whisper
     systemd -->|manages| tailscale
+    systemd -->|manages| syncthing
 
     style persona fill:#e8d5f5
     style garden fill:#d5f5e8
@@ -84,7 +85,7 @@ graph TB
 
 - **Skills** are pure knowledge — procedures, API references, troubleshooting guides. Pi reads them and acts. No code, no process, no resources. Pi can create these autonomously.
 - **Extensions** need direct access to Pi's session (send messages, register commands, access context). They run in-process and require TypeScript. These are core platform code.
-- **Services** are standalone workloads (speech-to-text, messaging bridges, VPN) that benefit from container isolation, independent updates, and resource limits. Pi can create and distribute these via OCI artifacts.
+- **Services** are standalone workloads (speech-to-text, messaging bridges, VPN, sync daemons) that benefit from container isolation, independent updates, and resource limits. Pi can create and distribute these via OCI artifacts.
 
 ### The `bloom-` Prefix
 
@@ -94,6 +95,7 @@ Service containers use a `bloom-` prefix on their **Quadlet unit names** (e.g., 
 |-------------|-----------------|-----------------|
 | `bloom-whisper` | `fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030` | No — upstream image |
 | `bloom-tailscale` | `tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1` | No — upstream image |
+| `bloom-syncthing` | `syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643` | No — upstream image |
 | `bloom-whatsapp` | `ghcr.io/alexradunet/bloom-whatsapp:latest` | Yes — custom bridge |
 
 The prefix enables:
@@ -140,14 +142,25 @@ services/{name}/
 └── SKILL.md                      # Skill file (frontmatter + API docs)
 ```
 
+### Service Catalog
+
+`services/catalog.yaml` is the declarative metadata index for install automation:
+
+- default service versions
+- OCI artifact references (`bloom-svc-*`)
+- runtime image references
+- preflight requirements (for example rootless subuid/subgid for Tailscale)
+
+The `manifest_apply` tool uses this catalog to auto-install missing services and enforce preflight checks.
+
 ### OCI Annotations
 
 ```
 org.opencontainers.image.title       = bloom-{name}
 org.opencontainers.image.description = Human-readable description
-org.opencontainers.image.source      = https://github.com/piBloom/pi-bloom
+org.opencontainers.image.source      = https://github.com/pibloom/pi-bloom
 org.opencontainers.image.version     = 1.0.0
-dev.bloom.service.category           = media | communication | networking
+dev.bloom.service.category           = media | communication | networking | sync
 dev.bloom.service.port               = 9000
 ```
 
@@ -166,7 +179,7 @@ stateDiagram-v2
     Running --> Removed: systemctl --user stop + remove files
 
     note right of Available
-        ghcr.io/alexradunet/bloom-svc-{name}
+        ghcr.io/pibloom/bloom-svc-{name}
     end note
 
     note right of Installed
@@ -242,12 +255,14 @@ graph LR
         wa_auth["bloom-whatsapp-auth<br/>WhatsApp credentials"]
         whisper_models["bloom-whisper-models<br/>ML model cache"]
         ts_state["bloom-tailscale-state<br/>Tailscale identity"]
+        st_state["bloom-syncthing-data<br/>Syncthing config + index state"]
     end
 
     bloom_pkg --> config
     config --> wa_auth
     config --> whisper_models
     config --> ts_state
+    config --> st_state
 ```
 
 ## Available Services
@@ -257,6 +272,7 @@ graph LR
 | bloom-whatsapp | communication | — | ghcr.io/alexradunet/bloom-whatsapp | 128MB RAM |
 | bloom-whisper | media | 9000 | fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030 | 2GB RAM |
 | bloom-tailscale | networking | — | tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1 | 256MB RAM |
+| bloom-syncthing | sync | 8384 | syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643 | 256MB RAM |
 
 ## Adding a New Service
 

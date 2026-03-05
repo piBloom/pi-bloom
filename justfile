@@ -8,7 +8,7 @@ podman := env("BLOOM_PODMAN", "sudo podman")
 storage := env("BLOOM_STORAGE", "/var/lib/containers/storage")
 ovmf := "/usr/share/edk2/ovmf/OVMF_CODE.fd"
 ovmf_vars := "/usr/share/edk2/ovmf/OVMF_VARS.fd"
-registry := env("BLOOM_REGISTRY", "ghcr.io/alexradunet")
+registry := env("BLOOM_REGISTRY", "ghcr.io/pibloom")
 remote_image := registry + "/bloom-os:latest"
 
 # Build the container image (rootful by default, so BIB can see it)
@@ -52,7 +52,7 @@ vm:
 		-drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
 		-drive if=pflash,format=raw,snapshot=on,file={{ ovmf_vars }} \
 		-drive file={{ output }}/qcow2/disk.qcow2,format=qcow2,if=virtio \
-		-netdev user,id=net0,hostfwd=tcp::2222-:22 \
+		-netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::8384-:8384 \
 		-device virtio-net-pci,netdev=net0 \
 		-display gtk
 
@@ -67,7 +67,7 @@ vm-serial:
 		-drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
 		-drive if=pflash,format=raw,snapshot=on,file={{ ovmf_vars }} \
 		-drive file={{ output }}/qcow2/disk.qcow2,format=qcow2,if=virtio \
-		-netdev user,id=net0,hostfwd=tcp::2222-:22 \
+		-netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::8384-:8384 \
 		-device virtio-net-pci,netdev=net0 \
 		-nographic \
 		-serial mon:stdio
@@ -106,7 +106,7 @@ iso-production: build _require-bib-config
 svc-push name:
 	cd services/{{ name }} && oras push {{ registry }}/bloom-svc-{{ name }}:latest \
 		--annotation "org.opencontainers.image.title=bloom-{{ name }}" \
-		--annotation "org.opencontainers.image.source=https://github.com/piBloom/pi-bloom" \
+		--annotation "org.opencontainers.image.source=https://github.com/pibloom/pi-bloom" \
 		$(find quadlet -type f | sed 's|.*|&:application/vnd.bloom.quadlet|') \
 		SKILL.md:text/markdown
 

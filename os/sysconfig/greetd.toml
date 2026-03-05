@@ -1,0 +1,12 @@
+[terminal]
+vt = 1
+
+[default_session]
+command = "tuigreet --time --remember --remember-session --cmd sway"
+user = "greetd"
+
+# Start Bloom's sway session automatically at boot so remote VNC is available
+# immediately. Remove this section if you prefer interactive login.
+[initial_session]
+command = "sway"
+user = "bloom"

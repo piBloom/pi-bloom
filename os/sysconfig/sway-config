@@ -1,0 +1,9 @@
+include /etc/sway/config
+
+# Bloom: expose the current sway session over VNC for SSH/Tailscale tunneling.
+# Bound to localhost only; use `ssh -L 5901:127.0.0.1:5901 bloom@<host>`.
+exec_always --no-startup-id sh -lc 'pkill -x wayvnc >/dev/null 2>&1 || true; wayvnc 127.0.0.1 5901'
+
+# Bloom: open one terminal on login and start Pi.
+# Falls back to an interactive shell if `pi` exits or is unavailable.
+exec --no-startup-id foot --title "Bloom Pi" sh -lc 'if command -v pi >/dev/null 2>&1; then pi; else exec bash; fi'

@@ -5,7 +5,6 @@ FROM quay.io/fedora/fedora-bootc:42@sha256:88db1a4a445e904a40187fc23594500a0671a
 
 # System + development packages
 RUN dnf install -y \
-    syncthing \
     git \
     git-lfs \
     gh \
@@ -53,6 +52,10 @@ RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
 COPY os/sysconfig/bloom-sysusers.conf /usr/lib/sysusers.d/bloom.conf
 RUN systemd-sysusers
 
+# Rootless Podman prerequisite: subordinate UID/GID ranges for user namespaces
+RUN printf "bloom:100000:65536\n" >> /etc/subuid && \
+    printf "bloom:100000:65536\n" >> /etc/subgid
+
 ARG PI_CODING_AGENT_VERSION=0.55.4
 ARG BIOME_VERSION=2.4.5
 ARG TYPESCRIPT_VERSION=5.9.3
@@ -96,9 +99,6 @@ RUN mkdir -p /usr/local/share/bloom/persona
 # Systemd service for Pi auto-start on login
 COPY os/sysconfig/bloom-greeting.sh /usr/local/bin/bloom-greeting.sh
 RUN chmod +x /usr/local/bin/bloom-greeting.sh
-
-# Syncthing user service
-RUN systemctl enable syncthing@bloom.service
 
 # Boot to desktop with greetd (sway is configured as default session)
 RUN systemctl enable greetd.service

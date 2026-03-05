@@ -1,0 +1,37 @@
+[Unit]
+Description=Bloom Syncthing — Garden vault sync service
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643
+ContainerName=bloom-syncthing
+Network=host
+
+# Persistent Syncthing config + index state
+Volume=bloom-syncthing-data:/var/syncthing:Z
+
+# Sync target: Garden vault
+Volume=%h/Garden:/var/syncthing/Garden:Z
+
+Environment=PUID=%U
+Environment=PGID=%G
+Environment=STGUIADDRESS=0.0.0.0:8384
+PodmanArgs=--memory=256m
+
+# Use Syncthing CLI against local API for health status
+HealthCmd=syncthing cli --home /var/syncthing/config show system > /dev/null || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthTimeout=10s
+
+NoNewPrivileges=true
+LogDriver=journald
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

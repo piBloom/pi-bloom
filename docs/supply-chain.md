@@ -13,7 +13,7 @@ This document defines Bloom's baseline supply-chain controls for bootc images an
 1. Publish service artifacts with immutable semver tags (e.g. `0.1.0`).
 2. Treat `latest` as development-only.
 3. Prefer digest verification at install time:
-   - Resolve digest: `oras resolve ghcr.io/alexradunet/bloom-svc-{name}:{version}`
+   - Resolve digest: `oras resolve ghcr.io/pibloom/bloom-svc-{name}:{version}`
    - Install with verification: `service_install(..., expected_digest="sha256:...")`
 
 ### Tooling Enforcement

@@ -43,8 +43,9 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
 1. List conflicts: search for `.sync-conflict-` files in `~/Garden/`
 2. Compare conflict file with original — keep the correct version
 3. Delete the conflict file
-4. Check Syncthing status at `http://localhost:8384` if available
-5. Prevention: avoid editing same file on multiple devices simultaneously
+4. Check service state: `systemd_control service=bloom-syncthing action=status`
+5. Check Syncthing UI at `http://localhost:8384` if available
+6. Prevention: avoid editing same file on multiple devices simultaneously
 
 ## Pi Startup Issues
 

@@ -20,10 +20,10 @@ services/{name}/
 Service packages are pushed to GHCR as OCI artifacts using `oras`:
 
 ```
-ghcr.io/alexradunet/bloom-svc-{name}:<version>
+ghcr.io/pibloom/bloom-svc-{name}:<version>
 ```
 
-> `bloom-svc-{name}` is the OCI *artifact* name (the installable package containing quadlet files and SKILL.md). This is distinct from the container *image* referenced inside the quadlet — which may be upstream (e.g., `docker.io/fedirz/faster-whisper-server`) or custom (e.g., `ghcr.io/alexradunet/bloom-whatsapp`).
+> `bloom-svc-{name}` is the OCI *artifact* name (the installable package containing quadlet files and SKILL.md). This is distinct from the container *image* referenced inside the quadlet — which may be upstream (e.g., `docker.io/fedirz/faster-whisper-server`) or custom (e.g., `ghcr.io/<owner>/bloom-whatsapp`).
 >
 > Use immutable semver tags for installs (e.g., `0.1.0`). Treat `latest` as development-only.
 
@@ -42,7 +42,7 @@ just svc-install {name}
 Or manually:
 ```bash
 mkdir -p /tmp/bloom-svc
-oras pull ghcr.io/alexradunet/bloom-svc-{name}:{version} -o /tmp/bloom-svc/
+oras pull ghcr.io/pibloom/bloom-svc-{name}:{version} -o /tmp/bloom-svc/
 cp /tmp/bloom-svc/quadlet/* ~/.config/containers/systemd/
 [ -f ~/.config/containers/systemd/bloom.network ] || cp /usr/local/share/bloom/os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network 2>/dev/null || cp os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network
 mkdir -p ~/Garden/Bloom/Skills/{name}
@@ -97,7 +97,7 @@ Each artifact carries standard annotations:
 |------------|-------------|
 | `org.opencontainers.image.title` | `bloom-{name}` |
 | `org.opencontainers.image.description` | Human-readable description |
-| `org.opencontainers.image.source` | `https://github.com/piBloom/pi-bloom` |
+| `org.opencontainers.image.source` | `https://github.com/pibloom/pi-bloom` |
 | `org.opencontainers.image.version` | Semver version |
 | `dev.bloom.service.category` | `media`, `communication`, `networking`, `sync`, or `utility` |
 | `dev.bloom.service.port` | Exposed port (if any) |
@@ -118,3 +118,15 @@ Each artifact carries standard annotations:
 | `whisper` | media | 9000 | Speech-to-text transcription via faster-whisper |
 | `whatsapp` | communication | — | WhatsApp messaging bridge via Baileys |
 | `tailscale` | networking | — | Secure mesh VPN via Tailscale |
+| `syncthing` | sync | 8384 | Peer-to-peer sync for the Garden vault |
+
+## Service Catalog
+
+`services/catalog.yaml` defines canonical service metadata for automation:
+
+- default versions
+- artifact references (`bloom-svc-*`)
+- runtime image references
+- service-specific preflight requirements
+
+`manifest_apply` uses this catalog during auto-install and preflight checks.

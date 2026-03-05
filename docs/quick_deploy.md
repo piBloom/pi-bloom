@@ -1,6 +1,10 @@
-Fastest path (from this repo) is the built-in QEMU flow.
+# Bloom OS Quick Deploy & Installation
 
-### 1) Install host deps (Fedora)
+This guide covers the fastest dev path (QEMU) and production-style installation options.
+
+## Option A — QEMU (fastest for development)
+
+### 1) Install host dependencies (Fedora)
 
 ```bash
 sudo dnf install -y just qemu-system-x86 edk2-ovmf podman
@@ -28,10 +32,12 @@ Output:
 just vm
 ```
 
-- Uses KVM + UEFI
-- SSH port forwarding is configured (`localhost:2222 -> guest:22`)
+Forwarded host ports:
 
-Headless:
+- `localhost:2222 -> guest:22` (SSH)
+- `localhost:8384 -> guest:8384` (Syncthing Web UI)
+
+Headless mode:
 
 ```bash
 just vm-serial
@@ -46,7 +52,13 @@ Default user comes from `os/bib-config.toml`:
 
 If you want password auth, configure it explicitly in your bootc-image-builder config and rebuild.
 
-### 6) Stop VM
+### 6) Run first-boot setup
+
+Follow the setup guide:
+
+- `docs/pibloom-setup.md`
+
+### 7) Stop VM
 
 ```bash
 just vm-kill
@@ -54,17 +66,39 @@ just vm-kill
 
 ---
 
-If you want deployment through a VM manager (virt-manager/Proxmox/etc), build an installer ISO:
+## Option B — Installer ISO (VM manager / bare metal)
+
+Build installer media:
 
 ```bash
 just iso
 ```
 
-Use the generated ISO from `os/output/anaconda-iso/` as installation media.
+Use ISO from `os/output/anaconda-iso/` as installation media.
 
-### Optional: Remote desktop (Sway + wayvnc, no Guacamole)
+For OTA-oriented builds targeting GHCR image refs:
 
-Bloom OS boots to `graphical.target` with `greetd` and starts a Sway session for the `bloom` user.
+```bash
+just iso-production
+```
+
+---
+
+## Option C — Direct bootc install (advanced)
+
+After building locally, install directly to a disk:
+
+```bash
+sudo bootc install to-disk /dev/sdX --source-imgref containers-storage:localhost/bloom-os:latest
+```
+
+Replace `/dev/sdX` with the target disk.
+
+---
+
+## Optional: Remote desktop (Sway + wayvnc)
+
+Bloom OS boots to `graphical.target` with `greetd` and starts a Sway session for user `bloom`.
 The Sway config starts `wayvnc` on `127.0.0.1:5901`.
 
 Recommended access pattern:

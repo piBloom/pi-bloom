@@ -46,12 +46,14 @@ For multi-device code contribution and PR flow, see `docs/fleet-pr-workflow.md`,
 ## Services (OCI Packages)
 
 Modular capabilities packaged as OCI artifacts, installed via `oras` from GHCR.
+Canonical metadata for automation lives in `services/catalog.yaml`.
 
 | Service | Category | Port | Image |
 |---------|----------|------|-------|
 | `bloom-svc-whisper` | media | 9000 | fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030 |
 | `bloom-svc-whatsapp` | communication | — | ghcr.io/alexradunet/bloom-whatsapp:latest *(private GHCR digest not publicly resolvable)* |
 | `bloom-svc-tailscale` | networking | — | tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1 |
+| `bloom-svc-syncthing` | sync | 8384 | syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643 |
 
 ## Persona
 
@@ -71,3 +73,9 @@ Or for development:
 ```bash
 pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-audit.ts -e ./extensions/bloom-os.ts -e ./extensions/bloom-services.ts -e ./extensions/bloom-objects.ts -e ./extensions/bloom-journal.ts -e ./extensions/bloom-garden.ts -e ./extensions/bloom-channels.ts -e ./extensions/bloom-topics.ts
 ```
+
+## Setup & Deployment Docs
+
+- OS build/deploy/install: `docs/quick_deploy.md`
+- First-boot setup flow: `docs/pibloom-setup.md`
+- Fleet PR bootstrap: `docs/fleet-bootstrap-checklist.md`

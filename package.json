@@ -10,15 +10,15 @@
 	"pi": {
 		"extensions": [
 			"./extensions"
-		],
-		"skills": [
-			"./skills"
 		]
 	},
 	"peerDependencies": {
 		"@mariozechner/pi-ai": "*",
 		"@mariozechner/pi-coding-agent": "*",
 		"@sinclair/typebox": "*"
+	},
+	"dependencies": {
+		"js-yaml": "^4.1.0"
 	},
 	"devDependencies": {
 		"@mariozechner/pi-ai": "^0.55.4",
@@ -28,7 +28,7 @@
 	},
 	"scripts": {
 		"build": "rm -rf dist && tsc --build",
-		"check": "npx @biomejs/biome check AGENTS.md CLAUDE.md guardrails.yaml .containerignore biome.json justfile package.json tsconfig.json .github/workflows docs extensions skills services/README.md services/examples services/tailscale services/whisper services/whatsapp/SKILL.md services/whatsapp/src os/Containerfile os/bootc os/sysconfig",
-		"check:fix": "npx @biomejs/biome check --write AGENTS.md CLAUDE.md guardrails.yaml .containerignore biome.json justfile package.json tsconfig.json .github/workflows docs extensions skills services/README.md services/examples services/tailscale services/whisper services/whatsapp/SKILL.md services/whatsapp/src os/Containerfile os/bootc os/sysconfig"
+		"check": "npx @biomejs/biome check AGENTS.md CLAUDE.md guardrails.yaml .containerignore biome.json justfile package.json tsconfig.json .github/workflows docs extensions skills services/README.md services/catalog.yaml services/examples services/tailscale services/whisper services/whatsapp/SKILL.md services/whatsapp/src services/syncthing os/Containerfile os/bootc os/sysconfig",
+		"check:fix": "npx @biomejs/biome check --write AGENTS.md CLAUDE.md guardrails.yaml .containerignore biome.json justfile package.json tsconfig.json .github/workflows docs extensions skills services/README.md services/catalog.yaml services/examples services/tailscale services/whisper services/whatsapp/SKILL.md services/whatsapp/src services/syncthing os/Containerfile os/bootc os/sysconfig"
 	}
 }
