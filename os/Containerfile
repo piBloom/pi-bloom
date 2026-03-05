@@ -95,6 +95,9 @@ COPY os/sysconfig/sway-config /usr/local/share/bloom/skel/.config/sway/config
 # tmpfiles.d for /var directory structure (created at boot)
 COPY os/sysconfig/bloom-tmpfiles.conf /usr/lib/tmpfiles.d/bloom.conf
 
+# Keep console output quiet so kernel/podman chatter does not overwrite Pi's TUI.
+COPY os/sysconfig/bloom-sysctl.conf /usr/lib/sysctl.d/60-bloom-console.conf
+
 # Default Quadlet network definition used by service packages
 COPY os/sysconfig/bloom.network /usr/share/containers/systemd/bloom.network
 
