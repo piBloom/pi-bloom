@@ -25,6 +25,8 @@ qcow2: build _require-bib-config
 		-v {{ storage }}:/var/lib/containers/storage \
 		{{ bib }} \
 		--type qcow2 --local {{ image }}
+	# bootc-image-builder may leave host files owned by nobody:nobody
+	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
 # Generate anaconda-iso installer via bootc-image-builder
 iso: build _require-bib-config
@@ -36,6 +38,8 @@ iso: build _require-bib-config
 		-v {{ storage }}:/var/lib/containers/storage \
 		{{ bib }} \
 		--type anaconda-iso --local {{ image }}
+	# bootc-image-builder may leave host files owned by nobody:nobody
+	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
 # Boot qcow2 in QEMU (graphical + SSH on port 2222)
 vm:
@@ -74,7 +78,7 @@ vm-ssh:
 
 # Kill the running QEMU VM
 vm-kill:
-	pkill -f "qemu-system-x86_64.*disk.qcow2" || true
+	pkill -f "[q]emu-system-x86_64.*disk.qcow2" || true
 
 # Remove generated images
 clean:
@@ -95,6 +99,8 @@ iso-production: build _require-bib-config
 		-v {{ storage }}:/var/lib/containers/storage \
 		{{ bib }} \
 		--type anaconda-iso --target-imgref {{ remote_image }} --local {{ image }}
+	# bootc-image-builder may leave host files owned by nobody:nobody
+	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
 # Push a service package as OCI artifact
 svc-push name:
@@ -109,6 +115,7 @@ svc-install name:
 	mkdir -p /tmp/bloom-svc-{{ name }}
 	oras pull {{ registry }}/bloom-svc-{{ name }}:latest -o /tmp/bloom-svc-{{ name }}/
 	cp /tmp/bloom-svc-{{ name }}/quadlet/* ~/.config/containers/systemd/
+	@if [ ! -f ~/.config/containers/systemd/bloom.network ]; then cp os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network; fi
 	mkdir -p ~/Garden/Bloom/Skills/{{ name }}
 	cp /tmp/bloom-svc-{{ name }}/SKILL.md ~/Garden/Bloom/Skills/{{ name }}/SKILL.md
 	mkdir -p ~/.config/bloom/channel-tokens

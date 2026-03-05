@@ -20,10 +20,12 @@ services/{name}/
 Service packages are pushed to GHCR as OCI artifacts using `oras`:
 
 ```
-ghcr.io/alexradunet/bloom-svc-{name}:latest
+ghcr.io/alexradunet/bloom-svc-{name}:<version>
 ```
 
 > `bloom-svc-{name}` is the OCI *artifact* name (the installable package containing quadlet files and SKILL.md). This is distinct from the container *image* referenced inside the quadlet — which may be upstream (e.g., `docker.io/fedirz/faster-whisper-server`) or custom (e.g., `ghcr.io/alexradunet/bloom-whatsapp`).
+>
+> Use immutable semver tags for installs (e.g., `0.1.0`). Treat `latest` as development-only.
 
 ### Pushing
 
@@ -40,8 +42,9 @@ just svc-install {name}
 Or manually:
 ```bash
 mkdir -p /tmp/bloom-svc
-oras pull ghcr.io/alexradunet/bloom-svc-{name}:latest -o /tmp/bloom-svc/
+oras pull ghcr.io/alexradunet/bloom-svc-{name}:{version} -o /tmp/bloom-svc/
 cp /tmp/bloom-svc/quadlet/* ~/.config/containers/systemd/
+[ -f ~/.config/containers/systemd/bloom.network ] || cp /usr/local/share/bloom/os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network 2>/dev/null || cp os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network
 mkdir -p ~/Garden/Bloom/Skills/{name}
 cp /tmp/bloom-svc/SKILL.md ~/Garden/Bloom/Skills/{name}/SKILL.md
 systemctl --user daemon-reload

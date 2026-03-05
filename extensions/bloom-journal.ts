@@ -80,9 +80,7 @@ export default function (pi: ExtensionAPI) {
 			const [year, month] = date.split("-");
 			const filepath = path.join(gardenDir, "Journal", year, month, `${date}.md`);
 
-			const text = fs.existsSync(filepath)
-				? fs.readFileSync(filepath, "utf-8")
-				: `No journal entry for ${date}`;
+			const text = fs.existsSync(filepath) ? fs.readFileSync(filepath, "utf-8") : `No journal entry for ${date}`;
 			return {
 				content: [{ type: "text" as const, text: truncate(text) }],
 				details: {},

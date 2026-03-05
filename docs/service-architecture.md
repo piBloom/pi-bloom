@@ -26,7 +26,7 @@ graph TD
 | Mechanism | Use When | Examples | Cost |
 |-----------|----------|----------|------|
 | **Skill** | Pi needs knowledge or a procedure to follow | meal-planning, troubleshooting guides, API references | Zero — just a markdown file |
-| **Extension** | Pi needs to register commands, tools, or react to session events | bloom-channels (TCP server), bloom-journal (daily entries) | Low — TypeScript, runs in-process |
+| **Extension** | Pi needs to register commands, tools, or react to session events | bloom-channels (Unix socket server), bloom-journal (daily entries) | Low — TypeScript, runs in-process |
 | **Service** | A standalone process needs to run independently of Pi's session | Whisper (ML model), WhatsApp bridge (always-on), Tailscale (VPN) | Medium — container image, systemd unit, resource allocation |
 
 **Always prefer the lighter option.** A skill that teaches Pi to call an existing API is better than an extension wrapping that API, which is better than a service re-implementing it.
@@ -42,7 +42,7 @@ graph TB
             objects[bloom-objects]
             journal[bloom-journal]
             topics[bloom-topics]
-            channels[bloom-channels<br/>TCP :18800]
+            channels[bloom-channels<br/>Unix socket<br/>/run/bloom/channels.sock]
         end
 
         subgraph "Service Containers (Podman Quadlet)"
@@ -57,7 +57,7 @@ graph TB
         end
     end
 
-    channels <-->|TCP JSON| wa
+    channels <-->|Unix socket JSON| wa
     wa <-->|Baileys| whatsapp_cloud[WhatsApp Cloud]
     whisper -->|HTTP API| channels
     tailscale <-->|WireGuard| tailnet[Tailnet]
@@ -78,7 +78,7 @@ graph TB
 |-------|-----------|-----------|---------------|------------|
 | **Skills** | Markdown files (SKILL.md) | Discovered at session start | Pi reads and follows instructions | Pi (via `skill_create`) or developer |
 | **Extensions** | In-process TypeScript | Loaded with Pi session | Direct API (ExtensionAPI) | Developer (requires code review + PR) |
-| **Services** | OCI containers via Podman Quadlet | systemd-managed, independent | TCP, HTTP, shell | Pi (via self-evolution) or developer |
+| **Services** | OCI containers via Podman Quadlet | systemd-managed, independent | Unix socket, HTTP, shell | Pi (via self-evolution) or developer |
 
 ### Why Three Layers?
 
@@ -92,8 +92,8 @@ Service containers use a `bloom-` prefix on their **Quadlet unit names** (e.g., 
 
 | Quadlet Name | Container Image | Bloom-specific? |
 |-------------|-----------------|-----------------|
-| `bloom-whisper` | `fedirz/faster-whisper-server:latest-cpu` | No — upstream image |
-| `bloom-tailscale` | `tailscale/tailscale:latest` | No — upstream image |
+| `bloom-whisper` | `fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030` | No — upstream image |
+| `bloom-tailscale` | `tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1` | No — upstream image |
 | `bloom-whatsapp` | `ghcr.io/alexradunet/bloom-whatsapp:latest` | Yes — custom bridge |
 
 The prefix enables:
@@ -158,12 +158,12 @@ stateDiagram-v2
     [*] --> Available: Published to GHCR
     Available --> Pulled: oras pull
     Pulled --> Installed: Copy quadlet + SKILL.md
-    Installed --> Running: systemctl start
-    Running --> Stopped: systemctl stop
-    Stopped --> Running: systemctl start
+    Installed --> Running: systemctl --user start
+    Running --> Stopped: systemctl --user stop
+    Stopped --> Running: systemctl --user start
     Stopped --> Removed: Remove quadlet + skill files
     Removed --> [*]
-    Running --> Removed: systemctl stop + remove files
+    Running --> Removed: systemctl --user stop + remove files
 
     note right of Available
         ghcr.io/alexradunet/bloom-svc-{name}
@@ -191,14 +191,14 @@ sequenceDiagram
     WA->>Bridge: Incoming voice note
     Bridge->>Bridge: downloadMediaMessage()
     Bridge->>FS: Save as {timestamp}-{id}.ogg
-    Bridge->>Channels: TCP JSON with media metadata
+    Bridge->>Channels: Unix socket JSON with media metadata
     Channels->>Pi: "[whatsapp: John] sent audio (15s, 24KB, audio/ogg). File: /var/lib/bloom/media/..."
 
     Note over Pi: Pi decides to transcribe
     Pi->>Whisper: POST /v1/audio/transcriptions<br/>file=@/var/lib/bloom/media/...ogg
     Whisper->>Pi: {"text": "transcribed content"}
     Pi->>Channels: Response text
-    Channels->>Bridge: TCP JSON response
+    Channels->>Bridge: Unix socket JSON response
     Bridge->>WA: Send reply
 ```
 
@@ -234,7 +234,7 @@ graph LR
         config["~/.config/containers/systemd/<br/>Installed Quadlet units"]
         garden["~/Garden/<br/>Synced vault"]
         skills["~/Garden/Bloom/Skills/<br/>Installed service skills"]
-        media["~/media/<br/>Downloaded media files"]
+        media["/var/lib/bloom/media/<br/>Downloaded media files"]
         pi_state["~/.pi/<br/>Pi agent state"]
     end
 
@@ -255,8 +255,8 @@ graph LR
 | Service | Category | Port | Image | Resources |
 |---------|----------|------|-------|-----------|
 | bloom-whatsapp | communication | — | ghcr.io/alexradunet/bloom-whatsapp | 128MB RAM |
-| bloom-whisper | media | 9000 | fedirz/faster-whisper-server:latest-cpu | 2GB RAM |
-| bloom-tailscale | networking | — | tailscale/tailscale:latest | 256MB RAM |
+| bloom-whisper | media | 9000 | fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030 | 2GB RAM |
+| bloom-tailscale | networking | — | tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1 | 256MB RAM |
 
 ## Adding a New Service
 
@@ -269,7 +269,7 @@ graph LR
 ### Quadlet Conventions Checklist
 
 - [ ] Container name: `bloom-{name}`
-- [ ] Network: `host`
+- [ ] Network: prefer `bloom.network` isolation (`host` only when required, e.g. VPN)
 - [ ] Health check defined (`HealthCmd`, `HealthInterval`, `HealthRetries`)
 - [ ] Logging: `LogDriver=journald`
 - [ ] Security: `NoNewPrivileges=true`

@@ -3,7 +3,15 @@ import path from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { PARA_DIRS, errorResult, getGardenDir, nowIso, parseFrontmatter, stringifyFrontmatter, truncate } from "./shared.js";
+import {
+	errorResult,
+	getGardenDir,
+	nowIso,
+	PARA_DIRS,
+	parseFrontmatter,
+	stringifyFrontmatter,
+	truncate,
+} from "./shared.js";
 
 function parseRef(ref: string): { type: string; slug: string } {
 	const slash = ref.indexOf("/");

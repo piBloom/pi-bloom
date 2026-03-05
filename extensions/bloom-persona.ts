@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
 import { join } from "node:path";
@@ -165,10 +165,7 @@ export default function (pi: ExtensionAPI) {
 		// Save context before compaction
 		let activeTopic: string | undefined;
 		for (const entry of event.branchEntries) {
-			if (
-				entry.type === "custom" &&
-				(entry as { customType?: string }).customType === "bloom-topic"
-			) {
+			if (entry.type === "custom" && (entry as { customType?: string }).customType === "bloom-topic") {
 				const data = (entry as { data?: { name?: string; status?: string } }).data;
 				if (data?.status === "active") activeTopic = data.name;
 			}

@@ -1,7 +1,9 @@
 .git
 node_modules
+**/node_modules
 dist
 bridges
+.worktrees
 docs
 .claude
 .omc

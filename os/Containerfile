@@ -1,7 +1,7 @@
 # Bloom OS — Fedora bootc 42 with Pi coding agent
 # Build: podman build -f os/Containerfile -t bloom-os:latest .
 # Install: sudo bootc install to-disk /dev/sdX --source-imgref containers-storage:bloom-os:latest
-FROM quay.io/fedora/fedora-bootc:42
+FROM quay.io/fedora/fedora-bootc:42@sha256:88db1a4a445e904a40187fc23594500a0671a3b85bad7a4c8689ec3e30a8b96b
 
 # System + development packages
 RUN dnf install -y \
@@ -25,6 +25,7 @@ RUN dnf install -y \
     podman \
     buildah \
     skopeo \
+    oras \
     qemu-system-x86 \
     edk2-ovmf \
     nodejs \
@@ -39,21 +40,21 @@ RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
     dnf clean all && \
     rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log /var/cache/ldconfig/aux-cache
 
-# Install oras CLI for OCI artifact management
-RUN curl -LO https://github.com/oras-project/oras/releases/download/v1.2.2/oras_1.2.2_linux_amd64.tar.gz && \
-    tar xzf oras_*.tar.gz -C /usr/local/bin oras && \
-    rm oras_*.tar.gz
-
 # Create bloom system user via systemd-sysusers
 COPY os/sysconfig/bloom-sysusers.conf /usr/lib/sysusers.d/bloom.conf
 RUN systemd-sysusers
 
-# Install global CLI tooling (keep npm cache out of /var for bootc lint)
+ARG PI_CODING_AGENT_VERSION=0.55.4
+ARG BIOME_VERSION=2.4.5
+ARG TYPESCRIPT_VERSION=5.9.3
+ARG CLAUDE_CODE_VERSION=2.1.69
+
+# Install global CLI tooling (pinned versions; keep npm cache out of /var for bootc lint)
 RUN HOME=/tmp npm install -g --cache /tmp/npm-cache \
-    @anthropic-ai/claude-code \
-    @mariozechner/pi-coding-agent \
-    @biomejs/biome \
-    typescript \
+    @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} \
+    @mariozechner/pi-coding-agent@${PI_CODING_AGENT_VERSION} \
+    @biomejs/biome@${BIOME_VERSION} \
+    typescript@${TYPESCRIPT_VERSION} \
     && rm -rf /tmp/npm-cache /var/roothome/.npm /root/.npm
 
 # Install Bloom Pi package
@@ -71,6 +72,9 @@ COPY os/sysconfig/bloom-bash_profile /usr/local/share/bloom/skel/.bash_profile
 
 # tmpfiles.d for /var directory structure (created at boot)
 COPY os/sysconfig/bloom-tmpfiles.conf /usr/lib/tmpfiles.d/bloom.conf
+
+# Default Quadlet network definition used by service packages
+COPY os/sysconfig/bloom.network /usr/share/containers/systemd/bloom.network
 
 # Install persona files
 RUN mkdir -p /usr/local/share/bloom/persona

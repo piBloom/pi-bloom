@@ -3,7 +3,7 @@ Description=Bloom Tailscale — Secure mesh networking
 After=network-online.target
 
 [Container]
-Image=docker.io/tailscale/tailscale:latest
+Image=docker.io/tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1
 ContainerName=bloom-tailscale
 Network=host
 Volume=bloom-tailscale-state:/var/lib/tailscale:Z

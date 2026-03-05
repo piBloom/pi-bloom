@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, wri
 import { createRequire } from "node:module";
 import os, { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
@@ -14,6 +15,20 @@ const yaml: { load: (str: string) => unknown; dump: (obj: unknown) => string } =
 
 const execAsync = promisify(execFile);
 const log = createLogger("bloom-services");
+
+function resolvePackageRoot(): string {
+	const here = dirname(fileURLToPath(import.meta.url));
+	const candidates = [join(here, ".."), join(here, "../..")];
+	for (const candidate of candidates) {
+		if (existsSync(join(candidate, "os", "sysconfig", "bloom.network"))) {
+			return candidate;
+		}
+	}
+	return join(here, "../..");
+}
+
+const packageRoot = resolvePackageRoot();
+const defaultNetworkPath = join(packageRoot, "os", "sysconfig", "bloom.network");
 
 async function run(
 	cmd: string,
@@ -42,6 +57,40 @@ function validateServiceName(name: string): string | null {
 	if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) {
 		return "Service name must be kebab-case using [a-z0-9-].";
 	}
+	return null;
+}
+
+function validatePinnedImage(image: string): string | null {
+	if (image.includes("@sha256:")) return null;
+	const tagMatch = image.match(/:([^/@]+)$/);
+	if (!tagMatch) {
+		return "Image must include an explicit version tag or digest (avoid implicit latest).";
+	}
+	const tag = tagMatch[1].toLowerCase();
+	if (tag === "latest" || tag.startsWith("latest-")) {
+		return "Image tag must be pinned (avoid latest/latest-* tags).";
+	}
+	return null;
+}
+
+function extractDigest(text: string): string | null {
+	const match = text.match(/sha256:[a-f0-9]{64}/i);
+	return match ? match[0].toLowerCase() : null;
+}
+
+async function resolveArtifactDigest(ref: string, signal?: AbortSignal): Promise<string | null> {
+	const resolve = await run("oras", ["resolve", ref], signal);
+	if (resolve.exitCode === 0) {
+		const digest = extractDigest(`${resolve.stdout}\n${resolve.stderr}`);
+		if (digest) return digest;
+	}
+
+	const descriptor = await run("oras", ["manifest", "fetch", "--descriptor", ref], signal);
+	if (descriptor.exitCode === 0) {
+		const digest = extractDigest(`${descriptor.stdout}\n${descriptor.stderr}`);
+		if (digest) return digest;
+	}
+
 	return null;
 }
 
@@ -107,6 +156,7 @@ export default function (pi: ExtensionAPI) {
 		promptGuidelines: [
 			"Use service_scaffold to bootstrap a new OCI service package with correct Bloom conventions.",
 			"Prefer upstream images and Quadlet composition (no Containerfile builds).",
+			"Use pinned image tags or digests; avoid latest/latest-* tags.",
 		],
 		parameters: Type.Object({
 			name: Type.String({ description: "Service name (kebab-case, e.g. my-api)" }),
@@ -126,6 +176,8 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			const guard = validateServiceName(params.name);
 			if (guard) return errorResult(guard);
+			const imageGuard = validatePinnedImage(params.image);
+			if (imageGuard) return errorResult(imageGuard);
 
 			const repoDir = resolveRepoDir(ctx);
 			const serviceDir = join(repoDir, "services", params.name);
@@ -252,6 +304,7 @@ export default function (pi: ExtensionAPI) {
 		promptSnippet: "service_install — pull and install Bloom service package",
 		promptGuidelines: [
 			"Use service_install to deploy a packaged service from the registry.",
+			"Prefer immutable semver tags over latest for reproducible installs.",
 			"After install, verify with systemctl status and container logs.",
 		],
 		parameters: Type.Object({
@@ -262,6 +315,15 @@ export default function (pi: ExtensionAPI) {
 			update_manifest: Type.Optional(
 				Type.Boolean({ description: "Update manifest.yaml with installed version", default: true }),
 			),
+			allow_latest: Type.Optional(
+				Type.Boolean({ description: "Allow installing latest tag (non-immutable)", default: false }),
+			),
+			require_pinned_image: Type.Optional(
+				Type.Boolean({ description: "Require SKILL.md image to be pinned (tag/digest, not latest)", default: true }),
+			),
+			expected_digest: Type.Optional(
+				Type.String({ description: "Optional expected OCI artifact digest (sha256:...) for verification" }),
+			),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
 			const guard = validateServiceName(params.name);
@@ -271,12 +333,36 @@ export default function (pi: ExtensionAPI) {
 			const version = params.version ?? "latest";
 			const start = params.start ?? true;
 			const updateManifest = params.update_manifest ?? true;
+			const allowLatest = params.allow_latest ?? false;
+			const requirePinnedImage = params.require_pinned_image ?? true;
+			const expectedDigest = params.expected_digest?.trim().toLowerCase();
 			const ref = `${registry}/bloom-svc-${params.name}:${version}`;
+
+			if (version === "latest" && !allowLatest) {
+				return errorResult(
+					"Refusing non-immutable install: version=latest. Use a semver tag (e.g. 0.1.0) or set allow_latest=true explicitly.",
+				);
+			}
 
 			const tempDir = join(tmpdir(), `bloom-svc-${params.name}-${Date.now()}`);
 			mkdirSync(tempDir, { recursive: true });
 
 			try {
+				const resolvedDigest = await resolveArtifactDigest(ref, signal);
+				if (expectedDigest) {
+					if (!expectedDigest.match(/^sha256:[a-f0-9]{64}$/)) {
+						return errorResult("expected_digest must be in sha256:<64-hex> format.");
+					}
+					if (!resolvedDigest) {
+						return errorResult(`Could not resolve digest for ${ref}. Cannot verify expected digest ${expectedDigest}.`);
+					}
+					if (resolvedDigest !== expectedDigest) {
+						return errorResult(
+							`Digest verification failed for ${ref}. Expected ${expectedDigest}, got ${resolvedDigest}.`,
+						);
+					}
+				}
+
 				const pull = await run("oras", ["pull", ref, "-o", tempDir], signal);
 				if (pull.exitCode !== 0) return errorResult(`Failed to pull ${ref}:\n${pull.stderr}`);
 
@@ -285,10 +371,26 @@ export default function (pi: ExtensionAPI) {
 				if (!existsSync(quadletSrc)) return errorResult(`Artifact ${ref} missing quadlet/ directory.`);
 				if (!existsSync(skillSrc)) return errorResult(`Artifact ${ref} missing SKILL.md.`);
 
+				const pulledMeta = extractSkillMetadata(skillSrc);
+				if (requirePinnedImage) {
+					if (!pulledMeta.image) {
+						return errorResult(`Artifact ${ref} SKILL.md is missing frontmatter image field.`);
+					}
+					const imageGuard = validatePinnedImage(pulledMeta.image);
+					if (imageGuard) {
+						return errorResult(`Artifact ${ref} image policy violation: ${imageGuard}`);
+					}
+				}
+
 				const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
 				const skillDir = join(getGardenDir(), "Bloom", "Skills", params.name);
 				mkdirSync(systemdDir, { recursive: true });
 				mkdirSync(skillDir, { recursive: true });
+
+				const networkDest = join(systemdDir, "bloom.network");
+				if (!existsSync(networkDest) && existsSync(defaultNetworkPath)) {
+					writeFileSync(networkDest, readFileSync(defaultNetworkPath));
+				}
 
 				for (const name of readdirSync(quadletSrc)) {
 					const src = join(quadletSrc, name);
@@ -328,6 +430,7 @@ export default function (pi: ExtensionAPI) {
 					content: [{ type: "text" as const, text: `Installed ${ref} successfully.` }],
 					details: {
 						ref,
+						resolvedDigest: resolvedDigest ?? null,
 						start,
 						manifestUpdated: updateManifest,
 						installedTo: {

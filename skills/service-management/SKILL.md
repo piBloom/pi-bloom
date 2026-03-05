@@ -7,12 +7,16 @@ description: Install, manage, and discover OCI-packaged service containers
 
 Bloom services are modular capabilities packaged as OCI artifacts. Each package contains Quadlet container units and a SKILL.md file.
 
+Follow `docs/supply-chain.md` for reproducibility and verification policy.
+
 ## Registry
 
 Service packages are hosted at:
 ```
-ghcr.io/alexradunet/bloom-svc-{name}:latest
+ghcr.io/alexradunet/bloom-svc-{name}:<version>
 ```
+
+Use immutable semver tags (for example `0.1.0`) for installs. `latest` is mutable and should be explicit only for development.
 
 ## Lifecycle Tools
 
@@ -53,8 +57,9 @@ Reference packages:
 
 ```bash
 mkdir -p /tmp/bloom-svc
-oras pull ghcr.io/alexradunet/bloom-svc-{name}:latest -o /tmp/bloom-svc/
+oras pull ghcr.io/alexradunet/bloom-svc-{name}:{version} -o /tmp/bloom-svc/
 cp /tmp/bloom-svc/quadlet/* ~/.config/containers/systemd/
+[ -f ~/.config/containers/systemd/bloom.network ] || cp /usr/local/share/bloom/os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network
 mkdir -p ~/Garden/Bloom/Skills/{name}
 cp /tmp/bloom-svc/SKILL.md ~/Garden/Bloom/Skills/{name}/SKILL.md
 systemctl --user daemon-reload
@@ -135,7 +140,7 @@ Service SKILL.md files include `version` and `image` fields in their frontmatter
 ---
 name: whisper
 version: 0.1.0
-image: docker.io/fedirz/faster-whisper-server:latest-cpu
+image: docker.io/fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030
 ---
 ```
 
@@ -152,6 +157,21 @@ oras pull ghcr.io/alexradunet/bloom-svc-{name}:0.1.0 -o /tmp/bloom-svc/
 ```
 
 Then update the manifest with `manifest_set_service` to record the pinned version.
+
+### Verify Artifact Digest (Recommended)
+
+For higher assurance, resolve and pin the OCI artifact digest before install:
+
+```bash
+oras resolve ghcr.io/alexradunet/bloom-svc-{name}:{version}
+# => sha256:...
+```
+
+Then pass it to `service_install`:
+
+- `service_install(name="{name}", version="{version}", expected_digest="sha256:...")`
+
+`service_install` verifies the digest (when provided) and enforces pinned runtime images by default.
 
 ## Known Services
 

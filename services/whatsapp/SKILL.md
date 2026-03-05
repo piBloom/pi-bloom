@@ -9,6 +9,8 @@ image: ghcr.io/alexradunet/bloom-whatsapp:latest
 
 Connects WhatsApp to Bloom via the channel protocol (Unix socket at `/run/bloom/channels.sock`). Messages from WhatsApp users flow into Pi's session.
 
+The bridge requires a channel token (`BLOOM_CHANNEL_TOKEN`) that is generated automatically by `service_install`.
+
 ## Setup
 
 1. Install the service package

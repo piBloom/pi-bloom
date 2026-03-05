@@ -5,116 +5,83 @@ description: Guide the user through one-time Bloom system setup on a fresh insta
 
 # First-Boot Setup
 
-Use this skill on the first session after a fresh Bloom OS install to configure all required services.
+Use this skill on the first session after a fresh Bloom OS install.
 
-## Prerequisites
+## Prerequisite Check
 
-Check for the setup marker file `~/.bloom/.setup-complete`. If it exists, setup is already done — skip this skill.
+If `~/.bloom/.setup-complete` exists, setup is already complete. Skip unless user asks to re-run specific steps.
+
+## Setup Style
+
+- Be conversational (one step at a time)
+- Let user skip/defer steps
+- Prefer Bloom tools over long shell copy-paste blocks
 
 ## Setup Steps
 
-Walk the user through each step conversationally. Skip steps they've already completed or don't want.
+### 1) LLM Provider + API Key
 
-### 1. LLM API Key
+- Ask preferred provider (Anthropic, OpenAI, etc.)
+- Help configure API key in Pi settings
 
-Configure the API key for Pi's language model provider:
-- Ask which provider (Anthropic, OpenAI, etc.)
-- Help set the key in Pi's settings
-
-### 2. GitHub Authentication
-
-Authenticate with GitHub so Bloom can open pull requests for self-evolution:
+### 2) GitHub Authentication
 
 ```bash
 gh auth login
+gh auth status
 ```
 
-Follow the interactive flow (browser-based or token). Verify with `gh auth status`.
-
-### 3. Git Configuration
-
-Set identity for commits:
+### 3) Git Identity
 
 ```bash
 git config --global user.name "Bloom"
 git config --global user.email "bloom@localhost"
 ```
 
-Ask the user if they want a custom name/email.
+Ask if user wants custom values.
 
-### 4. Clone Bloom Repository
-
-Clone the source repo for self-evolution capabilities:
+### 4) Clone Bloom Source Repo (self-evolution)
 
 ```bash
 mkdir -p ~/.bloom
 ```
 
-Detect the repo URL automatically:
-- Run `bootc status --json` and extract the source image reference
-- Parse the GitHub owner from the image URL (e.g., `ghcr.io/owner/bloom-os` → `owner`)
-- Clone from `https://github.com/{owner}/pibloom.git`
+Prefer auto-detection:
+- Get image reference from `bootc status --format=json`
+- Infer GitHub owner from image (`ghcr.io/{owner}/bloom-os`)
+- Clone `https://github.com/{owner}/pibloom.git` into `~/.bloom/pibloom`
 
-If auto-detection fails, ask the user for their fork URL.
+Fallback: ask user for the repo URL.
 
-```bash
-git clone https://github.com/{owner}/pibloom.git ~/.bloom/pibloom
-```
+### 5) Syncthing Setup
 
-### 5. Syncthing Setup
+- Check service state (user/system depending on host setup)
+- Direct user to `http://localhost:8384`
+- Help add/share `~/Garden`
 
-Syncthing syncs the Garden vault across devices:
+### 6) Optional Service Packages (tool-first)
 
-- Verify syncthing is running: `systemctl status syncthing@bloom`
-- Direct user to the web UI: `http://localhost:8384`
-- Help add the `~/Garden` folder for sharing
-- Help connect to other devices (share device IDs)
+Prefer Bloom tools:
 
-### 6. Service Packages (Optional)
+- Install: `service_install`
+- Validate: `service_test`
+- Check status/logs: `systemd_control` + `container_logs`
+- Confirm manifest: `manifest_show`
 
-Install desired service packages via `oras`:
+Recommended order:
 
-**WhatsApp Bridge** — messaging integration:
-```bash
-mkdir -p /tmp/bloom-svc
-oras pull ghcr.io/alexradunet/bloom-svc-whatsapp:latest -o /tmp/bloom-svc/
-cp /tmp/bloom-svc/quadlet/* ~/.config/containers/systemd/
-mkdir -p ~/Garden/Bloom/Skills/whatsapp
-cp /tmp/bloom-svc/SKILL.md ~/Garden/Bloom/Skills/whatsapp/SKILL.md
-systemctl --user daemon-reload
-systemctl --user start bloom-whatsapp
-rm -rf /tmp/bloom-svc
-```
-Then guide through QR code pairing: `journalctl --user -u bloom-whatsapp -f`
+1. `service_install(name="whatsapp", version="0.1.0")`
+2. `service_install(name="whisper", version="0.1.0")` (optional but recommended with WhatsApp)
+3. `service_install(name="tailscale", version="0.1.0")` (optional)
 
-**Whisper** — speech-to-text transcription (recommended with WhatsApp):
-```bash
-mkdir -p /tmp/bloom-svc
-oras pull ghcr.io/alexradunet/bloom-svc-whisper:latest -o /tmp/bloom-svc/
-cp /tmp/bloom-svc/quadlet/* ~/.config/containers/systemd/
-mkdir -p ~/Garden/Bloom/Skills/whisper
-cp /tmp/bloom-svc/SKILL.md ~/Garden/Bloom/Skills/whisper/SKILL.md
-systemctl --user daemon-reload
-systemctl --user start bloom-whisper
-rm -rf /tmp/bloom-svc
-```
+Post-install guidance:
 
-**Tailscale** — secure remote access:
-```bash
-mkdir -p /tmp/bloom-svc
-oras pull ghcr.io/alexradunet/bloom-svc-tailscale:latest -o /tmp/bloom-svc/
-cp /tmp/bloom-svc/quadlet/* ~/.config/containers/systemd/
-mkdir -p ~/Garden/Bloom/Skills/tailscale
-cp /tmp/bloom-svc/SKILL.md ~/Garden/Bloom/Skills/tailscale/SKILL.md
-systemctl --user daemon-reload
-systemctl --user start bloom-tailscale
-rm -rf /tmp/bloom-svc
-```
-Then authenticate: `podman exec bloom-tailscale tailscale up`
+- WhatsApp pairing: `journalctl --user -u bloom-whatsapp -f` and scan QR
+- Tailscale auth: `podman exec bloom-tailscale tailscale up`
 
-### 7. Mark Setup Complete
+If tooling is unavailable, use the fallback manual `oras pull` flow from `skills/service-management/SKILL.md`.
 
-After all desired steps are done:
+### 7) Mark Setup Complete
 
 ```bash
 touch ~/.bloom/.setup-complete
@@ -122,6 +89,5 @@ touch ~/.bloom/.setup-complete
 
 ## Notes
 
-- Be conversational — don't dump all steps at once
-- Let the user skip or defer any step
-- Revisit skipped steps if the user asks later
+- Revisit skipped steps on demand
+- Confirm each critical step before moving on

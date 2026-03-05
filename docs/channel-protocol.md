@@ -1,31 +1,46 @@
 # Channel Protocol
 
-Bloom uses a JSON-over-TCP bridge protocol for external messaging platforms. Bridges connect to Bloom's channel server as TCP clients.
+Bloom uses a JSON-over-Unix-socket bridge protocol for external messaging platforms.
 
 ## Connection
 
-Bridges connect to `localhost:18800` (configurable via `BLOOM_CHANNELS_PORT`).
+Bridges connect to the Unix socket:
+
+- Default: `/run/bloom/channels.sock`
+- Override: `BLOOM_CHANNELS_SOCKET`
+
+All frames are newline-delimited JSON (`\n`-terminated).
+
+## Authentication
+
+Each channel must register with a token from:
+
+- `~/.config/bloom/channel-tokens/{channel}`
+
+If token is missing or invalid, registration is rejected.
 
 ## Message Format
 
-All messages are newline-delimited JSON (`\n`-terminated).
-
 ### Bridge → Bloom
 
-**Register** — Identify the bridge:
+**Register**
+
 ```json
-{"type": "register", "channel": "whatsapp"}
+{"type":"register","channel":"whatsapp","token":"<hex-token>"}
 ```
 
-**Message** — Deliver an incoming text message:
+**Incoming message**
+
 ```json
-{"type": "message", "channel": "whatsapp", "from": "John", "text": "Hello!", "timestamp": 1709568000}
+{"type":"message","id":"msg-123","channel":"whatsapp","from":"John","text":"Hello!","timestamp":1709568000}
 ```
 
-**Message with media** — Deliver an incoming media message:
+**Incoming message with media**
+
 ```json
 {
   "type": "message",
+  "id": "msg-124",
   "channel": "whatsapp",
   "from": "John",
   "timestamp": 1709568000,
@@ -34,44 +49,59 @@ All messages are newline-delimited JSON (`\n`-terminated).
     "mimetype": "audio/ogg",
     "filepath": "/var/lib/bloom/media/1709568000-abc123.ogg",
     "duration": 15,
-    "size": 24576
+    "size": 24576,
+    "caption": null
   }
 }
 ```
 
-Media fields:
-- `kind`: `audio`, `image`, `video`, `document`, or `sticker`
-- `mimetype`: MIME type of the file
-- `filepath`: Absolute path to the saved file
-- `duration`: Duration in seconds (audio/video only)
-- `size`: File size in bytes
-- `caption`: Optional caption text
+**Pong**
+
+```json
+{"type":"pong","channel":"whatsapp"}
+```
 
 ### Bloom → Bridge
 
-**Status** — Acknowledge registration:
+**Status** (registration acknowledged)
+
 ```json
-{"type": "status", "connected": true}
+{"type":"status","connected":true}
 ```
 
-**Response** — Send a reply to a user:
+**Ping** (heartbeat)
+
 ```json
-{"type": "response", "channel": "whatsapp", "to": "John", "text": "Hey John!"}
+{"type":"ping"}
 ```
 
-**Send** — Outbound message (via `/wa` command):
+**Response** (reply to a specific inbound message)
+
 ```json
-{"type": "send", "channel": "whatsapp", "text": "Hello from Bloom"}
+{"type":"response","id":"msg-123","channel":"whatsapp","to":"John","text":"Hey John!"}
+```
+
+**Send** (outbound command from Pi, e.g. `/wa`)
+
+```json
+{"type":"send","channel":"whatsapp","text":"Hello from Bloom"}
+```
+
+**Error**
+
+```json
+{"type":"error","id":"msg-123","reason":"queue full"}
 ```
 
 ## Flow
 
-1. Bridge connects via TCP and sends `register`
-2. Bloom responds with `status`
-3. Bridge forwards incoming messages as `message`
-4. Bloom processes and sends `response` back to the bridge
-5. User can send outbound via `/wa` command, which sends `send`
+1. Bridge connects to `/run/bloom/channels.sock`
+2. Bridge sends `register` with channel token
+3. Bloom replies `status`
+4. Bridge sends inbound `message` events
+5. Bloom replies with `response` events
+6. Heartbeat: Bloom sends `ping`, bridge sends `pong`
 
 ## Current Bridges
 
-- **WhatsApp** (Baileys) — connects as `whatsapp` channel, deployed as a Podman Quadlet container
+- **WhatsApp (Baileys)** — channel `whatsapp`, deployed as a Podman Quadlet service

@@ -86,8 +86,6 @@ function extractResponseText(messages: AgentEndEvent["messages"]): string {
 				.filter((c) => c.type === "text" && c.text)
 				.map((c) => c.text as string);
 			if (textParts.length > 0) return textParts.join("\n\n");
-			// Tool-only turn — skip to previous assistant message
-			continue;
 		}
 	}
 	return "";
@@ -170,15 +168,19 @@ export default function (pi: ExtensionAPI) {
 			if (msg.type === "register") {
 				const name = msg.channel;
 				const expectedToken = loadToken(name);
-				if (expectedToken && msg.token !== expectedToken) {
+				if (!expectedToken) {
+					sendToSocket(socket, { type: "error", reason: "missing channel token" });
+					log.warn("rejected registration: missing token", { channel: name });
+					socket.destroy();
+					return;
+				}
+				if (msg.token !== expectedToken) {
 					sendToSocket(socket, { type: "error", reason: "invalid token" });
 					log.warn("rejected registration: invalid token", { channel: name });
 					socket.destroy();
 					return;
 				}
-				if (expectedToken) {
-					channelTokens.set(name, expectedToken);
-				}
+				channelTokens.set(name, expectedToken);
 				const info: ChannelInfo = { socket, connected: true, missedPings: 0, pendingCount: 0, rateBurst: RATE_BURST };
 				channels.set(name, info);
 				startHeartbeat(name, info);
@@ -300,9 +302,7 @@ export default function (pi: ExtensionAPI) {
 		if (pendingContexts.size === 0) return;
 
 		// Find the message ID from the user prompt that triggered this agent turn
-		const userMessages = event.messages.filter(
-			(m) => "role" in m && m.role === "user",
-		);
+		const userMessages = event.messages.filter((m) => "role" in m && m.role === "user");
 		let matchedId: string | undefined;
 		for (const um of userMessages) {
 			const content = (um as { role: "user"; content: unknown }).content;

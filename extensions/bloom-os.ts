@@ -42,8 +42,15 @@ function guardBloom(name: string): string | null {
 	return null;
 }
 
-async function requireConfirmation(ctx: ExtensionContext, action: string): Promise<string | null> {
-	if (!ctx.hasUI) return null;
+async function requireConfirmation(
+	ctx: ExtensionContext,
+	action: string,
+	options?: { requireUi?: boolean },
+): Promise<string | null> {
+	const requireUi = options?.requireUi ?? true;
+	if (!ctx.hasUI) {
+		return requireUi ? `Cannot perform "${action}" without interactive user confirmation.` : null;
+	}
 	const confirmed = await ctx.ui.confirm("Confirm action", `Allow: ${action}?`);
 	if (!confirmed) return `User declined: ${action}`;
 	return null;
@@ -131,7 +138,9 @@ export default function (pi: ExtensionAPI) {
 			const denied = await requireConfirmation(ctx, "Rollback to previous OS image via bootc rollback");
 			if (denied) return errorResult(denied);
 			const result = await run("sudo", ["bootc", "rollback"], signal);
-			const text = truncate(result.exitCode === 0 ? result.stdout || "Rollback staged. Reboot to apply." : `Error:\n${result.stderr}`);
+			const text = truncate(
+				result.exitCode === 0 ? result.stdout || "Rollback staged. Reboot to apply." : `Error:\n${result.stderr}`,
+			);
 			return {
 				content: [{ type: "text", text }],
 				details: { exitCode: result.exitCode },
@@ -196,7 +205,7 @@ export default function (pi: ExtensionAPI) {
 			if (guard) return errorResult(guard);
 			const n = String(params.lines ?? 50);
 			const unit = `${params.service}.service`;
-			const result = await run("journalctl", ["-u", unit, "--no-pager", "-n", n], signal);
+			const result = await run("journalctl", ["--user", "-u", unit, "--no-pager", "-n", n], signal);
 			const text = truncate(
 				result.exitCode === 0 ? result.stdout || "(no log output)" : `Error fetching logs:\n${result.stderr}`,
 			);
@@ -211,10 +220,10 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "systemd_control",
 		label: "Systemd Service Control",
-		description: "Manage a Bloom systemd service (start, stop, restart, status).",
+		description: "Manage a Bloom user-systemd service (start, stop, restart, status).",
 		promptSnippet: "systemd_control — start/stop/restart/status a bloom-* service",
 		promptGuidelines: [
-			"Use systemd_control to manage Bloom systemd services. Only bloom-* services can be controlled.",
+			"Use systemd_control to manage Bloom user-systemd services. Only bloom-* services can be controlled.",
 			"Use status for read-only checks; other actions require justification.",
 		],
 		parameters: Type.Object({
@@ -230,10 +239,8 @@ export default function (pi: ExtensionAPI) {
 				const denied = await requireConfirmation(ctx, `systemctl ${params.action} ${unit}`);
 				if (denied) return errorResult(denied);
 			}
-			const cmd = readOnly ? "systemctl" : "sudo";
-			const args = readOnly ? [params.action, unit] : ["systemctl", params.action, unit];
-			const result = await run(cmd, args, signal);
-			const text = truncate(result.stdout || result.stderr || `systemctl ${params.action} completed.`);
+			const result = await run("systemctl", ["--user", params.action, unit], signal);
+			const text = truncate(result.stdout || result.stderr || `systemctl --user ${params.action} ${unit} completed.`);
 			return {
 				content: [{ type: "text", text }],
 				details: { exitCode: result.exitCode },
@@ -245,7 +252,7 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "container_deploy",
 		label: "Deploy Container",
-		description: "Reload systemd and start a Bloom Quadlet unit.",
+		description: "Reload user systemd and start a Bloom Quadlet unit.",
 		promptSnippet: "container_deploy — deploy a bloom-* Quadlet container unit",
 		promptGuidelines: [
 			"Use container_deploy to start a new container from an existing Quadlet unit file. Only bloom-* units can be deployed.",
@@ -259,11 +266,11 @@ export default function (pi: ExtensionAPI) {
 			const unit = `${params.quadlet_name}.service`;
 			const denied = await requireConfirmation(ctx, `Deploy container ${unit}`);
 			if (denied) return errorResult(denied);
-			const reload = await run("sudo", ["systemctl", "daemon-reload"], signal);
+			const reload = await run("systemctl", ["--user", "daemon-reload"], signal);
 			if (reload.exitCode !== 0) {
-				return errorResult(`daemon-reload failed:\n${reload.stderr}`);
+				return errorResult(`systemctl --user daemon-reload failed:\n${reload.stderr}`);
 			}
-			const start = await run("sudo", ["systemctl", "start", unit], signal);
+			const start = await run("systemctl", ["--user", "start", unit], signal);
 			const text = truncate(
 				start.exitCode === 0 ? `Started ${unit} successfully.` : `Failed to start ${unit}:\n${start.stderr}`,
 			);
@@ -509,7 +516,12 @@ export default function (pi: ExtensionAPI) {
 			const manifest = loadManifest();
 			if (Object.keys(manifest.services).length === 0 && !manifest.device) {
 				return {
-					content: [{ type: "text" as const, text: "No manifest found. Use manifest_sync to generate one from running services." }],
+					content: [
+						{
+							type: "text" as const,
+							text: "No manifest found. Use manifest_sync to generate one from running services.",
+						},
+					],
 					details: {},
 				};
 			}
@@ -535,7 +547,8 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "manifest_sync",
 		label: "Sync Manifest",
-		description: "Reconcile the manifest with actual running containers. Detects drift and can update the manifest or report differences.",
+		description:
+			"Reconcile the manifest with actual running containers. Detects drift and can update the manifest or report differences.",
 		promptSnippet: "manifest_sync — reconcile manifest with running state",
 		promptGuidelines: [
 			"Use manifest_sync to detect drift between the manifest and reality.",
@@ -608,18 +621,27 @@ export default function (pi: ExtensionAPI) {
 				}
 
 				saveManifest(updated);
-				const text = drifts.length > 0
-					? `Manifest updated. Resolved ${drifts.length} drift(s):\n${drifts.join("\n")}`
-					: "Manifest updated. No drift detected.";
+				const text =
+					drifts.length > 0
+						? `Manifest updated. Resolved ${drifts.length} drift(s):\n${drifts.join("\n")}`
+						: "Manifest updated. No drift detected.";
 				return { content: [{ type: "text" as const, text }], details: updated };
 			}
 
 			// detect mode
 			if (drifts.length === 0) {
-				return { content: [{ type: "text" as const, text: "No drift detected. Manifest matches running state." }], details: {} };
+				return {
+					content: [{ type: "text" as const, text: "No drift detected. Manifest matches running state." }],
+					details: {},
+				};
 			}
 			return {
-				content: [{ type: "text" as const, text: `${drifts.length} drift(s) detected:\n${drifts.join("\n")}\n\nRun manifest_sync with mode='update' to reconcile.` }],
+				content: [
+					{
+						type: "text" as const,
+						text: `${drifts.length} drift(s) detected:\n${drifts.join("\n")}\n\nRun manifest_sync with mode='update' to reconcile.`,
+					},
+				],
 				details: { drifts },
 			};
 		},
@@ -646,7 +668,12 @@ export default function (pi: ExtensionAPI) {
 			};
 			saveManifest(manifest);
 			return {
-				content: [{ type: "text" as const, text: `Service ${params.name} set in manifest: ${params.image}${params.version ? `@${params.version}` : ""} [${params.enabled !== false ? "enabled" : "disabled"}]` }],
+				content: [
+					{
+						type: "text" as const,
+						text: `Service ${params.name} set in manifest: ${params.image}${params.version ? `@${params.version}` : ""} [${params.enabled !== false ? "enabled" : "disabled"}]`,
+					},
+				],
 				details: {},
 			};
 		},
@@ -669,9 +696,7 @@ export default function (pi: ExtensionAPI) {
 
 		if (ctx.hasUI) {
 			if (drifts.length > 0) {
-				ctx.ui.setWidget("bloom-manifest", [
-					`Manifest drift: ${drifts.join(", ")}`,
-				]);
+				ctx.ui.setWidget("bloom-manifest", [`Manifest drift: ${drifts.join(", ")}`]);
 			}
 			ctx.ui.setStatus("bloom-manifest", `Manifest: ${svcCount} services`);
 		}

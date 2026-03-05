@@ -2,7 +2,7 @@
 name: whisper
 version: 0.1.0
 description: Speech-to-text transcription via faster-whisper (OpenAI-compatible API)
-image: docker.io/fedirz/faster-whisper-server:latest-cpu
+image: docker.io/fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030
 ---
 
 # Whisper Service

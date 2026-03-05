@@ -16,6 +16,8 @@ Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension
 
 Always prefer the lightest option. See `docs/service-architecture.md` for details.
 
+For reproducible releases and artifact trust rules, see `docs/supply-chain.md`.
+
 ## Extensions
 
 | Extension | Purpose | LOC |
@@ -46,9 +48,9 @@ Modular capabilities packaged as OCI artifacts, installed via `oras` from GHCR.
 
 | Service | Category | Port | Image |
 |---------|----------|------|-------|
-| `bloom-svc-whisper` | media | 9000 | fedirz/faster-whisper-server:latest-cpu |
-| `bloom-svc-whatsapp` | communication | — | ghcr.io/alexradunet/bloom-whatsapp:latest |
-| `bloom-svc-tailscale` | networking | — | tailscale/tailscale:latest |
+| `bloom-svc-whisper` | media | 9000 | fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030 |
+| `bloom-svc-whatsapp` | communication | — | ghcr.io/alexradunet/bloom-whatsapp:latest *(private GHCR digest not publicly resolvable)* |
+| `bloom-svc-tailscale` | networking | — | tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1 |
 
 ## Persona
 

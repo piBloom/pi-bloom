@@ -1,30 +1,36 @@
 {
-  "name": "bloom",
-  "version": "0.1.0",
-  "description": "Bloom — Pi-native OS platform on Fedora bootc",
-  "type": "module",
-  "private": true,
-  "keywords": ["pi-package"],
-  "pi": {
-    "extensions": ["./extensions"],
-    "skills": ["./skills"]
-  },
-  "peerDependencies": {
-    "@mariozechner/pi-ai": "*",
-    "@mariozechner/pi-coding-agent": "*",
-    "@sinclair/typebox": "*",
-    "front-matter": "*"
-  },
-  "devDependencies": {
-    "@mariozechner/pi-ai": "^0.55.4",
-    "@mariozechner/pi-coding-agent": "^0.55.4",
-    "@sinclair/typebox": "^0.34.0",
-    "front-matter": "^4.0.2",
-    "typescript": "^5.7.0"
-  },
-  "scripts": {
-    "build": "tsc --build",
-    "check": "npx @biomejs/biome check .",
-    "check:fix": "npx @biomejs/biome check --write ."
-  }
+	"name": "bloom",
+	"version": "0.1.0",
+	"description": "Bloom — Pi-native OS platform on Fedora bootc",
+	"type": "module",
+	"private": true,
+	"keywords": [
+		"pi-package"
+	],
+	"pi": {
+		"extensions": [
+			"./extensions"
+		],
+		"skills": [
+			"./skills"
+		]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-ai": "*",
+		"@mariozechner/pi-coding-agent": "*",
+		"@sinclair/typebox": "*",
+		"front-matter": "*"
+	},
+	"devDependencies": {
+		"@mariozechner/pi-ai": "^0.55.4",
+		"@mariozechner/pi-coding-agent": "^0.55.4",
+		"@sinclair/typebox": "^0.34.0",
+		"front-matter": "^4.0.2",
+		"typescript": "^5.7.0"
+	},
+	"scripts": {
+		"build": "tsc --build",
+		"check": "npx @biomejs/biome check AGENTS.md CLAUDE.md guardrails.yaml .containerignore biome.json justfile package.json tsconfig.json .github/workflows docs extensions skills services/README.md services/examples services/tailscale services/whisper services/whatsapp/SKILL.md services/whatsapp/src os/Containerfile os/bootc os/sysconfig",
+		"check:fix": "npx @biomejs/biome check --write AGENTS.md CLAUDE.md guardrails.yaml .containerignore biome.json justfile package.json tsconfig.json .github/workflows docs extensions skills services/README.md services/examples services/tailscale services/whisper services/whatsapp/SKILL.md services/whatsapp/src os/Containerfile os/bootc os/sysconfig"
+	}
 }

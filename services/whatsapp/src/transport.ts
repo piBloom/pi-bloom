@@ -1,9 +1,15 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } from "baileys";
+import { randomBytes, randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
 import { createServer as createHttpServer } from "node:http";
 import { createConnection, type Socket } from "node:net";
-import { writeFile, mkdir } from "node:fs/promises";
-import { randomBytes, randomUUID } from "node:crypto";
 import type { Boom } from "@hapi/boom";
+import {
+	DisconnectReason,
+	downloadMediaMessage,
+	fetchLatestBaileysVersion,
+	makeWASocket,
+	useMultiFileAuthState,
+} from "baileys";
 
 const AUTH_DIR = process.env.BLOOM_AUTH_DIR ?? "/data/auth";
 const CHANNELS_SOCKET = process.env.BLOOM_CHANNELS_SOCKET ?? "/run/bloom/channels.sock";
@@ -140,9 +146,7 @@ async function startWhatsApp(): Promise<void> {
 					: Number(msg.messageTimestamp ?? Math.floor(Date.now() / 1000));
 
 			// Try text extraction first
-			const text =
-				msg.message?.conversation ??
-				msg.message?.extendedTextMessage?.text;
+			const text = msg.message?.conversation ?? msg.message?.extendedTextMessage?.text;
 
 			if (text) {
 				console.log(`[wa] message from ${from}: ${text.slice(0, 80)}`);
@@ -164,7 +168,6 @@ async function startWhatsApp(): Promise<void> {
 					handleMediaMessage(msg, from, timestamp, mediaType).catch((err) => {
 						console.error("[wa] media handling error:", (err as Error).message);
 					});
-					continue;
 				}
 			}
 		}
@@ -322,10 +325,7 @@ function isChannelMessage(val: unknown): val is ChannelMessage {
 	);
 }
 
-function handleChannelMessage(
-	waSock: ReturnType<typeof makeWASocket>,
-	raw: unknown,
-): void {
+function handleChannelMessage(waSock: ReturnType<typeof makeWASocket>, raw: unknown): void {
 	if (!isChannelMessage(raw)) {
 		console.warn("[tcp] unexpected message shape:", raw);
 		return;
