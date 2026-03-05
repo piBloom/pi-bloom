@@ -47,15 +47,44 @@ function mimeToExt(mime: string): string {
 	return map[mime] ?? mime.split("/").pop() ?? "bin";
 }
 
+type WaSocket = ReturnType<typeof makeWASocket>;
+
 // TCP state
 let channelSocket: Socket | null = null;
 let tcpBuffer = "";
 let tcpReconnectDelay = RECONNECT_BASE_MS;
+let tcpReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let tcpConnecting = false;
 let shuttingDown = false;
 let waConnected = false;
 
 // Track last WhatsApp socket so TCP layer can forward responses
-let currentWaSock: ReturnType<typeof makeWASocket> | null = null;
+let currentWaSock: WaSocket | null = null;
+
+function clearTcpReconnectTimer(): void {
+	if (tcpReconnectTimer) {
+		clearTimeout(tcpReconnectTimer);
+		tcpReconnectTimer = null;
+	}
+}
+
+function resetChannelSocket(): void {
+	const sock = channelSocket;
+	channelSocket = null;
+	tcpConnecting = false;
+	if (sock && !sock.destroyed) sock.destroy();
+}
+
+function scheduleTcpReconnect(waSock: WaSocket): void {
+	if (shuttingDown || tcpReconnectTimer) return;
+	const delay = tcpReconnectDelay;
+	console.log(`[tcp] disconnected. Reconnecting in ${delay}ms...`);
+	tcpReconnectDelay = Math.min(tcpReconnectDelay * 2, RECONNECT_MAX_MS);
+	tcpReconnectTimer = setTimeout(() => {
+		tcpReconnectTimer = null;
+		connectToChannels(waSock);
+	}, delay);
+}
 
 // --- Health check HTTP server ---
 
@@ -108,13 +137,18 @@ async function startWhatsApp(): Promise<void> {
 		if (connection === "open") {
 			console.log("[wa] connected.");
 			waConnected = true;
-			// Reset TCP reconnect delay on fresh WA connection
+			// Reset TCP reconnect state on fresh WA connection
 			tcpReconnectDelay = RECONNECT_BASE_MS;
+			clearTcpReconnectTimer();
+			resetChannelSocket();
 			connectToChannels(sock);
 		}
 
 		if (connection === "close") {
 			waConnected = false;
+			clearTcpReconnectTimer();
+			resetChannelSocket();
+
 			const statusCode = (lastDisconnect?.error as Boom | undefined)?.output?.statusCode;
 			const reason = statusCode ?? "unknown";
 			console.log(`[wa] connection closed (reason: ${reason})`);
@@ -249,23 +283,35 @@ function makeLogger() {
 
 // --- TCP channel connection ---
 
-function connectToChannels(waSock: ReturnType<typeof makeWASocket>): void {
-	if (shuttingDown) return;
+function connectToChannels(waSock: WaSocket): void {
+	if (shuttingDown || !waConnected) return;
+	if (tcpConnecting) return;
+	if (channelSocket?.writable) return;
+
+	clearTcpReconnectTimer();
+	tcpConnecting = true;
+	tcpBuffer = "";
 
 	console.log(`[tcp] connecting to ${CHANNELS_SOCKET}...`);
 
-	const sock = createConnection({ path: CHANNELS_SOCKET }, () => {
-		console.log("[tcp] connected to bloom-channels.");
+	const sock = createConnection({ path: CHANNELS_SOCKET });
+	channelSocket = sock;
+	sock.setEncoding("utf8");
+
+	sock.on("connect", () => {
+		if (channelSocket !== sock) return;
+		tcpConnecting = false;
 		tcpReconnectDelay = RECONNECT_BASE_MS;
+		console.log("[tcp] connected to bloom-channels.");
 
 		const registration: Record<string, string> = { type: "register", channel: "whatsapp" };
 		if (CHANNEL_TOKEN) registration.token = CHANNEL_TOKEN;
 		sock.write(`${JSON.stringify(registration)}\n`);
 	});
 
-	sock.setEncoding("utf8");
-
 	sock.on("data", (data: string) => {
+		if (channelSocket !== sock) return;
+
 		tcpBuffer += data;
 		const lines = tcpBuffer.split("\n");
 		// Keep any incomplete trailing fragment
@@ -284,21 +330,17 @@ function connectToChannels(waSock: ReturnType<typeof makeWASocket>): void {
 	});
 
 	sock.on("error", (err) => {
+		if (channelSocket !== sock) return;
 		console.error("[tcp] error:", err.message);
 	});
 
 	sock.on("close", () => {
+		if (channelSocket !== sock) return;
 		channelSocket = null;
-		if (shuttingDown) return;
-
-		console.log(`[tcp] disconnected. Reconnecting in ${tcpReconnectDelay}ms...`);
-		const delay = tcpReconnectDelay;
-		// Exponential backoff capped at 30s
-		tcpReconnectDelay = Math.min(tcpReconnectDelay * 2, RECONNECT_MAX_MS);
-		setTimeout(() => connectToChannels(waSock), delay);
+		tcpConnecting = false;
+		if (shuttingDown || !waConnected) return;
+		scheduleTcpReconnect(waSock);
 	});
-
-	channelSocket = sock;
 }
 
 function sendToChannels(msg: Record<string, unknown>): void {
@@ -326,7 +368,7 @@ function isChannelMessage(val: unknown): val is ChannelMessage {
 	);
 }
 
-function handleChannelMessage(waSock: ReturnType<typeof makeWASocket>, raw: unknown): void {
+function handleChannelMessage(waSock: WaSocket, raw: unknown): void {
 	if (!isChannelMessage(raw)) {
 		console.warn("[tcp] unexpected message shape:", raw);
 		return;
@@ -374,11 +416,8 @@ function shutdown(signal: string): void {
 	console.log(`[bloom-whatsapp] received ${signal}, shutting down...`);
 
 	healthServer.close();
-
-	if (channelSocket) {
-		channelSocket.destroy();
-		channelSocket = null;
-	}
+	clearTcpReconnectTimer();
+	resetChannelSocket();
 
 	if (currentWaSock) {
 		currentWaSock.end(undefined);
