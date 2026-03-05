@@ -112,12 +112,33 @@ export default function (pi: ExtensionAPI) {
 		ctx.ui.setStatus("bloom-channels", `Channels: ${channels.size} connected`);
 	}
 
+	function clearChannelTimers(info: ChannelInfo): void {
+		if (info.pingTimer) {
+			clearInterval(info.pingTimer);
+			info.pingTimer = undefined;
+		}
+		if (info.rateTimer) {
+			clearInterval(info.rateTimer);
+			info.rateTimer = undefined;
+		}
+	}
+
 	function removeChannel(name: string): void {
 		const info = channels.get(name);
-		if (info?.pingTimer) clearInterval(info.pingTimer);
-		if (info?.rateTimer) clearInterval(info.rateTimer);
+		if (!info) return;
+		clearChannelTimers(info);
 		channels.delete(name);
 		if (lastCtx) updateWidget(lastCtx);
+	}
+
+	function removeChannelBySocket(socket: Socket): string | null {
+		for (const [name, info] of channels) {
+			if (info.socket === socket) {
+				removeChannel(name);
+				return name;
+			}
+		}
+		return null;
 	}
 
 	function sendToSocket(socket: Socket, obj: object): void {
@@ -129,7 +150,8 @@ export default function (pi: ExtensionAPI) {
 			info.missedPings++;
 			if (info.missedPings > MAX_MISSED_PINGS) {
 				log.warn("missed pings, disconnecting", { channel: name });
-				info.socket.destroy();
+				clearChannelTimers(info);
+				if (!info.socket.destroyed) info.socket.destroy();
 				return;
 			}
 			sendToSocket(info.socket, { type: "ping" });
@@ -180,6 +202,16 @@ export default function (pi: ExtensionAPI) {
 					socket.destroy();
 					return;
 				}
+				const existing = channels.get(name);
+				if (existing) {
+					clearChannelTimers(existing);
+					channels.delete(name);
+					if (existing.socket !== socket && !existing.socket.destroyed) {
+						existing.socket.destroy();
+					}
+					log.info("replaced channel connection", { channel: name });
+				}
+
 				channelTokens.set(name, expectedToken);
 				const info: ChannelInfo = { socket, connected: true, missedPings: 0, pendingCount: 0, rateBurst: RATE_BURST };
 				channels.set(name, info);
@@ -266,22 +298,18 @@ export default function (pi: ExtensionAPI) {
 			});
 
 			socket.on("error", (err: Error) => {
-				log.error("socket error", { error: err.message });
-				for (const [name, info] of channels) {
-					if (info.socket === socket) {
-						removeChannel(name);
-						break;
-					}
+				const channel = removeChannelBySocket(socket);
+				if (channel) {
+					log.error("socket error", { channel, error: err.message });
+				} else {
+					log.error("socket error", { error: err.message });
 				}
 			});
 
 			socket.on("close", () => {
-				for (const [name, info] of channels) {
-					if (info.socket === socket) {
-						removeChannel(name);
-						log.info("channel disconnected", { channel: name });
-						break;
-					}
+				const channel = removeChannelBySocket(socket);
+				if (channel) {
+					log.info("channel disconnected", { channel });
 				}
 			});
 		});
