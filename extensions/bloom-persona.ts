@@ -49,7 +49,14 @@ function loadGuardrails(): Array<{ tool: string; pattern: RegExp; label: string 
 		for (const rule of config.rules) {
 			if (rule.action !== "block" || !rule.patterns) continue;
 			for (const p of rule.patterns) {
-				compiled.push({ tool: rule.tool, pattern: new RegExp(p.pattern), label: p.label });
+				try {
+					compiled.push({ tool: rule.tool, pattern: new RegExp(p.pattern), label: p.label });
+				} catch (patternErr) {
+					console.error(
+						`[bloom-persona] Skipping invalid guardrail pattern "${p.pattern}":`,
+						(patternErr as Error).message,
+					);
+				}
 			}
 		}
 		return compiled;

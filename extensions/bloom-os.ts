@@ -975,29 +975,29 @@ export default function (pi: ExtensionAPI) {
 		return errors;
 	}
 
-function hasTagOrDigest(ref: string): boolean {
+	function hasTagOrDigest(ref: string): boolean {
 		if (ref.includes("@")) return true;
 		const lastSlash = ref.lastIndexOf("/");
 		const tail = ref.slice(lastSlash + 1);
 		return tail.includes(":");
-}
-
-function tailscaleAuthConfigured(): boolean {
-	const direct = process.env.TS_AUTHKEY?.trim();
-	if (direct) return true;
-	const envPath = join(os.homedir(), ".config", "bloom", "tailscale.env");
-	if (!existsSync(envPath)) return false;
-	try {
-		const raw = readFileSync(envPath, "utf-8");
-		return raw
-			.split("\n")
-			.some((line) => line.trim().startsWith("TS_AUTHKEY=") && line.trim().length > "TS_AUTHKEY=".length);
-	} catch {
-		return false;
 	}
-}
 
-function findLocalServicePackage(name: string): { serviceDir: string; quadletDir: string; skillPath: string } | null {
+	function tailscaleAuthConfigured(): boolean {
+		const direct = process.env.TS_AUTHKEY?.trim();
+		if (direct) return true;
+		const envPath = join(os.homedir(), ".config", "bloom", "tailscale.env");
+		if (!existsSync(envPath)) return false;
+		try {
+			const raw = readFileSync(envPath, "utf-8");
+			return raw
+				.split("\n")
+				.some((line) => line.trim().startsWith("TS_AUTHKEY=") && line.trim().length > "TS_AUTHKEY=".length);
+		} catch {
+			return false;
+		}
+	}
+
+	function findLocalServicePackage(name: string): { serviceDir: string; quadletDir: string; skillPath: string } | null {
 		const candidates = [
 			join(repoDir, "services", name),
 			`/usr/local/share/bloom/services/${name}`,
