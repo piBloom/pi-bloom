@@ -37,6 +37,7 @@ interface ChannelInfo {
 interface ChannelContext {
 	channel: string;
 	from: string;
+	createdAt: number;
 }
 
 interface MediaInfo {
@@ -66,6 +67,8 @@ const MAX_MISSED_PINGS = 3;
 const MAX_PENDING_PER_CHANNEL = 10;
 const RATE_LIMIT_PER_SEC = 1;
 const RATE_BURST = 5;
+const PENDING_SWEEP_INTERVAL_MS = 5 * 60_000;
+const PENDING_MAX_AGE_MS = 10 * 60_000;
 
 function loadToken(channel: string): string | null {
 	try {
@@ -81,6 +84,7 @@ export default function (pi: ExtensionAPI) {
 	const pendingContexts = new Map<string, ChannelContext>();
 	let server: Server | null = null;
 	let lastCtx: ExtensionContext | null = null;
+	let pendingSweepTimer: ReturnType<typeof setInterval> | null = null;
 
 	function updateWidget(ctx: ExtensionContext): void {
 		if (!ctx.hasUI) return;
@@ -232,7 +236,7 @@ export default function (pi: ExtensionAPI) {
 				const from = msg.from ?? "unknown";
 				const messageId = msg.id ?? randomUUID();
 
-				pendingContexts.set(messageId, { channel, from });
+				pendingContexts.set(messageId, { channel, from, createdAt: Date.now() });
 
 				let prompt: string;
 				if (msg.media) {
@@ -306,6 +310,18 @@ export default function (pi: ExtensionAPI) {
 			log.info("listening", { path: SOCKET_PATH });
 		});
 
+		pendingSweepTimer = setInterval(() => {
+			const now = Date.now();
+			for (const [id, ctx] of pendingContexts) {
+				if (now - ctx.createdAt > PENDING_MAX_AGE_MS) {
+					pendingContexts.delete(id);
+					const channelInfo = channels.get(ctx.channel);
+					if (channelInfo) channelInfo.pendingCount = Math.max(0, channelInfo.pendingCount - 1);
+					log.warn("expired pending context", { id, channel: ctx.channel });
+				}
+			}
+		}, PENDING_SWEEP_INTERVAL_MS);
+
 		updateWidget(ctx);
 	});
 
@@ -353,6 +369,10 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	pi.on("session_shutdown", (_event: SessionShutdownEvent, _ctx: ExtensionContext) => {
+		if (pendingSweepTimer) {
+			clearInterval(pendingSweepTimer);
+			pendingSweepTimer = null;
+		}
 		if (server) {
 			server.close();
 			server = null;

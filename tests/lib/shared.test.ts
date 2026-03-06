@@ -8,8 +8,42 @@ import {
 	PARA_DIRS,
 	parseFrontmatter,
 	requireConfirmation,
+	safePath,
 	stringifyFrontmatter,
 } from "../../lib/shared.js";
+
+// ---------------------------------------------------------------------------
+// safePath
+// ---------------------------------------------------------------------------
+describe("safePath", () => {
+	it("resolves normal paths within root", () => {
+		expect(safePath("/garden", "Inbox", "note.md")).toBe("/garden/Inbox/note.md");
+	});
+
+	it("resolves nested paths", () => {
+		expect(safePath("/garden", "Projects", "myproj", "task.md")).toBe("/garden/Projects/myproj/task.md");
+	});
+
+	it("returns root when no segments given", () => {
+		expect(safePath("/garden")).toBe("/garden");
+	});
+
+	it("throws on ../ traversal", () => {
+		expect(() => safePath("/garden", "../../etc/passwd")).toThrow("Path traversal blocked");
+	});
+
+	it("throws on absolute path segment", () => {
+		expect(() => safePath("/garden", "/etc/passwd")).toThrow("Path traversal blocked");
+	});
+
+	it("throws on traversal hidden in nested segments", () => {
+		expect(() => safePath("/garden", "Projects", "..", "..", "etc", "shadow")).toThrow("Path traversal blocked");
+	});
+
+	it("allows segments that contain dots but don't escape", () => {
+		expect(safePath("/garden", "my.project", "note.md")).toBe("/garden/my.project/note.md");
+	});
+});
 
 // ---------------------------------------------------------------------------
 // parseFrontmatter

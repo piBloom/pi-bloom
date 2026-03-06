@@ -66,11 +66,11 @@ export default function (pi: ExtensionAPI) {
 					break;
 				case "download":
 					cmd = "sudo";
-					fullArgs = ["bootc", "upgrade", "--check"];
+					fullArgs = ["bootc", "upgrade"];
 					break;
 				case "apply":
 					cmd = "sudo";
-					fullArgs = ["bootc", "upgrade"];
+					fullArgs = ["bootc", "upgrade", "--apply"];
 					break;
 			}
 			const result = await run(cmd, fullArgs, signal);

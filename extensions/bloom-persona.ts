@@ -5,16 +5,14 @@
  * @see {@link ../AGENTS.md#bloom-persona} Extension reference
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import os from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { normalizeCommand } from "../lib/persona-utils.js";
 import { createLogger, getGardenDir } from "../lib/shared.js";
+import { yaml } from "../lib/yaml.js";
 
-const require = createRequire(import.meta.url);
-const yaml: { load: (str: string) => unknown } = require("js-yaml");
 const log = createLogger("bloom-persona");
 
 /** A single guardrail regex pattern with its human-readable label. */

@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { errorResult, getGardenDir, nowIso, stringifyFrontmatter, truncate } from "../lib/shared.js";
+import { errorResult, getGardenDir, nowIso, safePath, stringifyFrontmatter, truncate } from "../lib/shared.js";
 
 function getPackageDir(): string {
 	return path.join(fileURLToPath(import.meta.url), "../..");
@@ -296,7 +296,12 @@ export default function (pi: ExtensionAPI) {
 			content: Type.String({ description: "Skill body in markdown (instructions, guidelines, examples)" }),
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const skillDir = path.join(gardenDir, "Bloom", "Skills", params.name);
+			let skillDir: string;
+			try {
+				skillDir = safePath(gardenDir, "Bloom", "Skills", params.name);
+			} catch {
+				return errorResult("Path traversal blocked: invalid skill name");
+			}
 			const filepath = path.join(skillDir, "SKILL.md");
 
 			if (fs.existsSync(filepath)) {

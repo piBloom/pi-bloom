@@ -1,7 +1,7 @@
-/** Validate that a service/unit name starts with `bloom-`. Returns error message or null. */
+/** Validate that a service/unit name matches `bloom-[a-z0-9-]+`. Returns error message or null. */
 export function guardBloom(name: string): string | null {
-	if (!name.startsWith("bloom-")) {
-		return `Security error: only bloom-* names are permitted, got "${name}"`;
+	if (!/^bloom-[a-z0-9][a-z0-9-]*$/.test(name)) {
+		return `Security error: name must match bloom-[a-z0-9-]+, got "${name}"`;
 	}
 	return null;
 }

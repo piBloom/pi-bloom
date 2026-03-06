@@ -24,11 +24,12 @@ export async function run(cmd: string, args: string[], signal?: AbortSignal, cwd
 		const { stdout, stderr } = await execAsync(cmd, args, { signal, cwd });
 		return { stdout, stderr, exitCode: 0 };
 	} catch (err: unknown) {
-		const e = err as { message: string; stderr?: string; code?: number };
+		const e = err as { message?: string; stderr?: string; stdout?: string; code?: string | number; status?: number };
+		const exitCode = typeof e.status === "number" ? e.status : typeof e.code === "number" ? e.code : 1;
 		return {
-			stdout: "",
-			stderr: e.stderr ?? e.message,
-			exitCode: e.code ?? 1,
+			stdout: e.stdout ?? "",
+			stderr: e.stderr ?? e.message ?? String(err),
+			exitCode,
 		};
 	}
 }

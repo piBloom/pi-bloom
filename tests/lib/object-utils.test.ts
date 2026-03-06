@@ -48,4 +48,16 @@ describe("resolveCreatePath", () => {
 		const result = resolveCreatePath(garden, "x", { project: "p", area: "a" });
 		expect(result).toBe(path.join(garden, "Projects", "p", "x.md"));
 	});
+
+	it("throws on path traversal via slug", () => {
+		expect(() => resolveCreatePath(garden, "../../.ssh/authorized_keys", {})).toThrow("Path traversal blocked");
+	});
+
+	it("throws on path traversal via project", () => {
+		expect(() => resolveCreatePath(garden, "note", { project: "../../etc" })).toThrow("Path traversal blocked");
+	});
+
+	it("throws on path traversal via area", () => {
+		expect(() => resolveCreatePath(garden, "note", { area: "../../../tmp" })).toThrow("Path traversal blocked");
+	});
 });

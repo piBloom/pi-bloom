@@ -17,6 +17,7 @@ import {
 	nowIso,
 	PARA_DIRS,
 	parseFrontmatter,
+	safePath,
 	stringifyFrontmatter,
 	truncate,
 } from "../lib/shared.js";
@@ -88,6 +89,13 @@ export default function (pi: ExtensionAPI) {
 		const ref = `${type}/${slug}`;
 		const entry = index.get(ref);
 		if (entry && fs.existsSync(entry.path)) return entry.path;
+
+		// Validate slug does not escape garden
+		try {
+			safePath(gardenDir, slug);
+		} catch {
+			return null;
+		}
 
 		const filename = `${slug}.md`;
 		for (const paraDir of PARA_DIRS) {
@@ -418,14 +426,18 @@ export default function (pi: ExtensionAPI) {
 			attributes.modified = nowIso();
 
 			let newPath: string;
-			if (params.archive) {
-				newPath = path.join(gardenDir, "Archive", `${params.slug}.md`);
-			} else if (params.project) {
-				newPath = path.join(gardenDir, "Projects", params.project, `${params.slug}.md`);
-			} else if (params.area) {
-				newPath = path.join(gardenDir, "Areas", params.area, `${params.slug}.md`);
-			} else {
-				newPath = path.join(gardenDir, "Inbox", `${params.slug}.md`);
+			try {
+				if (params.archive) {
+					newPath = safePath(gardenDir, "Archive", `${params.slug}.md`);
+				} else if (params.project) {
+					newPath = safePath(gardenDir, "Projects", params.project, `${params.slug}.md`);
+				} else if (params.area) {
+					newPath = safePath(gardenDir, "Areas", params.area, `${params.slug}.md`);
+				} else {
+					newPath = safePath(gardenDir, "Inbox", `${params.slug}.md`);
+				}
+			} catch {
+				return errorResult("Path traversal blocked: invalid slug, project, or area name");
 			}
 
 			fs.mkdirSync(path.dirname(newPath), { recursive: true });

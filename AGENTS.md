@@ -63,7 +63,7 @@ sequenceDiagram
     end
 ```
 
-### 🪞 bloom-persona (207 lines)
+### 🪞 bloom-persona (217 lines)
 
 Identity injection, safety guardrails, and compaction context.
 
@@ -73,7 +73,7 @@ Identity injection, safety guardrails, and compaction context.
 - `tool_call` — Check bash commands against guardrails, block if pattern matches
 - `session_before_compact` — Save context (active topic, pending channels, update status) to `~/.pi/bloom-context.json`
 
-### 🔍 bloom-audit (175 lines)
+### 🔍 bloom-audit (183 lines)
 
 Tool-call audit trail with 30-day retention.
 
@@ -83,23 +83,34 @@ Tool-call audit trail with 30-day retention.
 - `tool_call` — Append tool call event to daily JSONL
 - `tool_result` — Append tool result event to daily JSONL
 
-### 💻 bloom-os (1523 lines)
+### 💻 bloom-os (402 lines)
 
-OS management, bootc lifecycle, containers, systemd, repo management, and service manifest.
+OS management: bootc lifecycle, containers, systemd, health, updates.
 
 **Tools:**
 - Bootc: `bootc_status`, `bootc_update`, `bootc_rollback`
 - Containers: `container_status`, `container_logs`, `container_deploy`
 - System: `systemd_control`, `system_health`
 - Updates: `update_status`, `schedule_reboot`
-- Repo: `bloom_repo_configure`, `bloom_repo_sync`, `bloom_repo_submit_pr`, `bloom_repo_status`
-- Manifest: `manifest_show`, `manifest_sync`, `manifest_set_service`, `manifest_apply`
 
 **Hooks:**
-- `session_start` — Check manifest drift, write update status file
 - `before_agent_start` — Inject OS update availability into system prompt
 
-### 📦 bloom-services (653 lines)
+### 🔀 bloom-repo (371 lines)
+
+Repository management: configure, sync, submit PRs, check status.
+
+**Tools:** `bloom_repo_configure`, `bloom_repo_sync`, `bloom_repo_submit_pr`, `bloom_repo_status`
+
+### 📋 bloom-manifest (419 lines)
+
+Declarative service manifest: show, sync, set, apply.
+
+**Tools:** `manifest_show`, `manifest_sync`, `manifest_set_service`, `manifest_apply`
+**Hooks:**
+- `session_start` — Check manifest drift, display status widget
+
+### 📦 bloom-services (570 lines)
 
 Service lifecycle: scaffold, publish, install, and test OCI service packages.
 
@@ -107,7 +118,7 @@ Service lifecycle: scaffold, publish, install, and test OCI service packages.
 **Hooks:**
 - `session_start` — Set UI status
 
-### 🗂️ bloom-objects (471 lines)
+### 🗂️ bloom-objects (491 lines)
 
 Flat-file object store with YAML frontmatter + Markdown in the Garden vault.
 
@@ -115,13 +126,13 @@ Flat-file object store with YAML frontmatter + Markdown in the Garden vault.
 **Hooks:**
 - `session_start` — Build in-memory index from all PARA directories
 
-### 📓 bloom-journal (90 lines)
+### 📓 bloom-journal (102 lines)
 
 Daily journal entries at `~/Garden/Journal/{YYYY}/{MM}/{YYYY-MM-DD}.md`.
 
 **Tools:** `journal_write`, `journal_read`
 
-### 🌿 bloom-garden (399 lines)
+### 🌿 bloom-garden (408 lines)
 
 Garden vault management, blueprint seeding, skill creation, persona evolution.
 
@@ -131,7 +142,7 @@ Garden vault management, blueprint seeding, skill creation, persona evolution.
 - `session_start` — Ensure garden structure, seed blueprints (hash-based change detection)
 - `resources_discover` — Return skill paths from `~/Garden/Bloom/Skills/`
 
-### 📡 bloom-channels (381 lines)
+### 📡 bloom-channels (410 lines)
 
 Channel bridge Unix socket server at `/run/bloom/channels.sock`. JSON-newline protocol with rate limiting and heartbeat.
 
@@ -141,7 +152,7 @@ Channel bridge Unix socket server at `/run/bloom/channels.sock`. JSON-newline pr
 - `agent_end` — Extract response, send back to channel socket by message ID
 - `session_shutdown` — Close socket server, cleanup
 
-### 🗂️ bloom-topics (154 lines)
+### 🗂️ bloom-topics (162 lines)
 
 Conversation topic management and session organization.
 
@@ -168,14 +179,14 @@ Quick reference of every tool name available to Pi:
 | `system_health` | bloom-os | Comprehensive health overview |
 | `update_status` | bloom-os | Check if OS update is available |
 | `schedule_reboot` | bloom-os | Schedule a delayed reboot |
-| `bloom_repo_configure` | bloom-os | Bootstrap repo, set remotes, git identity |
-| `bloom_repo_sync` | bloom-os | Sync from upstream branch |
-| `bloom_repo_submit_pr` | bloom-os | Create PR from local changes |
-| `bloom_repo_status` | bloom-os | Check repo health, remotes, GitHub auth |
-| `manifest_show` | bloom-os | Display service manifest |
-| `manifest_sync` | bloom-os | Reconcile manifest with running state |
-| `manifest_set_service` | bloom-os | Declare service in manifest |
-| `manifest_apply` | bloom-os | Apply desired state |
+| `bloom_repo_configure` | bloom-repo | Bootstrap repo, set remotes, git identity |
+| `bloom_repo_sync` | bloom-repo | Sync from upstream branch |
+| `bloom_repo_submit_pr` | bloom-repo | Create PR from local changes |
+| `bloom_repo_status` | bloom-repo | Check repo health, remotes, GitHub auth |
+| `manifest_show` | bloom-manifest | Display service manifest |
+| `manifest_sync` | bloom-manifest | Reconcile manifest with running state |
+| `manifest_set_service` | bloom-manifest | Declare service in manifest |
+| `manifest_apply` | bloom-manifest | Apply desired state |
 | `service_scaffold` | bloom-services | Generate service package skeleton |
 | `service_publish` | bloom-services | Publish package to OCI registry (oras) |
 | `service_install` | bloom-services | Pull and install package from registry |
@@ -251,11 +262,14 @@ graph LR
 | Export | Purpose |
 |--------|---------|
 | `getGardenDir()` | Resolve Garden path (`$BLOOM_GARDEN_DIR` or `~/Garden`) |
+| `safePath(root, ...segments)` | Resolve path under root, blocking traversal |
 | `parseFrontmatter<T>(str)` | Parse YAML frontmatter from markdown |
 | `stringifyFrontmatter(data, content)` | Build markdown with YAML frontmatter |
 | `createLogger(component)` | JSON-structured logging (debug/info/warn/error) |
 | `truncate(text)` | Truncate to 2000 lines / 50KB |
 | `errorResult(message)` | Standardized error response |
+| `requireConfirmation(ctx, action)` | Prompt for UI confirmation, returns null or error string |
+| `getServiceRegistry()` | Resolve OCI service registry from env |
 | `nowIso()` | ISO timestamp without milliseconds |
 | `PARA_DIRS` | `["Inbox", "Projects", "Areas", "Resources", "Archive"]` |
 
@@ -267,7 +281,7 @@ pi install /path/to/bloom
 
 Or for development:
 ```bash
-pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-audit.ts -e ./extensions/bloom-os.ts -e ./extensions/bloom-services.ts -e ./extensions/bloom-objects.ts -e ./extensions/bloom-journal.ts -e ./extensions/bloom-garden.ts -e ./extensions/bloom-channels.ts -e ./extensions/bloom-topics.ts
+pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-audit.ts -e ./extensions/bloom-os.ts -e ./extensions/bloom-repo.ts -e ./extensions/bloom-manifest.ts -e ./extensions/bloom-services.ts -e ./extensions/bloom-objects.ts -e ./extensions/bloom-journal.ts -e ./extensions/bloom-garden.ts -e ./extensions/bloom-channels.ts -e ./extensions/bloom-topics.ts
 ```
 
 ## 📖 Setup & Deployment Docs

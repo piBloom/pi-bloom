@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { getGardenDir, nowIso, stringifyFrontmatter, truncate } from "../lib/shared.js";
+import { errorResult, getGardenDir, nowIso, stringifyFrontmatter, truncate } from "../lib/shared.js";
 
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({
@@ -31,6 +31,9 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
 			const gardenDir = getGardenDir();
 			const date = params.date ?? new Date().toISOString().slice(0, 10);
+			if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+				return errorResult(`Invalid date format: "${date}" (expected YYYY-MM-DD)`);
+			}
 			const [year, month] = date.split("-");
 			const filepath = path.join(gardenDir, "Journal", year, month, `${date}.md`);
 			fs.mkdirSync(path.dirname(filepath), { recursive: true });
@@ -83,6 +86,9 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
 			const gardenDir = getGardenDir();
 			const date = params.date ?? new Date().toISOString().slice(0, 10);
+			if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+				return errorResult(`Invalid date format: "${date}" (expected YYYY-MM-DD)`);
+			}
 			const [year, month] = date.split("-");
 			const filepath = path.join(gardenDir, "Journal", year, month, `${date}.md`);
 

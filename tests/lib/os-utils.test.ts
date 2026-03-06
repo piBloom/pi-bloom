@@ -10,14 +10,45 @@ describe("guardBloom", () => {
 		expect(guardBloom("bloom-test")).toBeNull();
 	});
 
+	it("returns null for bloom names with numbers", () => {
+		expect(guardBloom("bloom-svc1")).toBeNull();
+		expect(guardBloom("bloom-v2-api")).toBeNull();
+	});
+
 	it("returns error for non-bloom names", () => {
 		const result = guardBloom("not-bloom");
 		expect(result).toContain("Security error");
-		expect(result).toContain("not-bloom");
 	});
 
 	it("returns error for empty string", () => {
 		expect(guardBloom("")).not.toBeNull();
+	});
+
+	it("rejects shell metacharacters", () => {
+		expect(guardBloom("bloom-;rm -rf /")).not.toBeNull();
+		expect(guardBloom("bloom-$(whoami)")).not.toBeNull();
+		expect(guardBloom("bloom-`id`")).not.toBeNull();
+	});
+
+	it("rejects path separators", () => {
+		expect(guardBloom("bloom-../../etc")).not.toBeNull();
+		expect(guardBloom("bloom-foo/bar")).not.toBeNull();
+	});
+
+	it("rejects spaces", () => {
+		expect(guardBloom("bloom- evil")).not.toBeNull();
+	});
+
+	it("rejects uppercase letters", () => {
+		expect(guardBloom("bloom-Foo")).not.toBeNull();
+	});
+
+	it("rejects bloom- with nothing after it", () => {
+		expect(guardBloom("bloom-")).not.toBeNull();
+	});
+
+	it("rejects bloom- starting with hyphen", () => {
+		expect(guardBloom("bloom--double")).not.toBeNull();
 	});
 });
 

@@ -3,6 +3,19 @@ import path from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { truncateHead } from "@mariozechner/pi-coding-agent";
 
+/**
+ * Resolve path segments under a root directory, blocking path traversal.
+ * Throws if the resolved path escapes the root.
+ */
+export function safePath(root: string, ...segments: string[]): string {
+	const resolved = path.resolve(root, ...segments);
+	const normalRoot = path.resolve(root);
+	if (!resolved.startsWith(normalRoot + path.sep) && resolved !== normalRoot) {
+		throw new Error(`Path traversal blocked: ${segments.join("/")} escapes ${root}`);
+	}
+	return resolved;
+}
+
 /** Result of parsing YAML frontmatter from a markdown string. */
 export interface ParsedFrontmatter<T> {
 	attributes: T;
@@ -125,8 +138,7 @@ export function parseFrontmatter<T extends Record<string, unknown> = Record<stri
 			continue;
 		}
 
-		const ARRAY_KEYS = new Set(["tags", "links", "aliases"]);
-		if (ARRAY_KEYS.has(key) && val.includes(",")) {
+		if (FRONTMATTER_ARRAY_KEYS.has(key) && val.includes(",")) {
 			attributes[key] = val
 				.split(",")
 				.map((s) => s.trim())
@@ -154,6 +166,9 @@ export function getServiceRegistry(): string {
 
 /** The five PARA methodology directory names used in the Garden vault. */
 export const PARA_DIRS = ["Inbox", "Projects", "Areas", "Resources", "Archive"];
+
+/** Frontmatter keys that are parsed as comma-separated arrays. */
+const FRONTMATTER_ARRAY_KEYS = new Set(["tags", "links", "aliases"]);
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 

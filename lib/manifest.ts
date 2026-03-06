@@ -9,16 +9,13 @@ import {
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { createRequire } from "node:module";
 import os from "node:os";
 import { join } from "node:path";
 import { run } from "./exec.js";
 import { commandMissingError } from "./service-utils.js";
 import { createLogger } from "./shared.js";
 import { hasSubidRange } from "./system-checks.js";
-
-const require = createRequire(import.meta.url);
-const yaml: { load: (str: string) => unknown; dump: (obj: unknown) => string } = require("js-yaml");
+import { yaml } from "./yaml.js";
 
 const log = createLogger("manifest");
 
@@ -138,19 +135,8 @@ export async function servicePreflightErrors(
 		if (!ok) errors.push(`missing command: ${command}`);
 	}
 
-	if (entry?.preflight?.rootless_subids) {
-		const user = os.userInfo().username;
-		const hasSubuid = hasSubidRange("/etc/subuid", user);
-		const hasSubgid = hasSubidRange("/etc/subgid", user);
-		if (!hasSubuid || !hasSubgid) {
-			errors.push(
-				`rootless subuid/subgid mappings missing for ${user} (fix: sudo usermod --add-subuids 100000-165535 ${user} && sudo usermod --add-subgids 100000-165535 ${user})`,
-			);
-		}
-	}
-
-	// Fallback guard for known services even if catalog not loaded.
-	if (name === "tailscale" && !entry?.preflight?.rootless_subids) {
+	const needsSubids = entry?.preflight?.rootless_subids ?? name === "tailscale";
+	if (needsSubids) {
 		const user = os.userInfo().username;
 		const hasSubuid = hasSubidRange("/etc/subuid", user);
 		const hasSubgid = hasSubidRange("/etc/subgid", user);
