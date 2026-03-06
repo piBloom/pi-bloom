@@ -214,5 +214,3 @@ Atomic updates via `bootc upgrade` with automatic rollback support.
 - [Emoji Legend](docs/LEGEND.md) — Notation reference
 - [AGENTS.md](AGENTS.md) — Extension, tool, and hook reference
 - [Service Architecture](docs/service-architecture.md) — Extensibility hierarchy details
-- [UI Protocol](docs/ui-protocol.md) — Headless web UI protocol spec
-- [Headless Web UI Plan](docs/headless-web-ui-plan.md) — Web UI implementation plan

@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { run } from "../lib/exec.js";
+import { tailscaleAuthConfigured } from "../lib/manifest.js";
 import { commandMissingError, extractDigest, validatePinnedImage, validateServiceName } from "../lib/service-utils.js";
 import { createLogger, errorResult, getGardenDir, parseFrontmatter, truncate } from "../lib/shared.js";
 import { hasSubidRange } from "../lib/system-checks.js";
@@ -85,21 +86,6 @@ function tailscaleRootlessPreflightError(): string | null {
 		`sudo usermod --add-subuids 100000-165535 ${user}`,
 		`sudo usermod --add-subgids 100000-165535 ${user}`,
 	].join("\n");
-}
-
-function tailscaleAuthConfigured(): boolean {
-	const direct = process.env.TS_AUTHKEY?.trim();
-	if (direct) return true;
-	const envPath = join(os.homedir(), ".config", "bloom", "tailscale.env");
-	if (!existsSync(envPath)) return false;
-	try {
-		const raw = readFileSync(envPath, "utf-8");
-		return raw
-			.split("\n")
-			.some((line) => line.trim().startsWith("TS_AUTHKEY=") && line.trim().length > "TS_AUTHKEY=".length);
-	} catch {
-		return false;
-	}
 }
 
 function resolveRepoDir(ctx: ExtensionContext): string {

@@ -283,5 +283,3 @@ pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-audit.ts -e ./extensio
 
 - [Emoji Legend](docs/LEGEND.md) — Notation reference
 - [Service Architecture](docs/service-architecture.md) — Extensibility hierarchy details
-- [UI Protocol](docs/ui-protocol.md) — Headless web UI protocol spec
-- [Headless Web UI Plan](docs/headless-web-ui-plan.md) — Web UI implementation plan

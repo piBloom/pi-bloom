@@ -32,7 +32,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
 	const handlers = new Map<string, Array<(...args: unknown[]) => unknown>>();
 	const messages: Array<{ message: string; options?: unknown }> = [];
 	const entries: Array<{ customType: string; data: unknown }> = [];
-	let sessionName: string | null = null;
+	let _sessionName: string | null = null;
 
 	const api: MockExtensionAPI = {
 		_registeredTools: tools,
@@ -44,7 +44,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
 
 		on: vi.fn((event: string, handler: (...args: unknown[]) => unknown) => {
 			if (!handlers.has(event)) handlers.set(event, []);
-			handlers.get(event)!.push(handler);
+			handlers.get(event)?.push(handler);
 		}),
 
 		registerTool: vi.fn((tool: RegisteredTool) => {
@@ -64,7 +64,7 @@ export function createMockExtensionAPI(): MockExtensionAPI {
 		}),
 
 		setSessionName: vi.fn((name: string) => {
-			sessionName = name;
+			_sessionName = name;
 			api._sessionName = name;
 		}),
 

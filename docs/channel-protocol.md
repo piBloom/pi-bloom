@@ -140,4 +140,3 @@ stateDiagram-v2
 - [Emoji Legend](LEGEND.md) — Notation reference
 - [Service Architecture](service-architecture.md) — Extensibility hierarchy details
 - [AGENTS.md](../AGENTS.md#bloom-channels) — bloom-channels extension reference
-- [UI Protocol](ui-protocol.md) — Headless web UI protocol spec

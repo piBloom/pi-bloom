@@ -38,7 +38,7 @@ describe("validateServiceName", () => {
 // ---------------------------------------------------------------------------
 describe("validatePinnedImage", () => {
 	it("accepts sha256 digest", () => {
-		expect(validatePinnedImage("ghcr.io/foo/bar@sha256:" + "a".repeat(64))).toBeNull();
+		expect(validatePinnedImage(`ghcr.io/foo/bar@sha256:${"a".repeat(64)}`)).toBeNull();
 	});
 
 	it("accepts semver tag", () => {
@@ -67,15 +67,15 @@ describe("validatePinnedImage", () => {
 // ---------------------------------------------------------------------------
 describe("extractDigest", () => {
 	it("extracts sha256 digest from mixed text", () => {
-		const text = "Digest: sha256:" + "abcdef01".repeat(8) + " done";
+		const text = `Digest: sha256:${"abcdef01".repeat(8)} done`;
 		const result = extractDigest(text);
-		expect(result).toBe("sha256:" + "abcdef01".repeat(8));
+		expect(result).toBe(`sha256:${"abcdef01".repeat(8)}`);
 	});
 
 	it("lowercases the digest", () => {
-		const digest = "SHA256:" + "ABCDEF01".repeat(8);
+		const digest = `SHA256:${"ABCDEF01".repeat(8)}`;
 		const result = extractDigest(digest);
-		expect(result).toBe("sha256:" + "abcdef01".repeat(8));
+		expect(result).toBe(`sha256:${"abcdef01".repeat(8)}`);
 	});
 
 	it("returns null when no digest found", () => {

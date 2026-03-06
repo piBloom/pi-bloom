@@ -17,6 +17,16 @@
 		}
 	},
 	"files": {
-		"includes": ["**", "!node_modules", "!dist", "!services/whatsapp/node_modules", "!.worktrees", "!os/output", "!.pi"]
+		"includes": [
+			"**",
+			"!node_modules",
+			"!dist",
+			"!services/whatsapp/node_modules",
+			"!.worktrees",
+			"!os/output",
+			"!.pi",
+			"!.claude",
+			"!coverage"
+		]
 	}
 }
