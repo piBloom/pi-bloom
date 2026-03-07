@@ -67,15 +67,10 @@ Offer one of these access paths:
 
 #### WhatsApp Bridge
 
-WhatsApp runs as a native systemd user service (not a container). Enable it:
-
-```bash
-systemctl --user enable --now bloom-whatsapp
-```
-
-The first start opens a Chromium window on the Sway desktop with a WhatsApp QR code. Scan it with your phone to pair.
-
-Check logs: `journalctl --user -u bloom-whatsapp -f`
+- Install service package: `service_install(name="whatsapp")`
+- Watch logs for QR code: `journalctl --user -u bloom-whatsapp -f`
+- Scan QR with WhatsApp mobile app (Settings > Linked Devices)
+- Verify: `service_test(name="whatsapp")`
 
 The WhatsApp bridge needs the bloom-channels socket for IPC. If bloom-channels is not running, WhatsApp will reconnect automatically when it becomes available.
 
