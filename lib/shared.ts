@@ -37,9 +37,9 @@ export interface ParsedFrontmatter<T> {
 	frontmatter: string;
 }
 
-/** Resolve the Garden vault directory. Checks `_BLOOM_GARDEN_RESOLVED`, then `BLOOM_GARDEN_DIR`, then falls back to `~/Garden`. */
-export function getGardenDir(): string {
-	return process.env._BLOOM_GARDEN_RESOLVED ?? process.env.BLOOM_GARDEN_DIR ?? path.join(os.homedir(), "Garden");
+/** Resolve the Bloom directory. Checks `_BLOOM_DIR_RESOLVED`, then `BLOOM_DIR`, then falls back to `~/Bloom`. */
+export function getBloomDir(): string {
+	return process.env._BLOOM_DIR_RESOLVED ?? process.env.BLOOM_DIR ?? path.join(os.homedir(), "Bloom");
 }
 
 /** Truncate text to 2000 lines / 50KB using Pi's truncateHead utility. */
@@ -125,9 +125,6 @@ export function parseFrontmatter<T extends Record<string, unknown> = Record<stri
 export function getServiceRegistry(): string {
 	return process.env.BLOOM_SERVICE_REGISTRY?.trim() || process.env.BLOOM_REGISTRY?.trim() || "ghcr.io/pibloom";
 }
-
-/** The five PARA methodology directory names used in the Garden vault. */
-export const PARA_DIRS = ["Inbox", "Projects", "Areas", "Resources", "Archive"];
 
 /** Frontmatter keys that are parsed as comma-separated arrays. */
 const FRONTMATTER_ARRAY_KEYS = new Set(["tags", "links", "aliases"]);
