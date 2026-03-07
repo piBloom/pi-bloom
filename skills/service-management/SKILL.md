@@ -5,7 +5,7 @@ description: Install, manage, and discover bundled service packages
 
 # Service Management
 
-Bloom services are modular capabilities bundled as local packages. Each package contains Quadlet container units (or native systemd units) and a SKILL.md file.
+Bloom services are modular capabilities bundled as local packages. Each package contains Quadlet container units and a SKILL.md file.
 
 Follow `docs/supply-chain.md` for reproducibility and verification policy.
 
@@ -139,6 +139,6 @@ Update the manifest with `manifest_set_service` to record the desired version.
 | Name | Version | Category | Description |
 |------|---------|----------|-------------|
 | `lemonade` | 0.1.0 | ai | Local LLM + STT via Lemonade (port 8000) |
-| `whatsapp` | 0.2.0 | communication | WhatsApp messaging bridge via whatsapp-web.js |
+| `whatsapp` | 0.2.0 | communication | WhatsApp messaging bridge via Baileys |
 | `netbird` | 0.1.0 | networking | Secure mesh VPN via NetBird |
 | `dufs` | 0.1.0 | sync | WebDAV file server via dufs (port 5000) |

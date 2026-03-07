@@ -12,11 +12,11 @@ graph TD
     q1 -->|No| skill[Skill<br/>SKILL.md]
     q1 -->|Yes| q2{Needs direct access<br/>to Pi session?}
     q2 -->|Yes| ext[Extension<br/>TypeScript]
-    q2 -->|No| svc[Service<br/>Container / Native]
+    q2 -->|No| svc[Service<br/>Container]
 
     skill --> skill_desc["Markdown file with instructions<br/>Cheapest to create<br/>No code, just knowledge"]
     ext --> ext_desc["In-process TypeScript<br/>Full Pi API access<br/>Commands, tools, events"]
-    svc --> svc_desc["Containerized workload<br/>Isolated, resource-limited<br/>HTTP/bash interaction"]
+    svc --> svc_desc["Containerized workload<br/>Isolated, resource-limited<br/>HTTP/socket interaction"]
 
     style skill fill:#d5f5d5
     style ext fill:#d5d5f5
@@ -49,10 +49,10 @@ graph TB
         subgraph "Service Containers (Podman Quadlet)"
             lemonade[bloom-lemonade<br/>Lemonade :8000]
             dufs[bloom-dufs<br/>WebDAV :5000]
+            wa[bloom-whatsapp<br/>Baileys Bridge]
         end
 
-        subgraph "Native Services"
-            wa[bloom-whatsapp<br/>whatsapp-web.js Bridge<br/>systemd --user]
+        subgraph "System Services (RPM)"
             netbird[netbird<br/>NetBird VPN<br/>system RPM service]
         end
 
@@ -63,7 +63,7 @@ graph TB
     end
 
     channels <-->|Unix socket JSON| wa
-    wa <-->|whatsapp-web.js| whatsapp_cloud[WhatsApp Cloud]
+    wa <-->|Baileys| whatsapp_cloud[WhatsApp Cloud]
     lemonade -->|HTTP API| channels
     netbird <-->|WireGuard| netbird_cloud[NetBird Cloud]
     dufs -->|WebDAV| devices[Other Devices]
@@ -84,23 +84,23 @@ graph TB
 |-------|-----------|-----------|---------------|------------|
 | **Skills** | Markdown files (SKILL.md) | Discovered at session start | Pi reads and follows instructions | Pi (via `skill_create`) or developer |
 | **Extensions** | In-process TypeScript | Loaded with Pi session | Direct API (ExtensionAPI) | Developer (requires code review + PR) |
-| **Services** | Containers (Podman Quadlet) or native systemd units | systemd-managed, independent | Unix socket, HTTP, shell | Pi (via self-evolution) or developer |
+| **Services** | Containers (Podman Quadlet) | systemd-managed, independent | Unix socket, HTTP, shell | Pi (via self-evolution) or developer |
 
 ### 🌱 Why Three Layers?
 
 - **Skills** are pure knowledge — procedures, API references, troubleshooting guides. Pi reads them and acts. No code, no process, no resources. Pi can create these autonomously.
 - **Extensions** need direct access to Pi's session (send messages, register commands, access context). They run in-process and require TypeScript. These are core platform code.
-- **Services** are standalone workloads (speech-to-text, messaging bridges, mesh VPN, file sync) that run as either containers (for isolation) or native systemd units (when container overhead is unnecessary).
+- **Services** are standalone workloads (speech-to-text, messaging bridges, mesh VPN, file sync) that run as containers.
 
 ### 📦 The `bloom-` Prefix
 
-Bloom-managed services use a `bloom-` prefix on their **unit names** (e.g., `bloom-lemonade`, `bloom-whatsapp`). This is a management namespace — it does NOT mean the underlying image is Bloom-specific. Some services run as containers, others as native systemd units, and NetBird runs as a system-level RPM service:
+Bloom-managed services use a `bloom-` prefix on their **unit names** (e.g., `bloom-lemonade`, `bloom-whatsapp`). This is a management namespace — it does NOT mean the underlying image is Bloom-specific. NetBird runs as a system-level RPM service:
 
 | Unit Name | Type | Image / Runtime | Bloom-specific? |
 |-----------|------|-----------------|-----------------|
 | `bloom-lemonade` | Podman Quadlet (user) | `ghcr.io/lemonade-sdk/lemonade-server:latest` | No — upstream image |
 | `bloom-dufs` | Podman Quadlet (user) | `docker.io/sigoden/dufs:latest` | No — upstream image |
-| `bloom-whatsapp` | Native systemd (user) | Node.js + whatsapp-web.js | Yes — custom bridge |
+| `bloom-whatsapp` | Podman Quadlet (user) | localhost/bloom-whatsapp:latest | Yes — custom bridge |
 | `netbird` | System RPM service | NetBird package | No — upstream RPM |
 
 The prefix enables:
@@ -109,7 +109,7 @@ The prefix enables:
 
 ## 📦 Local Package Installation
 
-Services are installed from bundled local packages in `services/{name}/`. Each package contains Quadlet container units (or native systemd units) and a SKILL.md file.
+Services are installed from bundled local packages in `services/{name}/`. Each package contains Quadlet container units and a SKILL.md file.
 
 ### 📦 Package Format
 
@@ -213,10 +213,10 @@ graph LR
 
     subgraph "Container Volumes"
         lemonade_models["bloom-lemonade-models<br/>ML model cache"]
+        wa_auth["bloom-whatsapp-data<br/>WhatsApp credentials"]
     end
 
-    subgraph "Native State"
-        wa_auth["~/.local/share/bloom-whatsapp/<br/>WhatsApp credentials"]
+    subgraph "System State"
         nb_state["/var/lib/netbird/<br/>NetBird identity"]
     end
 
@@ -230,7 +230,7 @@ graph LR
 |---------|----------|------|------|-----------------|-----------|
 | bloom-lemonade | ai | 8000 | Podman Quadlet | ghcr.io/lemonade-sdk/lemonade-server:latest | 2GB RAM |
 | bloom-dufs | sync | 5000 | Podman Quadlet | docker.io/sigoden/dufs:latest | 64MB RAM |
-| bloom-whatsapp | communication | — | Native systemd (user) | Node.js + whatsapp-web.js | 128MB RAM |
+| bloom-whatsapp | communication | — | Podman Quadlet | localhost/bloom-whatsapp:latest | 128MB RAM |
 | netbird | networking | — | System RPM service | NetBird package | 256MB RAM |
 
 ## 📦 Adding a New Service

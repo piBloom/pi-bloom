@@ -14,7 +14,7 @@ Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension
 |-------|------|------|------------|
 | **Skill** | Markdown instructions (SKILL.md) | Pi needs knowledge or a procedure | Pi or developer |
 | **Extension** | In-process TypeScript | Pi needs commands, tools, or event hooks | Developer (PR required) |
-| **Service** | Container (Podman Quadlet) or native systemd unit | Standalone workload needing isolation | Pi or developer |
+| **Service** | Container (Podman Quadlet) | Standalone workload needing isolation | Pi or developer |
 
 Always prefer the lightest option. See `docs/service-architecture.md` for details.
 
@@ -191,14 +191,14 @@ Quick reference of every tool name available to Pi:
 
 ## 📦 Services
 
-Modular capabilities managed as container or native systemd services.
+Modular capabilities managed as container services.
 Canonical metadata for automation lives in `services/catalog.yaml`.
 
 | Service | Category | Port | Type |
 |---------|----------|------|------|
 | `bloom-svc-lemonade` | ai | 8000 | Podman Quadlet |
 | `bloom-svc-dufs` | sync | 5000 | Podman Quadlet |
-| `bloom-whatsapp` | communication | — | Native systemd (user) |
+| `bloom-whatsapp` | communication | — | Podman Quadlet |
 | `netbird` | networking | — | System RPM service |
 
 ## 🪞 Persona

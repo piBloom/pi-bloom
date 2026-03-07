@@ -15,7 +15,7 @@ When extending capabilities, prefer the lightest option: **Skill → Extension �
 |------|-----------|---------|
 | Pi needs knowledge or a procedure | **Skill** — create a SKILL.md | Meal planning guide, API reference |
 | Pi needs commands, tools, or session hooks | **Extension** — TypeScript (requires PR) | New Pi command, event handler |
-| Standalone workload needing isolation | **Service** — Container or native systemd service | ML model, messaging bridge, VPN |
+| Standalone workload needing isolation | **Service** — Container (Podman Quadlet) | ML model, messaging bridge, VPN |
 
 ## Evolution Workflow
 

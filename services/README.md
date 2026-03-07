@@ -1,6 +1,6 @@
 # Bloom Service Packages
 
-Bloom services are modular capabilities deployed via Podman Quadlet or native systemd units, installed from bundled local packages.
+Bloom services are modular capabilities deployed via Podman Quadlet, installed from bundled local packages.
 
 ## Package Format
 
@@ -75,7 +75,7 @@ Copy/paste quickstart commands are in `services/examples/README.md`.
 | Service | Category | Port | Description |
 |---------|----------|------|-------------|
 | `lemonade` | ai | 8000 | Local LLM + STT via Lemonade |
-| `whatsapp` | communication | — | WhatsApp messaging bridge via whatsapp-web.js |
+| `whatsapp` | communication | — | WhatsApp messaging bridge via Baileys |
 | `netbird` | networking | — | Secure mesh VPN via NetBird |
 | `dufs` | sync | 5000 | WebDAV file server via dufs |
 

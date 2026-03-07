@@ -89,15 +89,14 @@ sudo journalctl -u netbird -f
 
 ### 📦 WhatsApp
 
-WhatsApp runs as a native systemd user service (not a container).
+WhatsApp runs as a containerized service (Podman Quadlet with Baileys).
 
-Enable and start:
+Install via manifest or directly:
 
-```bash
-systemctl --user enable --now bloom-whatsapp
-```
+- `manifest_set_service(name="whatsapp", image="localhost/bloom-whatsapp:latest", version="0.2.0", enabled=true)`
+- Or: `service_install(name="whatsapp")`
 
-Watch logs and pair QR:
+Watch logs for the pairing QR code:
 
 ```bash
 journalctl --user -u bloom-whatsapp -f

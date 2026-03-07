@@ -12,7 +12,7 @@ Bloom is a **Pi package** — a bundle of extensions, skills, and services that 
 
 - **Remembers** — flat-file object store with YAML frontmatter in `~/Bloom/Objects/`
 - **Manages its own OS** — bootc updates, rollbacks, container lifecycle, systemd services
-- **Communicates** — channel bridges (WhatsApp via whatsapp-web.js) over Unix socket IPC
+- **Communicates** — channel bridges (WhatsApp via Baileys) over Unix socket IPC
 - **Evolves** — structured self-improvement workflow, persona that grows from Seed to Bloom
 - **Stays private** — no cloud, no telemetry. Your thoughts never leave your box.
 
@@ -24,7 +24,7 @@ Bloom extends Pi through three mechanisms, lightest first:
 |-------|------|------|
 | **Skill** | Markdown instructions (SKILL.md) | Pi needs knowledge or a procedure |
 | **Extension** | In-process TypeScript module | Pi needs tools, commands, or event hooks |
-| **Service** | Container or native systemd unit | Standalone workload needing isolation |
+| **Service** | Container (Podman Quadlet) | Standalone workload needing isolation |
 
 Always prefer the lightest option.
 
@@ -32,7 +32,7 @@ Always prefer the lightest option.
 graph TD
     Pi[🤖 Pi Agent] --> Skills[📜 Skills<br/>Markdown instructions]
     Pi --> Extensions[🧩 Extensions<br/>In-process TypeScript]
-    Pi --> Services[📦 Services<br/>Containers / Native]
+    Pi --> Services[📦 Services<br/>Containers]
     Extensions --> BloomDir[🌿 Bloom Directory<br/>~/Bloom/]
     Services --> BloomDir
     Extensions --> Persona[🪞 Persona<br/>4-layer identity]
@@ -72,13 +72,13 @@ graph TD
 
 ### 📦 Services
 
-Modular capabilities running as containers or native systemd services:
+Modular capabilities running as containers:
 
 | Service | What | Type |
 |---------|------|------|
 | `bloom-lemonade` | Local LLM + STT (Lemonade) | Podman Quadlet |
 | `bloom-dufs` | WebDAV file server | Podman Quadlet |
-| `bloom-whatsapp` | WhatsApp bridge (whatsapp-web.js) | Native systemd (user) |
+| `bloom-whatsapp` | WhatsApp bridge (Baileys) | Podman Quadlet |
 | `netbird` | Mesh VPN | System RPM service |
 
 ### 🪞 Persona
