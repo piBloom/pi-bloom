@@ -38,9 +38,9 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
 
 ## Syncthing Sync Conflicts
 
-**Symptoms**: Duplicate files with `.sync-conflict-*` suffix in Garden.
+**Symptoms**: Duplicate files with `.sync-conflict-*` suffix in home directory.
 
-1. List conflicts: search for `.sync-conflict-` files in `~/Garden/`
+1. List conflicts: search for `.sync-conflict-` files in `$HOME`
 2. Compare conflict file with original — keep the correct version
 3. Delete the conflict file
 4. Check service state: `systemd_control service=bloom-syncthing action=status`
@@ -81,7 +81,7 @@ Use `audit_review` to inspect recent tool actions when you need to reconstruct w
 2. Common consumers:
    - Container images: `podman image prune` to remove unused
    - Journal logs: `sudo journalctl --vacuum-size=500M`
-   - Garden vault: check for large files in `~/Garden/`
+   - Home directory: check for large files in `$HOME`
    - Whisper models: check `/var/home/bloom/.local/share/whisper/`
 3. For /var partition: focus on container images and logs
-4. For /home partition: focus on Garden content and downloaded media
+4. For /home partition: focus on user content and downloaded media

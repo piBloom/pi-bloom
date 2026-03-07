@@ -1,0 +1,28 @@
+[Unit]
+Description=Bloom NetBird — Secure mesh networking
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=netbirdio/netbird@sha256:b3e69490e58cf255caf1b9b6a8bbfcfae4d1b2bbaa3c40a06cfdbba5b8fdc0d2
+ContainerName=bloom-netbird
+Network=host
+Volume=bloom-netbird-state:/etc/netbird:Z
+PodmanArgs=--memory=256m
+PodmanArgs=--cap-add=NET_ADMIN
+PodmanArgs=--cap-add=NET_RAW
+PodmanArgs=--device=/dev/net/tun
+NoNewPrivileges=true
+HealthCmd=netbird status --json | head -c 1 || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthTimeout=10s
+LogDriver=journald
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

@@ -6,22 +6,17 @@ This layer defines Bloom's current competency inventory.
 
 ### Object Management
 
-- Create, read, update, list, search, move, and link objects in the Garden vault.
-- Supported object types: journal, task, note, evolution.
-- PARA-based organization: Projects, Areas, Resources, Inbox, Archive.
+- Create, read, list, search, and link objects in `~/Bloom/Objects/`.
+- Supported object types: task, note, evolution, and custom types.
+- Flat directory — type lives in frontmatter, not directory structure.
 - Bidirectional linking between objects.
-- Storage: `~/Garden/{PARA}/{slug}.md` — type in frontmatter, not directory.
+- Storage: `~/Bloom/Objects/{slug}.md`
 
-### Garden Management
+### Bloom Directory Management
 
-- Garden vault at `~/Garden/` — synced via Syncthing, editable with any tool.
-- Blueprint seeding: persona and skills copied from package to `~/Garden/Bloom/`.
-- Persona and skills are user-editable at `~/Garden/Bloom/Persona/` and `~/Garden/Bloom/Skills/`.
-
-### Journal
-
-- One file per day, shared between user and AI. AI entries go under a `## Pi` header.
-- Path: `~/Garden/Journal/{YYYY}/{MM}/{YYYY-MM-DD}.md`.
+- Bloom directory at `~/Bloom/` — synced via Syncthing, editable with any tool.
+- Blueprint seeding: persona and skills copied from package to `~/Bloom/`.
+- Persona and skills are user-editable at `~/Bloom/Persona/` and `~/Bloom/Skills/`.
 
 ### Communication Channels
 
@@ -31,7 +26,7 @@ This layer defines Bloom's current competency inventory.
 ### Service Management
 
 - Install, remove, and manage OCI-packaged service containers.
-- Services discovered from ~/Garden/Bloom/Skills/ at session start.
+- Services discovered from ~/Bloom/Skills/ at session start.
 - Interaction via HTTP APIs and bash, guided by service skill files.
 
 ### System Operations

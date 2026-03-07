@@ -12,7 +12,7 @@
 - Should split into 3+ modules or extract domain logic to lib/
 
 ### I-2: Duplicated utilities across bloom-os.ts and bloom-services.ts
-- `run()`, `hasSubidRange()`, `tailscaleAuthConfigured()`, `commandMissingError()`
+- `run()`, `hasSubidRange()`, `commandMissingError()`
 - Extract to `lib/exec-utils.ts` and `lib/service-utils.ts`
 
 ### I-3: No test coverage for extension tool execution
@@ -33,7 +33,7 @@
 - lib/ layer is genuinely pure (no side effects) -- good domain core
 - Extensions lack port/adapter separation -- directly call fs, execFile, net
 - Cross-extension coupling is low (communicate via Pi events only)
-- Shared env var `_BLOOM_GARDEN_RESOLVED` is the only cross-extension state
+- Shared env var `_BLOOM_DIR_RESOLVED` is the only cross-extension state
 
 ## Testing Patterns
 - `tests/helpers/temp-garden.ts` -- creates temp dir, saves/restores env vars

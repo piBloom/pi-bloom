@@ -29,7 +29,7 @@ When extending capabilities, prefer the lightest option: **Skill → Extension �
 ## Available Tools
 
 ### Skill Self-Creation
-- `skill_create` — Create a new skill in `~/Garden/Bloom/Skills/` with proper frontmatter
+- `skill_create` — Create a new skill in `~/Bloom/Skills/` with proper frontmatter
 - `skill_list` — List all skills currently in the Garden vault
 
 ### Persona Evolution
@@ -56,7 +56,7 @@ skill_create(
 )
 ```
 
-Skills are automatically discovered from `~/Garden/Bloom/Skills/` at session start.
+Skills are automatically discovered from `~/Bloom/Skills/` at session start.
 
 ## Proposing a Persona Change
 
@@ -69,7 +69,7 @@ persona_evolve(
 )
 ```
 
-Evolution objects are stored at `~/Garden/Bloom/Evolutions/{slug}.pi.md`.
+Evolution objects are stored at `~/Bloom/Evolutions/{slug}.pi.md`.
 
 ## Evolution Object Fields
 

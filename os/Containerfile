@@ -50,17 +50,9 @@ RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
     dnf clean all && \
     rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log /var/cache/ldconfig/aux-cache
 
-# Create bloom system user via systemd-sysusers
-COPY os/sysconfig/bloom-sysusers.conf /usr/lib/sysusers.d/bloom.conf
-RUN systemd-sysusers
-
-# First-boot sudo access for the bloom user (non-interactive setup tasks).
-COPY os/sysconfig/bloom-sudoers /etc/sudoers.d/10-bloom-firstboot
-RUN chmod 0440 /etc/sudoers.d/10-bloom-firstboot
-
-# Rootless Podman prerequisite: subordinate UID/GID ranges for user namespaces
-RUN printf "bloom:100000:65536\n" >> /etc/subuid && \
-    printf "bloom:100000:65536\n" >> /etc/subgid
+# Wheel group sudo (Anaconda creates user at install time)
+COPY os/sysconfig/bloom-sudoers /etc/sudoers.d/10-bloom
+RUN chmod 0440 /etc/sudoers.d/10-bloom
 
 ARG PI_CODING_AGENT_VERSION=0.55.4
 ARG BIOME_VERSION=2.4.5
@@ -84,14 +76,14 @@ RUN cd /usr/local/share/bloom && HOME=/tmp npm install --omit=dev --cache /tmp/n
 RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
     echo '{"packages": ["/usr/local/share/bloom"]}' > /usr/local/share/bloom/.pi/agent/settings.json
 
-# Shell config skel in /usr (immutable layer)
-COPY os/sysconfig/bloom-bashrc /usr/local/share/bloom/skel/.bashrc
-COPY os/sysconfig/bloom-bash_profile /usr/local/share/bloom/skel/.bash_profile
+# Shell config skel — Anaconda copies /etc/skel/ to new user's home
+COPY os/sysconfig/bloom-bashrc /etc/skel/.bashrc
+COPY os/sysconfig/bloom-bash_profile /etc/skel/.bash_profile
 
 # Minimal desktop defaults: greetd + sway + wayvnc
 COPY os/sysconfig/greetd.toml /etc/greetd/config.toml
-RUN mkdir -p /usr/local/share/bloom/skel/.config/sway
-COPY os/sysconfig/sway-config /usr/local/share/bloom/skel/.config/sway/config
+RUN mkdir -p /etc/skel/.config/sway
+COPY os/sysconfig/sway-config /etc/skel/.config/sway/config
 
 # tmpfiles.d for /var directory structure (created at boot)
 COPY os/sysconfig/bloom-tmpfiles.conf /usr/lib/tmpfiles.d/bloom.conf

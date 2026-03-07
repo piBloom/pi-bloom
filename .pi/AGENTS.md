@@ -54,7 +54,7 @@ From `tsconfig.json`:
 
 - `extensions/` — Pi extension modules (core product behavior)
 - `skills/` — Domain skills (`SKILL.md`) used by Pi
-- `services/` — OCI service packages (whisper, whatsapp, tailscale, examples)
+- `services/` — OCI service packages (whisper, whatsapp, netbird, examples)
 - `os/` — bootc image build assets, sysconfig, output manifests
 - `persona/` — OpenPersona identity layers (`SOUL/BODY/FACULTY/SKILL`)
 - `docs/` — architecture, protocol, deployment, supply-chain docs

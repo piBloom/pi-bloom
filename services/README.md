@@ -47,8 +47,8 @@ mkdir -p ~/.config/containers/systemd ~/.config/systemd/user
 find /tmp/bloom-svc/quadlet -maxdepth 1 -type f -name '*.socket' -exec cp {} ~/.config/systemd/user/ \;
 find /tmp/bloom-svc/quadlet -maxdepth 1 -type f ! -name '*.socket' -exec cp {} ~/.config/containers/systemd/ \;
 [ -f ~/.config/containers/systemd/bloom.network ] || cp /usr/local/share/bloom/os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network 2>/dev/null || cp os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network
-mkdir -p ~/Garden/Bloom/Skills/{name}
-cp /tmp/bloom-svc/SKILL.md ~/Garden/Bloom/Skills/{name}/SKILL.md
+mkdir -p ~/Bloom/Skills/{name}
+cp /tmp/bloom-svc/SKILL.md ~/Bloom/Skills/{name}/SKILL.md
 systemctl --user daemon-reload
 if [ -f ~/.config/systemd/user/bloom-{name}.socket ]; then
   systemctl --user start bloom-{name}.socket
@@ -119,8 +119,8 @@ Each artifact carries standard annotations:
 |---------|----------|------|-------------|
 | `whisper` | media | 9000 | Speech-to-text transcription via faster-whisper |
 | `whatsapp` | communication | — | WhatsApp messaging bridge via Baileys |
-| `tailscale` | networking | — | Secure mesh VPN via Tailscale |
-| `syncthing` | sync | 8384 | Peer-to-peer sync for the Garden vault |
+| `netbird` | networking | — | Secure mesh VPN via NetBird |
+| `syncthing` | sync | 8384 | Peer-to-peer sync for the home directory |
 
 ## Service Catalog
 

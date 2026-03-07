@@ -10,14 +10,14 @@ The bloom word comes from the concept that you "plant" your mini-pc and then in 
 Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension → Service**.
 
 - **Pi package**: Extensions + skills bundled as a Pi package (`pi install ./`)
-- **Extensions**: `extensions/` — 9 TypeScript Pi extensions (bloom-persona, bloom-audit, bloom-os, bloom-services, bloom-objects, bloom-journal, bloom-garden, bloom-channels, bloom-topics)
-- **Shared lib**: `lib/shared.ts` — utilities used across extensions (parseFrontmatter, stringifyFrontmatter, getGardenDir, createLogger, PARA_DIRS, truncate, errorResult, nowIso)
+- **Extensions**: `extensions/` — 10 TypeScript Pi extensions (bloom-persona, bloom-audit, bloom-os, bloom-repo, bloom-manifest, bloom-services, bloom-objects, bloom-garden, bloom-channels, bloom-topics)
+- **Shared lib**: `lib/shared.ts` — utilities used across extensions (parseFrontmatter, stringifyFrontmatter, getBloomDir, createLogger, truncate, errorResult, nowIso)
 - **Skills**: `skills/` — 6 Pi skill markdown files (first-boot, os-operations, object-store, service-management, self-evolution, recovery)
-- **Services**: `services/` — OCI-packaged containers (whisper, whatsapp, tailscale, syncthing). Metadata in `services/catalog.yaml`
-- **Persona**: `persona/` — OpenPersona 4-layer identity (SOUL.md, BODY.md, FACULTY.md, SKILL.md) — seeded to Garden on first run
+- **Services**: `services/` — OCI-packaged containers (whisper, whatsapp, netbird, syncthing). Metadata in `services/catalog.yaml`
+- **Persona**: `persona/` — OpenPersona 4-layer identity (SOUL.md, BODY.md, FACULTY.md, SKILL.md) — seeded to `~/Bloom/` on first run
 - **Guardrails**: `guardrails.yaml` — bash patterns blocked by bloom-persona (rm -rf, mkfs, dd, fork bombs, eval, pipe-to-shell, force-push, etc.)
-- **Garden vault**: `~/Garden/` — PARA-organized user content (Inbox, Projects, Areas, Resources, Archive), synced via Syncthing. Env override: `BLOOM_GARDEN_DIR`
-- **Bloom system**: `~/Garden/Bloom/` — shareable persona, skills, evolutions (synced)
+- **User home**: `$HOME` — the user's space, synced via Syncthing
+- **Bloom directory**: `~/Bloom/` — persona, skills, evolutions, guardrails, objects (synced). Env override: `BLOOM_DIR`
 - **Pi state**: `~/.pi/` — internal agent state, sessions, settings (NOT synced)
 - **OS image**: `os/Containerfile` — Fedora bootc 42
 
@@ -25,11 +25,12 @@ Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension
 
 | Path | Purpose | Synced |
 |------|---------|--------|
-| `~/Garden/` | User vault (PARA structure) | Yes (Syncthing) |
-| `~/Garden/Bloom/Persona/` | Active persona files | Yes |
-| `~/Garden/Bloom/Skills/` | Installed skills | Yes |
-| `~/Garden/Bloom/Evolutions/` | Proposed persona changes | Yes |
-| `~/Garden/Journal/{YYYY}/{MM}/` | Daily journal files | Yes |
+| `$HOME` | User's home directory | Yes (Syncthing) |
+| `~/Bloom/` | Bloom config: persona, skills, evolutions, guardrails | Yes |
+| `~/Bloom/Persona/` | Active persona files | Yes |
+| `~/Bloom/Skills/` | Installed skills | Yes |
+| `~/Bloom/Evolutions/` | Proposed persona changes | Yes |
+| `~/Bloom/Objects/` | Tracked objects (notes, tasks, etc.) | Yes |
 | `~/.pi/` | Pi agent state, sessions | No |
 | `~/.pi/bloom-context.json` | Compaction context persistence | No |
 | `~/.config/containers/systemd/` | Quadlet container units | No |
@@ -73,7 +74,7 @@ just svc-install {name}        # install service locally (testing)
 - **Skills**: SKILL.md with frontmatter (name, description)
 - **Containers**: `Containerfile` (not Dockerfile), `podman` (not docker)
 - **Services**: Quadlet units named `bloom-{name}`, isolated `bloom.network`, health checks required
-- **Objects**: Markdown files with YAML frontmatter, PARA-organized in Garden vault
+- **Objects**: Markdown files with YAML frontmatter in ~/Bloom/Objects/
 
 ## Documentation Workflow
 

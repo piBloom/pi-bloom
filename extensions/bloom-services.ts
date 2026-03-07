@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { run } from "../lib/exec.js";
-import { loadManifest, saveManifest, servicePreflightErrors, tailscaleAuthConfigured } from "../lib/manifest.js";
+import { loadManifest, saveManifest, servicePreflightErrors } from "../lib/manifest.js";
 import {
 	commandMissingError,
 	resolveArtifactDigest,
@@ -23,7 +23,7 @@ import {
 import {
 	createLogger,
 	errorResult,
-	getGardenDir,
+	getBloomDir,
 	getServiceRegistry,
 	parseFrontmatter,
 	truncate,
@@ -279,11 +279,6 @@ export default function (pi: ExtensionAPI) {
 			const expectedDigest = params.expected_digest?.trim().toLowerCase();
 			const ref = `${registry}/bloom-svc-${params.name}:${version}`;
 
-			if (params.name === "tailscale" && start) {
-				const errors = await servicePreflightErrors("tailscale", undefined, signal);
-				if (errors.length > 0) return errorResult(errors.join("\n"));
-			}
-
 			if (version === "latest" && !allowLatest) {
 				return errorResult(
 					"Refusing non-immutable install: version=latest. Use a semver tag (e.g. 0.1.0) or set allow_latest=true explicitly.",
@@ -360,7 +355,7 @@ export default function (pi: ExtensionAPI) {
 
 				const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
 				const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
-				const skillDir = join(getGardenDir(), "Bloom", "Skills", params.name);
+				const skillDir = join(getBloomDir(), "Skills", params.name);
 				mkdirSync(systemdDir, { recursive: true });
 				mkdirSync(userSystemdDir, { recursive: true });
 				mkdirSync(skillDir, { recursive: true });
@@ -399,13 +394,7 @@ export default function (pi: ExtensionAPI) {
 				if (daemonReload.exitCode !== 0) return errorResult(`daemon-reload failed:\n${daemonReload.stderr}`);
 
 				const socketUnit = join(userSystemdDir, `bloom-${params.name}.socket`);
-				let startSkippedNote: string | null = null;
-				const shouldStart = start && (params.name !== "tailscale" || tailscaleAuthConfigured());
-				if (start && !shouldStart && params.name === "tailscale") {
-					startSkippedNote =
-						"Tailscale installed but not auto-started (TS_AUTHKEY is not configured). Configure auth first, then run: systemctl --user start bloom-tailscale.service";
-				}
-				if (shouldStart) {
+				if (start) {
 					const target = existsSync(socketUnit) ? `bloom-${params.name}.socket` : `bloom-${params.name}.service`;
 					const startRes = await run("systemctl", ["--user", "start", target], signal);
 					if (startRes.exitCode !== 0) {
@@ -415,29 +404,22 @@ export default function (pi: ExtensionAPI) {
 
 				const meta = extractSkillMetadata(join(skillDir, "SKILL.md"));
 				if (updateManifest) {
-					const gardenDir = getGardenDir();
-					const manifestPath = join(gardenDir, "Bloom", "manifest.yaml");
+					const bloomDir = getBloomDir();
+					const manifestPath = join(bloomDir, "manifest.yaml");
 					const manifest = loadManifest(manifestPath);
 					manifest.services[params.name] = {
 						image: meta.image ?? "unknown",
 						version: version === "latest" ? meta.version : version,
 						enabled: true,
 					};
-					saveManifest(manifest, manifestPath, gardenDir);
+					saveManifest(manifest, manifestPath);
 				}
 
 				return {
 					content: [
 						{
 							type: "text" as const,
-							text:
-								sourceNote && startSkippedNote
-									? `Installed ${ref} successfully.\n${sourceNote}\n${startSkippedNote}`
-									: sourceNote
-										? `Installed ${ref} successfully.\n${sourceNote}`
-										: startSkippedNote
-											? `Installed ${ref} successfully.\n${startSkippedNote}`
-											: `Installed ${ref} successfully.`,
+							text: sourceNote ? `Installed ${ref} successfully.\n${sourceNote}` : `Installed ${ref} successfully.`,
 						},
 					],
 					details: {
@@ -446,7 +428,6 @@ export default function (pi: ExtensionAPI) {
 						installSource,
 						sourceNote,
 						start,
-						startSkippedNote,
 						manifestUpdated: updateManifest,
 						installedTo: {
 							systemdDir,

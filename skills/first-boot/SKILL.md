@@ -57,7 +57,7 @@ If not, `bloom_repo_configure` tries to create/attach one via `gh` when authenti
 - Install service package: `service_install(name="syncthing", version="0.1.0")`
 - Validate service: `service_test(name="syncthing")`
 - Direct user to `http://localhost:8384`
-- Help add/share `~/Garden` (mapped in container as `/var/syncthing/Garden`)
+- Help add/share `$HOME` (mapped in container as bind mount)
 
 If Bloom runs inside a VM, `localhost` in the guest may not be reachable from the host machine.
 Offer one of these access paths:
@@ -78,21 +78,21 @@ Suggested optional profiles:
 
 - **sync-only**: syncthing
 - **communication**: whatsapp + whisper
-- **remote-access**: tailscale (+ syncthing recommended)
+- **remote-access**: netbird (+ syncthing recommended)
 
 Example declaration flow:
 
 1. `manifest_set_service(name="syncthing", image="docker.io/syncthing/syncthing@sha256:...", version="0.1.0", enabled=true)`
 2. `manifest_set_service(name="whatsapp", image="ghcr.io/pibloom/bloom-whatsapp:0.1.0", version="0.1.0", enabled=true)`
 3. `manifest_set_service(name="whisper", image="docker.io/fedirz/faster-whisper-server@sha256:...", version="0.1.0", enabled=true)`
-4. `manifest_set_service(name="tailscale", image="docker.io/tailscale/tailscale@sha256:...", version="0.1.0", enabled=true)`
+4. `manifest_set_service(name="netbird", image="docker.io/netbirdio/netbird@sha256:...", version="0.1.0", enabled=true)`
 5. `manifest_apply(install_missing=true)`
 
 Post-install guidance:
 
 - WhatsApp pairing: `journalctl --user -u bloom-whatsapp -f` and scan QR
-- Tailscale preflight: confirm `bloom` has entries in `/etc/subuid` and `/etc/subgid`
-- Tailscale auth: `podman exec bloom-tailscale tailscale up`
+- NetBird preflight: confirm user has entries in `/etc/subuid` and `/etc/subgid`
+- NetBird auth: `podman exec bloom-netbird netbird up`
 
 If tooling is unavailable, use the fallback manual `oras pull` flow from `skills/service-management/SKILL.md`.
 

@@ -20,21 +20,20 @@ import {
 	type Manifest,
 	saveManifest,
 	servicePreflightErrors,
-	tailscaleAuthConfigured,
 } from "../lib/manifest.js";
-import { errorResult, getGardenDir, getServiceRegistry, requireConfirmation, truncate } from "../lib/shared.js";
+import { errorResult, getBloomDir, getServiceRegistry, requireConfirmation, truncate } from "../lib/shared.js";
 
 export default function (pi: ExtensionAPI) {
-	const gardenDir = getGardenDir();
-	const manifestPath = join(gardenDir, "Bloom", "manifest.yaml");
-	const bloomDir = join(os.homedir(), ".bloom");
-	const repoDir = join(bloomDir, "pi-bloom");
+	const bloomDir = getBloomDir();
+	const manifestPath = join(bloomDir, "manifest.yaml");
+	const dotBloomDir = join(os.homedir(), ".bloom");
+	const repoDir = join(dotBloomDir, "pi-bloom");
 	const defaultServiceRegistry = getServiceRegistry();
 
 	pi.registerTool({
 		name: "manifest_show",
 		label: "Show Manifest",
-		description: "Display the declarative service manifest from ~/Garden/Bloom/manifest.yaml",
+		description: "Display the declarative service manifest from ~/Bloom/manifest.yaml",
 		promptSnippet: "manifest_show — display the Bloom service manifest",
 		promptGuidelines: ["Use manifest_show to view the current manifest state and configured services."],
 		parameters: Type.Object({}),
@@ -143,7 +142,7 @@ export default function (pi: ExtensionAPI) {
 					}
 				}
 
-				saveManifest(updated, manifestPath, gardenDir);
+				saveManifest(updated, manifestPath);
 				const text =
 					drifts.length > 0
 						? `Manifest updated. Resolved ${drifts.length} drift(s):\n${drifts.join("\n")}`
@@ -188,7 +187,7 @@ export default function (pi: ExtensionAPI) {
 				version: params.version,
 				enabled: params.enabled ?? true,
 			};
-			saveManifest(manifest, manifestPath, gardenDir);
+			saveManifest(manifest, manifestPath);
 			return {
 				content: [
 					{
@@ -286,7 +285,7 @@ export default function (pi: ExtensionAPI) {
 					continue;
 				}
 
-				const install = await installServicePackage(name, version, registry, gardenDir, repoDir, catalogEntry, signal);
+				const install = await installServicePackage(name, version, registry, bloomDir, repoDir, catalogEntry, signal);
 				if (!install.ok) {
 					errors.push(`${name}: install failed — ${install.note ?? "unknown error"}`);
 					continue;
@@ -329,13 +328,6 @@ export default function (pi: ExtensionAPI) {
 						continue;
 					}
 
-					if (name === "tailscale" && !tailscaleAuthConfigured()) {
-						lines.push(
-							"Skipped starting bloom-tailscale.service (TS_AUTHKEY not configured). Configure auth, then start it manually.",
-						);
-						continue;
-					}
-
 					if (dryRun) {
 						lines.push(`[dry-run] start ${startTarget}`);
 						startedCount += 1;
@@ -366,7 +358,7 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			if (manifestChanged && !dryRun) {
-				saveManifest(manifest, manifestPath, gardenDir);
+				saveManifest(manifest, manifestPath);
 			}
 
 			const summary = [

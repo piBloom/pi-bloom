@@ -28,8 +28,8 @@ graph TD
 | Mechanism | Use When | Examples | Cost |
 |-----------|----------|----------|------|
 | **Skill** | Pi needs knowledge or a procedure to follow | meal-planning, troubleshooting guides, API references | Zero — just a markdown file |
-| **Extension** | Pi needs to register commands, tools, or react to session events | bloom-channels (Unix socket server), bloom-journal (daily entries) | Low — TypeScript, runs in-process |
-| **Service** | A standalone process needs to run independently of Pi's session | Whisper (ML model), WhatsApp bridge (always-on), Tailscale (VPN) | Medium — container image, systemd unit, resource allocation |
+| **Extension** | Pi needs to register commands, tools, or react to session events | bloom-channels (Unix socket server), bloom-objects (object store) | Low — TypeScript, runs in-process |
+| **Service** | A standalone process needs to run independently of Pi's session | Whisper (ML model), WhatsApp bridge (always-on), NetBird (VPN) | Medium — container image, systemd unit, resource allocation |
 
 **Always prefer the lighter option.** A skill that teaches Pi to call an existing API is better than an extension wrapping that API, which is better than a service re-implementing it.
 
@@ -42,7 +42,6 @@ graph TB
             persona[bloom-persona]
             garden[bloom-garden]
             objects[bloom-objects]
-            journal[bloom-journal]
             topics[bloom-topics]
             channels[bloom-channels<br/>Unix socket<br/>/run/bloom/channels.sock]
         end
@@ -50,8 +49,8 @@ graph TB
         subgraph "Service Containers (Podman Quadlet)"
             wa[bloom-whatsapp<br/>Baileys Bridge]
             whisper[bloom-whisper<br/>faster-whisper :9000]
-            tailscale[bloom-tailscale<br/>Tailscale VPN]
-            syncthing[bloom-syncthing<br/>Garden sync :8384]
+            netbird[bloom-netbird<br/>NetBird VPN]
+            syncthing[bloom-syncthing<br/>Home sync :8384]
         end
 
         subgraph "System Services"
@@ -62,11 +61,11 @@ graph TB
     channels <-->|Unix socket JSON| wa
     wa <-->|Baileys| whatsapp_cloud[WhatsApp Cloud]
     whisper -->|HTTP API| channels
-    tailscale <-->|WireGuard| tailnet[Tailnet]
+    netbird <-->|WireGuard| netbird_cloud[NetBird Cloud]
     syncthing <-->|Syncthing Protocol| devices[Other Devices]
     systemd -->|manages| wa
     systemd -->|manages| whisper
-    systemd -->|manages| tailscale
+    systemd -->|manages| netbird
     systemd -->|manages| syncthing
 
     style persona fill:#e8d5f5
@@ -87,16 +86,16 @@ graph TB
 
 - **Skills** are pure knowledge — procedures, API references, troubleshooting guides. Pi reads them and acts. No code, no process, no resources. Pi can create these autonomously.
 - **Extensions** need direct access to Pi's session (send messages, register commands, access context). They run in-process and require TypeScript. These are core platform code.
-- **Services** are standalone workloads (speech-to-text, messaging bridges, VPN, sync daemons) that benefit from container isolation, independent updates, and resource limits. Pi can create and distribute these via OCI artifacts.
+- **Services** are standalone workloads (speech-to-text, messaging bridges, mesh VPN, sync daemons) that benefit from container isolation, independent updates, and resource limits. Pi can create and distribute these via OCI artifacts.
 
 ### 📦 The `bloom-` Prefix
 
-Service containers use a `bloom-` prefix on their **Quadlet unit names** (e.g., `bloom-whisper`, `bloom-tailscale`). This is a management namespace — it does NOT mean the container image is Bloom-specific. Most services use upstream images directly:
+Service containers use a `bloom-` prefix on their **Quadlet unit names** (e.g., `bloom-whisper`, `bloom-netbird`). This is a management namespace — it does NOT mean the container image is Bloom-specific. Most services use upstream images directly:
 
 | Quadlet Name | Container Image | Bloom-specific? |
 |-------------|-----------------|-----------------|
 | `bloom-whisper` | `fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030` | No — upstream image |
-| `bloom-tailscale` | `tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1` | No — upstream image |
+| `bloom-netbird` | `netbirdio/netbird@sha256:b3e69490e58cf255caf1b9b6a8bbfcfae4d1b2bbaa3c40a06cfdbba5b8fdc0d2` | No — upstream image |
 | `bloom-syncthing` | `syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643` | No — upstream image |
 | `bloom-whatsapp` | `ghcr.io/pibloom/bloom-whatsapp:0.1.0` | Yes — custom bridge |
 
@@ -123,7 +122,7 @@ sequenceDiagram
     Note over Bloom: Install service
     Pi->>GHCR: oras pull bloom-svc-{name}
     Pi->>Bloom: Copy quadlet → ~/.config/containers/systemd/
-    Pi->>Bloom: Copy SKILL.md → ~/Garden/Bloom/Skills/{name}/
+    Pi->>Bloom: Copy SKILL.md → ~/Bloom/Skills/{name}/
     Pi->>Bloom: systemctl --user daemon-reload
     Pi->>Bloom: systemctl --user start bloom-{name}
 
@@ -151,7 +150,7 @@ services/{name}/
 - default service versions
 - OCI artifact references (`bloom-svc-*`)
 - runtime image references
-- preflight requirements (for example rootless subuid/subgid for Tailscale)
+- preflight requirements (for example rootless subuid/subgid for NetBird)
 
 The `manifest_apply` tool uses this catalog to auto-install missing services and enforce preflight checks.
 
@@ -186,7 +185,7 @@ stateDiagram-v2
 
     note right of Installed
         ~/.config/containers/systemd/bloom-{name}.container
-        ~/Garden/Bloom/Skills/{name}/SKILL.md
+        ~/Bloom/Skills/{name}/SKILL.md
     end note
 ```
 
@@ -245,10 +244,10 @@ graph LR
         oras_bin["/usr/local/bin/oras"]
     end
 
-    subgraph "User State (/var/lib/bloom)"
+    subgraph "User State (~)"
         config["~/.config/containers/systemd/<br/>Installed Quadlet units"]
-        garden["~/Garden/<br/>Synced vault"]
-        skills["~/Garden/Bloom/Skills/<br/>Installed service skills"]
+        bloom_dir["~/Bloom/<br/>Persona, skills, objects"]
+        skills["~/Bloom/Skills/<br/>Installed service skills"]
         media["/var/lib/bloom/media/<br/>Downloaded media files"]
         pi_state["~/.pi/<br/>Pi agent state"]
     end
@@ -256,14 +255,14 @@ graph LR
     subgraph "Container Volumes"
         wa_auth["bloom-whatsapp-auth<br/>WhatsApp credentials"]
         whisper_models["bloom-whisper-models<br/>ML model cache"]
-        ts_state["bloom-tailscale-state<br/>Tailscale identity"]
+        nb_state["bloom-netbird-state<br/>NetBird identity"]
         st_state["bloom-syncthing-data<br/>Syncthing config + index state"]
     end
 
     bloom_pkg --> config
     config --> wa_auth
     config --> whisper_models
-    config --> ts_state
+    config --> nb_state
     config --> st_state
 ```
 
@@ -273,7 +272,7 @@ graph LR
 |---------|----------|------|-------|-----------|
 | bloom-whatsapp | communication | — | ghcr.io/pibloom/bloom-whatsapp:0.1.0 | 128MB RAM |
 | bloom-whisper | media | 9000 | fedirz/faster-whisper-server@sha256:760e5e43d427dc6cfbbc4731934b908b7de9c7e6d5309c6a1f0c8c923a5b6030 | 2GB RAM |
-| bloom-tailscale | networking | — | tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1 | 256MB RAM |
+| bloom-netbird | networking | — | netbirdio/netbird@sha256:b3e69490e58cf255caf1b9b6a8bbfcfae4d1b2bbaa3c40a06cfdbba5b8fdc0d2 | 256MB RAM |
 | bloom-syncthing | sync | 8384 | syncthing/syncthing@sha256:1feffa2d4826b48f25faefed093d07c5f00304d7e7ac86fd7cda334d22651643 | 256MB RAM |
 
 ## 📦 Adding a New Service

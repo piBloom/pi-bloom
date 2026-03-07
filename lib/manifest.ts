@@ -10,7 +10,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import os from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { run } from "./exec.js";
 import { commandMissingError } from "./service-utils.js";
 import { createLogger } from "./shared.js";
@@ -30,7 +30,7 @@ export interface ManifestService {
 	enabled: boolean;
 }
 
-/** Declarative service manifest stored at `~/Garden/Bloom/manifest.yaml`. */
+/** Declarative service manifest stored at `~/Bloom/manifest.yaml`. */
 export interface Manifest {
 	device?: string;
 	os_image?: string;
@@ -68,8 +68,8 @@ export function loadManifest(manifestPath: string): Manifest {
 }
 
 /** Write the manifest to disk, creating the parent directory if needed. */
-export function saveManifest(manifest: Manifest, manifestPath: string, gardenDir: string): void {
-	mkdirSync(join(gardenDir, "Bloom"), { recursive: true });
+export function saveManifest(manifest: Manifest, manifestPath: string): void {
+	mkdirSync(dirname(manifestPath), { recursive: true });
 	writeFileSync(manifestPath, yaml.dump(manifest));
 }
 
@@ -135,7 +135,7 @@ export async function servicePreflightErrors(
 		if (!ok) errors.push(`missing command: ${command}`);
 	}
 
-	const needsSubids = entry?.preflight?.rootless_subids ?? name === "tailscale";
+	const needsSubids = entry?.preflight?.rootless_subids === true;
 	if (needsSubids) {
 		const user = os.userInfo().username;
 		const hasSubuid = hasSubidRange("/etc/subuid", user);
@@ -160,22 +160,6 @@ export function hasTagOrDigest(ref: string): boolean {
 	const lastSlash = ref.lastIndexOf("/");
 	const tail = ref.slice(lastSlash + 1);
 	return tail.includes(":");
-}
-
-/** Check whether Tailscale auth is configured (via `TS_AUTHKEY` env or bloom config file). */
-export function tailscaleAuthConfigured(): boolean {
-	const direct = process.env.TS_AUTHKEY?.trim();
-	if (direct) return true;
-	const envPath = join(os.homedir(), ".config", "bloom", "tailscale.env");
-	if (!existsSync(envPath)) return false;
-	try {
-		const raw = readFileSync(envPath, "utf-8");
-		return raw
-			.split("\n")
-			.some((line) => line.trim().startsWith("TS_AUTHKEY=") && line.trim().length > "TS_AUTHKEY=".length);
-	} catch {
-		return false;
-	}
 }
 
 // ---------------------------------------------------------------------------
@@ -207,7 +191,7 @@ export async function installServicePackage(
 	name: string,
 	version: string,
 	registry: string,
-	gardenDir: string,
+	bloomDir: string,
 	repoDir: string,
 	entry: ServiceCatalogEntry | undefined,
 	signal?: AbortSignal,
@@ -254,7 +238,7 @@ export async function installServicePackage(
 
 		const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
 		const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
-		const skillDir = join(gardenDir, "Bloom", "Skills", name);
+		const skillDir = join(bloomDir, "Skills", name);
 		mkdirSync(systemdDir, { recursive: true });
 		mkdirSync(userSystemdDir, { recursive: true });
 		mkdirSync(skillDir, { recursive: true });

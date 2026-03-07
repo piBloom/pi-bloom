@@ -1,2 +1,2 @@
-export BLOOM_GARDEN_DIR=/var/lib/bloom/Garden
+export BLOOM_DIR="$HOME/Bloom"
 export PATH="/usr/local/share/bloom/node_modules/.bin:$PATH"

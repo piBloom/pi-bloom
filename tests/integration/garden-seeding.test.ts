@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 // We test garden seeding by importing and calling the bloom-garden extension
-// which calls ensureGarden + seedBlueprints in its session_start handler.
+// which calls ensureBloom + seedBlueprints in its session_start handler.
 async function runGardenExtension() {
 	const mod = await import("../../extensions/bloom-garden.js");
 	const api = createMockExtensionAPI();
@@ -27,21 +27,10 @@ async function runGardenExtension() {
 }
 
 describe("garden seeding", () => {
-	it("creates all PARA dirs and Bloom structure", async () => {
+	it("creates Bloom subdirectories", async () => {
 		await runGardenExtension();
 
-		const expected = [
-			"Inbox",
-			"Journal",
-			"Projects",
-			"Areas",
-			"Resources",
-			"Archive",
-			"Bloom/Persona",
-			"Bloom/Skills",
-			"Bloom/Evolutions",
-			"Bloom/audit",
-		];
+		const expected = ["Persona", "Skills", "Evolutions", "audit"];
 		for (const dir of expected) {
 			expect(existsSync(join(temp.gardenDir, dir))).toBe(true);
 		}
@@ -50,7 +39,7 @@ describe("garden seeding", () => {
 	it("creates blueprint-versions.json", async () => {
 		await runGardenExtension();
 
-		const versionsPath = join(temp.gardenDir, "Bloom", "blueprint-versions.json");
+		const versionsPath = join(temp.gardenDir, "blueprint-versions.json");
 		expect(existsSync(versionsPath)).toBe(true);
 
 		const versions = JSON.parse(readFileSync(versionsPath, "utf-8"));
@@ -61,7 +50,7 @@ describe("garden seeding", () => {
 
 	it("second call is idempotent", async () => {
 		await runGardenExtension();
-		const versionsPath = join(temp.gardenDir, "Bloom", "blueprint-versions.json");
+		const versionsPath = join(temp.gardenDir, "blueprint-versions.json");
 		const first = readFileSync(versionsPath, "utf-8");
 
 		await runGardenExtension();
@@ -74,32 +63,32 @@ describe("garden seeding", () => {
 		await runGardenExtension();
 
 		// Modify a seeded persona file
-		const soulPath = join(temp.gardenDir, "Bloom", "Persona", "SOUL.md");
+		const soulPath = join(temp.gardenDir, "Persona", "SOUL.md");
 		if (existsSync(soulPath)) {
 			writeFileSync(soulPath, "user modified content");
 
 			// Re-run to trigger update detection
 			await runGardenExtension();
 
-			const versionsPath = join(temp.gardenDir, "Bloom", "blueprint-versions.json");
+			const versionsPath = join(temp.gardenDir, "blueprint-versions.json");
 			const versions = JSON.parse(readFileSync(versionsPath, "utf-8"));
 			// updatesAvailable may have the modified key
 			expect(versions).toHaveProperty("updatesAvailable");
 		}
 	});
 
-	it("creates .stignore file", async () => {
+	it("does not create .stignore inside bloom dir", async () => {
 		await runGardenExtension();
-		expect(existsSync(join(temp.gardenDir, ".stignore"))).toBe(true);
+		expect(existsSync(join(temp.gardenDir, ".stignore"))).toBe(false);
 	});
 
-	it("sets _BLOOM_GARDEN_RESOLVED env var", async () => {
+	it("sets _BLOOM_DIR_RESOLVED env var", async () => {
 		await runGardenExtension();
-		expect(process.env._BLOOM_GARDEN_RESOLVED).toBe(temp.gardenDir);
+		expect(process.env._BLOOM_DIR_RESOLVED).toBe(temp.gardenDir);
 	});
 
 	it("sets UI status when hasUI is true", async () => {
 		const { ctx } = await runGardenExtension();
-		expect(ctx.ui.setStatus).toHaveBeenCalledWith("bloom-garden", expect.stringContaining("Garden:"));
+		expect(ctx.ui.setStatus).toHaveBeenCalledWith("bloom-garden", expect.stringContaining("Bloom:"));
 	});
 });

@@ -33,8 +33,8 @@ curl -sf http://localhost:9080/
 
 ```bash
 cp services/examples/demo-api/quadlet/* ~/.config/containers/systemd/
-mkdir -p ~/Garden/Bloom/Skills/demo-api
-cp services/examples/demo-api/SKILL.md ~/Garden/Bloom/Skills/demo-api/SKILL.md
+mkdir -p ~/Bloom/Skills/demo-api
+cp services/examples/demo-api/SKILL.md ~/Bloom/Skills/demo-api/SKILL.md
 systemctl --user daemon-reload
 systemctl --user start bloom-demo-api.service
 ```

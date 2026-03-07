@@ -18,7 +18,7 @@ A **transport-agnostic message protocol** with HATEOAS semantics. Every message 
 | Protocol level | Message envelope, not transport | Bridges keep Unix sockets, web uses HTTP. The abstraction is the message format. |
 | Hypermedia format | Lightweight JSON envelope with `links` | Siren is overkill for a single-user system with controlled clients. Plain JSON with optional links captures 80% of the value. |
 | HTTP server | `node:http` (zero dependencies) | Fits Bloom's minimal-dependency philosophy. Sufficient for a local server. |
-| Authentication | None — localhost binding | Tailscale handles remote access security. Auth can be added later at the transport layer without changing the protocol. |
+| Authentication | None — localhost binding | NetBird handles remote access security. Auth can be added later at the transport layer without changing the protocol. |
 | Content negotiation | HTML for browsers, JSON for programmatic clients | htmx consumes HTML directly. Bridges consume JSON. Same resource, different representations. |
 | UI rendering | Pi-designed templates hydrated with live data | Pi generates/evolves templates stored in Garden. The HTTP server renders them with current data. Fast responses, AI-driven design. |
 | Bridge transport | Unix socket stays | The current channel protocol has backpressure, rate limiting, and heartbeats that HTTP+SSE cannot replicate. Bridges stay on sockets; the API is a window into channels, not a replacement. |
@@ -125,7 +125,7 @@ bloom-api extension
 
 ### Pi-Designed Templates
 
-- Pi generates and evolves HTML templates stored in `~/Garden/Bloom/UI/`
+- Pi generates and evolves HTML templates stored in `~/Bloom/UI/`
 - Templates sync across devices via Syncthing (same as persona and skills)
 - `bloom-api` hydrates templates with live data at request time
 - Pi evolves its own UI through the same self-evolution mechanism as persona
@@ -145,7 +145,7 @@ bloom-api extension
 | Events | `/events` | — | SSE stream of system events |
 | Channel events | `/channels/:name/events` | — | SSE stream for a specific channel |
 | Garden | `/garden` | `reindex` | Garden vault overview |
-| Objects | `/garden/objects` | `create` | PARA-organized objects |
+| Objects | `/bloom/objects` | `create` | Tracked objects |
 | Object | `/garden/objects/:id` | `update`, `move`, `link` | Individual object |
 | Journal | `/journal` | `write` | Journal entries |
 | Journal entry | `/journal/:date` | — | Specific day |
@@ -189,7 +189,7 @@ The following concerns were raised during design review and should be addressed 
 
 1. **SSE limitations**: SSE is unidirectional and lacks backpressure. Suitable for browser clients but not for bidirectional bridge communication. Design event emission as an internal concern that can be delivered over multiple transports.
 
-2. **Auth will eventually be needed**: When exposing the API beyond localhost (even via Tailscale), consider a pairing mechanism or token-based auth at the transport layer. The protocol itself stays auth-agnostic.
+2. **Auth will eventually be needed**: When exposing the API beyond localhost (even via NetBird), consider a pairing mechanism or token-based auth at the transport layer. The protocol itself stays auth-agnostic.
 
 3. **No over-abstraction**: The API extension should call system commands directly (same as bloom-os, bloom-services). Do not create a domain core abstraction layer — extract shared code into `lib/` only when actual duplication emerges.
 

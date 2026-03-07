@@ -1,4 +1,2 @@
-# Bloom first-boot convenience: allow the bloom user to run privileged setup.
-# Review and tighten this policy after bootstrap if desired.
-Defaults:bloom !requiretty
-bloom ALL=(ALL) NOPASSWD:ALL
+# Bloom: allow wheel group members passwordless sudo
+%wheel ALL=(ALL) NOPASSWD:ALL

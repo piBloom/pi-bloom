@@ -1,6 +1,6 @@
 # Bloom Guardrails Policy
 # This file defines safety rules for Pi tool execution.
-# Customize in ~/Garden/Bloom/guardrails.yaml (seeded from defaults).
+# Customize in ~/Bloom/guardrails.yaml (seeded from defaults).
 
 rules:
   # Block dangerous bash commands
@@ -41,3 +41,19 @@ rules:
         label: "chmod 777"
       - pattern: '\bchown\s+.*\s+\/'
         label: "chown root paths"
+
+# Configurable permission tiers (future enforcement)
+# Values: allow | deny | approval-required
+permissions:
+  filesystem:
+    write: allow
+    delete: approval-required
+  services:
+    install: allow
+    remove: approval-required
+  network:
+    outbound: allow
+    listen: approval-required
+  system:
+    reboot: approval-required
+    update: approval-required

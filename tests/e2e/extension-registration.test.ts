@@ -66,23 +66,8 @@ describe("bloom-garden registration", () => {
 		expect(toolNames(api)).toEqual(
 			expect.arrayContaining(["garden_status", "skill_create", "skill_list", "persona_evolve"]),
 		);
-		expect(commandNames(api)).toEqual(["garden"]);
+		expect(commandNames(api)).toEqual(["bloom"]);
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start", "resources_discover"]));
-	});
-});
-
-// ---------------------------------------------------------------------------
-// bloom-journal
-// ---------------------------------------------------------------------------
-describe("bloom-journal registration", () => {
-	it("registers expected tools", async () => {
-		const mod = await import("../../extensions/bloom-journal.js");
-		const api = createMockExtensionAPI();
-		mod.default(api as never);
-
-		expect(toolNames(api)).toEqual(["journal_write", "journal_read"]);
-		expect(commandNames(api)).toEqual([]);
-		expect(eventNames(api)).toEqual([]);
 	});
 });
 
@@ -90,23 +75,17 @@ describe("bloom-journal registration", () => {
 // bloom-objects
 // ---------------------------------------------------------------------------
 describe("bloom-objects registration", () => {
-	it("registers expected tools and events", async () => {
+	it("registers expected tools (no events)", async () => {
 		const mod = await import("../../extensions/bloom-objects.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
 		expect(toolNames(api)).toEqual(
-			expect.arrayContaining([
-				"memory_create",
-				"memory_read",
-				"memory_search",
-				"memory_link",
-				"memory_list",
-				"memory_move",
-				"garden_reindex",
-			]),
+			expect.arrayContaining(["memory_create", "memory_read", "memory_search", "memory_link", "memory_list"]),
 		);
-		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start"]));
+		expect(toolNames(api)).not.toContain("memory_move");
+		expect(toolNames(api)).not.toContain("garden_reindex");
+		expect(eventNames(api)).toEqual([]);
 	});
 });
 

@@ -10,7 +10,7 @@ import { join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { dayStamp, sanitize, summarizeInput } from "../lib/audit-utils.js";
-import { createLogger, getGardenDir, truncate } from "../lib/shared.js";
+import { createLogger, getBloomDir, truncate } from "../lib/shared.js";
 
 const log = createLogger("bloom-audit");
 
@@ -28,7 +28,7 @@ interface AuditEntry {
 }
 
 function auditDir(): string {
-	return join(getGardenDir(), "Bloom", "audit");
+	return join(getBloomDir(), "audit");
 }
 
 function ensureAuditDir(): string {

@@ -1,18 +1,19 @@
 /**
- * 🌿 bloom-garden — Garden vault management, blueprint seeding, skill creation, persona evolution.
+ * bloom-garden — Bloom directory management, blueprint seeding, skill creation, persona evolution.
  *
  * @tools garden_status, skill_create, skill_list, persona_evolve
- * @commands /garden (init | status | update-blueprints)
+ * @commands /bloom (init | status | update-blueprints)
  * @hooks session_start, resources_discover
  * @see {@link ../AGENTS.md#bloom-garden} Extension reference
  */
 import { createHash } from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { errorResult, getGardenDir, nowIso, safePath, stringifyFrontmatter, truncate } from "../lib/shared.js";
+import { errorResult, getBloomDir, nowIso, safePath, stringifyFrontmatter, truncate } from "../lib/shared.js";
 
 function getPackageDir(): string {
 	return path.join(fileURLToPath(import.meta.url), "../..");
@@ -27,18 +28,7 @@ function getPackageVersion(packageDir: string): string {
 	}
 }
 
-const GARDEN_DIRS = [
-	"Inbox",
-	"Journal",
-	"Projects",
-	"Areas",
-	"Resources",
-	"Archive",
-	"Bloom/Persona",
-	"Bloom/Skills",
-	"Bloom/Evolutions",
-	"Bloom/audit",
-];
+const BLOOM_DIRS = ["Persona", "Skills", "Evolutions", "audit"];
 
 const PERSONA_FILES = ["SOUL.md", "BODY.md", "FACULTY.md", "SKILL.md"];
 
@@ -49,8 +39,8 @@ interface BlueprintVersions {
 	updatesAvailable: Record<string, string>;
 }
 
-function readBlueprintVersions(gardenDir: string): BlueprintVersions {
-	const fp = path.join(gardenDir, "Bloom", "blueprint-versions.json");
+function readBlueprintVersions(bloomDir: string): BlueprintVersions {
+	const fp = path.join(bloomDir, "blueprint-versions.json");
 	try {
 		const parsed = JSON.parse(fs.readFileSync(fp, "utf-8")) as Partial<BlueprintVersions>;
 		return {
@@ -64,17 +54,36 @@ function readBlueprintVersions(gardenDir: string): BlueprintVersions {
 	}
 }
 
-function writeBlueprintVersions(gardenDir: string, versions: BlueprintVersions): void {
-	fs.writeFileSync(path.join(gardenDir, "Bloom", "blueprint-versions.json"), `${JSON.stringify(versions, null, 2)}\n`);
+function writeBlueprintVersions(bloomDir: string, versions: BlueprintVersions): void {
+	fs.writeFileSync(path.join(bloomDir, "blueprint-versions.json"), `${JSON.stringify(versions, null, 2)}\n`);
 }
 
-function ensureGarden(gardenDir: string): void {
-	for (const dir of GARDEN_DIRS) {
-		fs.mkdirSync(path.join(gardenDir, dir), { recursive: true });
+function ensureBloom(bloomDir: string): void {
+	for (const dir of BLOOM_DIRS) {
+		fs.mkdirSync(path.join(bloomDir, dir), { recursive: true });
 	}
-	const stignore = path.join(gardenDir, ".stignore");
+}
+
+const STIGNORE_CONTENT = `// Syncthing device-specific exclusions
+.pi
+.ssh
+.gnupg
+.config/containers
+.config/systemd
+.config/bloom/channel-tokens
+.local
+.cache
+.mozilla
+.pki
+node_modules
+*.sock
+.git
+`;
+
+function ensureStignore(homeDir: string): void {
+	const stignore = path.join(homeDir, ".stignore");
 	if (!fs.existsSync(stignore)) {
-		fs.writeFileSync(stignore, "// Syncthing ignore patterns for Garden vault\n");
+		fs.writeFileSync(stignore, STIGNORE_CONTENT);
 	}
 }
 
@@ -82,17 +91,17 @@ function hashContent(content: string): string {
 	return createHash("sha256").update(content).digest("hex");
 }
 
-function blueprintDestPath(gardenDir: string, key: string): string {
+function blueprintDestPath(bloomDir: string, key: string): string {
 	if (key.startsWith("persona/")) {
-		return path.join(gardenDir, "Bloom", "Persona", key.replace(/^persona\//, ""));
+		return path.join(bloomDir, "Persona", key.replace(/^persona\//, ""));
 	}
 	if (key.startsWith("skills/")) {
-		return path.join(gardenDir, "Bloom", "Skills", key.replace(/^skills\//, ""));
+		return path.join(bloomDir, "Skills", key.replace(/^skills\//, ""));
 	}
 	if (key === "guardrails.yaml") {
-		return path.join(gardenDir, "Bloom", "guardrails.yaml");
+		return path.join(bloomDir, "guardrails.yaml");
 	}
-	return path.join(gardenDir, key);
+	return path.join(bloomDir, key);
 }
 
 function seedFile(src: string, dest: string, key: string, version: string, versions: BlueprintVersions): void {
@@ -134,14 +143,14 @@ function seedFile(src: string, dest: string, key: string, version: string, versi
 	versions.updatesAvailable[key] = version;
 }
 
-function seedBlueprints(gardenDir: string, packageDir: string): void {
+function seedBlueprints(bloomDir: string, packageDir: string): void {
 	const version = getPackageVersion(packageDir);
-	const versions = readBlueprintVersions(gardenDir);
+	const versions = readBlueprintVersions(bloomDir);
 
 	for (const file of PERSONA_FILES) {
 		const key = `persona/${file}`;
 		const src = path.join(packageDir, "persona", file);
-		const dest = path.join(gardenDir, "Bloom", "Persona", file);
+		const dest = path.join(bloomDir, "Persona", file);
 		seedFile(src, dest, key, version, versions);
 	}
 
@@ -151,7 +160,7 @@ function seedBlueprints(gardenDir: string, packageDir: string): void {
 			if (!entry.isDirectory()) continue;
 			const key = `skills/${entry.name}/SKILL.md`;
 			const src = path.join(skillsDir, entry.name, "SKILL.md");
-			const dest = path.join(gardenDir, "Bloom", "Skills", entry.name, "SKILL.md");
+			const dest = path.join(bloomDir, "Skills", entry.name, "SKILL.md");
 			seedFile(src, dest, key, version, versions);
 		}
 	}
@@ -159,58 +168,50 @@ function seedBlueprints(gardenDir: string, packageDir: string): void {
 	// Seed guardrails policy
 	seedFile(
 		path.join(packageDir, "guardrails.yaml"),
-		path.join(gardenDir, "Bloom", "guardrails.yaml"),
+		path.join(bloomDir, "guardrails.yaml"),
 		"guardrails.yaml",
 		version,
 		versions,
 	);
 
 	versions.packageVersion = version;
-	writeBlueprintVersions(gardenDir, versions);
-}
-
-function countFiles(dir: string): number {
-	if (!fs.existsSync(dir)) return 0;
-	return fs.globSync("**/*.md", { cwd: dir }).length;
+	writeBlueprintVersions(bloomDir, versions);
 }
 
 export default function (pi: ExtensionAPI) {
-	const gardenDir = getGardenDir();
+	const bloomDir = getBloomDir();
 	const packageDir = getPackageDir();
 
 	pi.on("session_start", (_event, ctx) => {
-		ensureGarden(gardenDir);
-		seedBlueprints(gardenDir, packageDir);
-		process.env._BLOOM_GARDEN_RESOLVED = gardenDir;
+		ensureBloom(bloomDir);
+		seedBlueprints(bloomDir, packageDir);
+		ensureStignore(os.homedir());
+		process.env._BLOOM_DIR_RESOLVED = bloomDir;
 
-		const versions = readBlueprintVersions(gardenDir);
+		const versions = readBlueprintVersions(bloomDir);
 		const updates = Object.keys(versions.updatesAvailable);
 		if (ctx.hasUI) {
 			if (updates.length > 0) {
 				ctx.ui.setWidget("bloom-updates", [
-					`${updates.length} blueprint update(s) available — /garden update-blueprints`,
+					`${updates.length} blueprint update(s) available — /bloom update-blueprints`,
 				]);
 			}
-			ctx.ui.setStatus("bloom-garden", `Garden: ${gardenDir}`);
+			ctx.ui.setStatus("bloom-garden", `Bloom: ${bloomDir}`);
 		}
 	});
 
 	pi.registerTool({
 		name: "garden_status",
-		label: "Garden Status",
-		description: "Show Garden vault location, file counts, and blueprint state",
-		promptSnippet: "Show Garden vault status and blueprint state",
-		promptGuidelines: ["Use garden_status to check the Garden vault state."],
+		label: "Bloom Status",
+		description: "Show Bloom directory location and blueprint state",
+		promptSnippet: "Show Bloom directory status and blueprint state",
+		promptGuidelines: ["Use garden_status to check the Bloom directory state."],
 		parameters: Type.Object({}),
 		async execute() {
-			const lines: string[] = [`Garden: ${gardenDir}`, ""];
+			const lines: string[] = [`Bloom: ${bloomDir}`, ""];
 
-			for (const dir of ["Inbox", "Journal", "Projects", "Areas", "Resources", "Archive"]) {
-				lines.push(`${dir}: ${countFiles(path.join(gardenDir, dir))} files`);
-			}
-
-			const versions = readBlueprintVersions(gardenDir);
-			lines.push("", `Package version: ${versions.packageVersion}`);
+			const versions = readBlueprintVersions(bloomDir);
+			lines.push(`Package version: ${versions.packageVersion}`);
 			lines.push(`Seeded blueprints: ${Object.keys(versions.seeded).length}`);
 
 			const updates = Object.keys(versions.updatesAvailable);
@@ -225,24 +226,24 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
-	pi.registerCommand("garden", {
-		description: "Garden vault management: /garden init | status | update-blueprints",
+	pi.registerCommand("bloom", {
+		description: "Bloom directory management: /bloom init | status | update-blueprints",
 		handler: async (args: string, ctx) => {
 			const sub = args.trim().split(/\s+/)[0] ?? "";
 
 			switch (sub) {
 				case "init": {
-					ensureGarden(gardenDir);
-					seedBlueprints(gardenDir, packageDir);
-					ctx.ui.notify("Garden initialized", "info");
+					ensureBloom(bloomDir);
+					seedBlueprints(bloomDir, packageDir);
+					ctx.ui.notify("Bloom initialized", "info");
 					break;
 				}
 				case "status": {
-					pi.sendUserMessage("Show garden status using the garden_status tool.", { deliverAs: "followUp" });
+					pi.sendUserMessage("Show bloom status using the garden_status tool.", { deliverAs: "followUp" });
 					break;
 				}
 				case "update-blueprints": {
-					const versions = readBlueprintVersions(gardenDir);
+					const versions = readBlueprintVersions(bloomDir);
 					const updates = Object.entries(versions.updatesAvailable);
 					if (updates.length === 0) {
 						ctx.ui.notify("All blueprints are up to date", "info");
@@ -250,7 +251,7 @@ export default function (pi: ExtensionAPI) {
 					}
 					for (const [key, version] of updates) {
 						const src = path.join(packageDir, key);
-						const dest = blueprintDestPath(gardenDir, key);
+						const dest = blueprintDestPath(bloomDir, key);
 						if (!fs.existsSync(src)) continue;
 						const srcContent = fs.readFileSync(src, "utf-8");
 						fs.mkdirSync(path.dirname(dest), { recursive: true });
@@ -259,12 +260,12 @@ export default function (pi: ExtensionAPI) {
 						versions.seededHashes[key] = hashContent(srcContent);
 						delete versions.updatesAvailable[key];
 					}
-					writeBlueprintVersions(gardenDir, versions);
+					writeBlueprintVersions(bloomDir, versions);
 					ctx.ui.notify(`Updated ${updates.length} blueprint(s)`, "info");
 					break;
 				}
 				default: {
-					ctx.ui.notify("Usage: /garden init | status | update-blueprints", "info");
+					ctx.ui.notify("Usage: /bloom init | status | update-blueprints", "info");
 					break;
 				}
 			}
@@ -274,7 +275,7 @@ export default function (pi: ExtensionAPI) {
 	// --- Dynamic skill discovery ---
 
 	pi.on("resources_discover", () => {
-		const skillsDir = path.join(gardenDir, "Bloom", "Skills");
+		const skillsDir = path.join(bloomDir, "Skills");
 		if (!fs.existsSync(skillsDir)) return;
 		return { skillPaths: [skillsDir] };
 	});
@@ -284,8 +285,8 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "skill_create",
 		label: "Create Skill",
-		description: "Create a new skill markdown file in the Garden vault",
-		promptSnippet: "Create a new SKILL.md in ~/Garden/Bloom/Skills/",
+		description: "Create a new skill markdown file in the Bloom directory",
+		promptSnippet: "Create a new SKILL.md in ~/Bloom/Skills/",
 		promptGuidelines: [
 			"Use skill_create when the user wants to teach Bloom a new capability.",
 			"Skills are markdown files with YAML frontmatter (name, description) and structured instructions.",
@@ -298,7 +299,7 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
 			let skillDir: string;
 			try {
-				skillDir = safePath(gardenDir, "Bloom", "Skills", params.name);
+				skillDir = safePath(bloomDir, "Skills", params.name);
 			} catch {
 				return errorResult("Path traversal blocked: invalid skill name");
 			}
@@ -322,12 +323,12 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "skill_list",
 		label: "List Skills",
-		description: "List all skills in the Garden vault",
-		promptSnippet: "List skills in ~/Garden/Bloom/Skills/",
-		promptGuidelines: ["Use skill_list to show available Garden skills."],
+		description: "List all skills in the Bloom directory",
+		promptSnippet: "List skills in ~/Bloom/Skills/",
+		promptGuidelines: ["Use skill_list to show available Bloom skills."],
 		parameters: Type.Object({}),
 		async execute() {
-			const skillsDir = path.join(gardenDir, "Bloom", "Skills");
+			const skillsDir = path.join(bloomDir, "Skills");
 			if (!fs.existsSync(skillsDir)) {
 				return { content: [{ type: "text" as const, text: "No skills directory found." }], details: {} };
 			}
@@ -345,7 +346,7 @@ export default function (pi: ExtensionAPI) {
 				skills.push(`${entry.name} — ${desc}`);
 			}
 
-			const text = skills.length > 0 ? skills.join("\n") : "No skills found in Garden.";
+			const text = skills.length > 0 ? skills.join("\n") : "No skills found in Bloom.";
 			return { content: [{ type: "text" as const, text }], details: {} };
 		},
 	});
@@ -373,7 +374,7 @@ export default function (pi: ExtensionAPI) {
 				return errorResult(`invalid layer: ${params.layer} (expected: ${validLayers.join(", ")})`);
 			}
 
-			const evoDir = path.join(gardenDir, "Bloom", "Evolutions");
+			const evoDir = path.join(bloomDir, "Evolutions");
 			fs.mkdirSync(evoDir, { recursive: true });
 
 			const filepath = path.join(evoDir, `${params.slug}.pi.md`);

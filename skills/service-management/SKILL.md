@@ -31,7 +31,7 @@ Bloom exposes service lifecycle tools:
 
 Related declarative tools:
 
-- `manifest_set_service` — declare desired service state in `~/Garden/Bloom/manifest.yaml`
+- `manifest_set_service` — declare desired service state in `~/Bloom/manifest.yaml`
 - `manifest_apply` — apply desired state (install missing, start enabled, stop disabled)
 
 ## End-to-End Example (Scaffold → Test → Publish → Install)
@@ -69,8 +69,8 @@ mkdir -p ~/.config/containers/systemd ~/.config/systemd/user
 find /tmp/bloom-svc/quadlet -maxdepth 1 -type f -name '*.socket' -exec cp {} ~/.config/systemd/user/ \;
 find /tmp/bloom-svc/quadlet -maxdepth 1 -type f ! -name '*.socket' -exec cp {} ~/.config/containers/systemd/ \;
 [ -f ~/.config/containers/systemd/bloom.network ] || cp /usr/local/share/bloom/os/sysconfig/bloom.network ~/.config/containers/systemd/bloom.network
-mkdir -p ~/Garden/Bloom/Skills/{name}
-cp /tmp/bloom-svc/SKILL.md ~/Garden/Bloom/Skills/{name}/SKILL.md
+mkdir -p ~/Bloom/Skills/{name}
+cp /tmp/bloom-svc/SKILL.md ~/Bloom/Skills/{name}/SKILL.md
 systemctl --user daemon-reload
 if [ -f ~/.config/systemd/user/bloom-{name}.socket ]; then
   systemctl --user start bloom-{name}.socket
@@ -83,7 +83,7 @@ rm -rf /tmp/bloom-svc
 Notes:
 
 - `service_install` is registry-first. If OCI pull fails but the service package exists in the local Bloom bundle, it may install from the bundled copy as a fallback.
-- For `tailscale`, ensure rootless Podman subuid/subgid mappings exist for user `bloom` (`/etc/subuid`, `/etc/subgid`).
+- For `netbird`, ensure rootless Podman subuid/subgid mappings exist for the user (`/etc/subuid`, `/etc/subgid`).
 
 ## Remove a Service
 
@@ -92,7 +92,7 @@ systemctl --user stop bloom-{name}.socket 2>/dev/null || true
 systemctl --user stop bloom-{name}.service 2>/dev/null || true
 rm -f ~/.config/containers/systemd/bloom-{name}.*
 rm -f ~/.config/systemd/user/bloom-{name}.socket
-rm -rf ~/Garden/Bloom/Skills/{name}
+rm -rf ~/Bloom/Skills/{name}
 systemctl --user daemon-reload
 ```
 
@@ -126,13 +126,13 @@ oras repo tags ghcr.io/pibloom/bloom-svc-{name}
 Backup a service package locally before making changes:
 
 ```bash
-oras backup ghcr.io/pibloom/bloom-svc-{name}:latest -o ~/Garden/Bloom/backups/
+oras backup ghcr.io/pibloom/bloom-svc-{name}:latest -o ~/Bloom/backups/
 ```
 
 Restore a previously backed-up service:
 
 ```bash
-oras restore ~/Garden/Bloom/backups/bloom-svc-{name}/ --to ghcr.io/pibloom/bloom-svc-{name}:rollback
+oras restore ~/Bloom/backups/bloom-svc-{name}/ --to ghcr.io/pibloom/bloom-svc-{name}:rollback
 ```
 
 ## Service Dependencies
@@ -143,8 +143,8 @@ Services may depend on other components:
 |---------|-----------|----------|
 | `whatsapp` | Pi channels server (`/run/bloom/channels.sock`) | Unix socket reconnect with exponential backoff |
 | `whisper` | None (standalone HTTP API) | — |
-| `tailscale` | Network stack (NET_ADMIN, /dev/net/tun) | Host network mode |
-| `syncthing` | Syncthing peers and local Garden bind mount | Host network mode + `%h/Garden` bind mount |
+| `netbird` | Network stack (NET_ADMIN, /dev/net/tun) | Host network mode |
+| `syncthing` | Syncthing peers and local home bind mount | Host network mode + `%h` bind mount |
 
 Pi's channels server is a user-space interactive process, not a systemd service. Service bridges handle unavailability via reconnect logic.
 
@@ -164,7 +164,7 @@ OCI artifacts use semver tags: `ghcr.io/pibloom/bloom-svc-whisper:0.1.0`
 
 ### Check Installed Version
 
-The manifest at `~/Garden/Bloom/manifest.yaml` tracks installed service versions. Use `manifest_show` to view current state.
+The manifest at `~/Bloom/manifest.yaml` tracks installed service versions. Use `manifest_show` to view current state.
 
 ### Pin a Service Version
 
@@ -195,5 +195,5 @@ Then pass it to `service_install`:
 |------|---------|----------|-------------|
 | `whisper` | 0.1.0 | media | Speech-to-text transcription (faster-whisper, port 9000) |
 | `whatsapp` | 0.1.0 | communication | WhatsApp messaging bridge via Baileys |
-| `tailscale` | 0.1.0 | networking | Secure mesh VPN via Tailscale |
-| `syncthing` | 0.1.0 | sync | Peer-to-peer Garden vault sync via Syncthing (port 8384 UI) |
+| `netbird` | 0.1.0 | networking | Secure mesh VPN via NetBird |
+| `syncthing` | 0.1.0 | sync | Peer-to-peer home directory sync via Syncthing (port 8384 UI) |

@@ -34,7 +34,7 @@ sequenceDiagram
     Ext->>Hooks: Register before_agent_start hooks
     Ext->>Hooks: Register tool_call / tool_result hooks
     Pi->>Hooks: Fire session_start
-    Note over Hooks: bloom-persona sets session name<br/>bloom-audit rotates logs<br/>bloom-garden seeds blueprints<br/>bloom-objects builds index<br/>bloom-channels starts socket
+    Note over Hooks: bloom-persona sets session name<br/>bloom-audit rotates logs<br/>bloom-garden seeds blueprints<br/>bloom-channels starts socket
     Pi->>Hooks: Fire before_agent_start
     Note over Hooks: bloom-persona injects identity<br/>bloom-os injects update status<br/>bloom-topics injects topic guidance
     Pi-->>Pi: Ready
@@ -118,29 +118,21 @@ Service lifecycle: scaffold, publish, install, and test OCI service packages.
 **Hooks:**
 - `session_start` — Set UI status
 
-### 🗂️ bloom-objects (491 lines)
+### 🗂️ bloom-objects
 
-Flat-file object store with YAML frontmatter + Markdown in the Garden vault.
+Flat-file object store with YAML frontmatter + Markdown in `~/Bloom/Objects/`.
 
-**Tools:** `memory_create`, `memory_read`, `memory_search`, `memory_link`, `memory_list`, `memory_move`, `garden_reindex`
-**Hooks:**
-- `session_start` — Build in-memory index from all PARA directories
+**Tools:** `memory_create`, `memory_read`, `memory_search`, `memory_link`, `memory_list`
 
-### 📓 bloom-journal (102 lines)
+### 🌿 bloom-garden
 
-Daily journal entries at `~/Garden/Journal/{YYYY}/{MM}/{YYYY-MM-DD}.md`.
-
-**Tools:** `journal_write`, `journal_read`
-
-### 🌿 bloom-garden (408 lines)
-
-Garden vault management, blueprint seeding, skill creation, persona evolution.
+Bloom directory management, blueprint seeding, skill creation, persona evolution.
 
 **Tools:** `garden_status`, `skill_create`, `skill_list`, `persona_evolve`
-**Commands:** `/garden` (init | status | update-blueprints)
+**Commands:** `/bloom` (init | status | update-blueprints)
 **Hooks:**
-- `session_start` — Ensure garden structure, seed blueprints (hash-based change detection)
-- `resources_discover` — Return skill paths from `~/Garden/Bloom/Skills/`
+- `session_start` — Ensure Bloom directory structure, seed blueprints (hash-based change detection)
+- `resources_discover` — Return skill paths from `~/Bloom/Skills/`
 
 ### 📡 bloom-channels (410 lines)
 
@@ -162,7 +154,7 @@ Conversation topic management and session organization.
 - `before_agent_start` — Inject topic guidance into system prompt
 - `session_start` — Initialize topic state
 
-## 🧩 All Registered Tools (35)
+## 🧩 All Registered Tools (30)
 
 Quick reference of every tool name available to Pi:
 
@@ -191,18 +183,14 @@ Quick reference of every tool name available to Pi:
 | `service_publish` | bloom-services | Publish package to OCI registry (oras) |
 | `service_install` | bloom-services | Pull and install package from registry |
 | `service_test` | bloom-services | Smoke-test installed service units |
-| `memory_create` | bloom-objects | Create new object in Garden vault |
+| `memory_create` | bloom-objects | Create new object in ~/Bloom/Objects/ |
 | `memory_read` | bloom-objects | Read object by type/slug |
 | `memory_search` | bloom-objects | Search objects by pattern |
 | `memory_link` | bloom-objects | Add bidirectional links between objects |
-| `memory_list` | bloom-objects | List objects (filter by type, para, frontmatter) |
-| `memory_move` | bloom-objects | Relocate object between PARA categories |
-| `garden_reindex` | bloom-objects | Rebuild in-memory index |
-| `journal_write` | bloom-journal | Write entry to daily journal |
-| `journal_read` | bloom-journal | Read journal for a date |
-| `garden_status` | bloom-garden | Show vault location, file counts, blueprint state |
-| `skill_create` | bloom-garden | Create new SKILL.md in Garden vault |
-| `skill_list` | bloom-garden | List all skills in Garden vault |
+| `memory_list` | bloom-objects | List objects (filter by type, frontmatter) |
+| `garden_status` | bloom-garden | Show Bloom directory, file counts, blueprint state |
+| `skill_create` | bloom-garden | Create new SKILL.md in ~/Bloom/Skills/ |
+| `skill_list` | bloom-garden | List all skills in ~/Bloom/Skills/ |
 | `persona_evolve` | bloom-garden | Propose persona layer change |
 
 ## 📜 Skills
@@ -225,33 +213,26 @@ Canonical metadata for automation lives in `services/catalog.yaml`.
 |---------|----------|------|
 | `bloom-svc-whisper` | media | 9000 |
 | `bloom-svc-whatsapp` | communication | — |
-| `bloom-svc-tailscale` | networking | — |
+| `bloom-svc-netbird` | networking | — |
 | `bloom-svc-syncthing` | sync | 8384 |
 
 ## 🪞 Persona
 
-OpenPersona 4-layer identity in `persona/`, seeded to `~/Garden/Bloom/Persona/` on first boot:
+OpenPersona 4-layer identity in `persona/`, seeded to `~/Bloom/Persona/` on first boot:
 - `SOUL.md` — Identity, values, voice, boundaries
 - `BODY.md` — Channel adaptation, presence behavior
-- `FACULTY.md` — Reasoning patterns, PARA methodology
+- `FACULTY.md` — Reasoning patterns, decision frameworks
 - `SKILL.md` — Current capabilities, tool preferences
 
-### 🌿 Garden Structure
+### 🌿 Bloom Directory Structure
 
 ```mermaid
 graph LR
-    Garden["🌿 ~/Garden/"] --> Inbox[Inbox]
-    Garden --> Projects[Projects]
-    Garden --> Areas[Areas]
-    Garden --> Resources[Resources]
-    Garden --> Archive[Archive]
-    Garden --> Bloom[Bloom/]
-    Bloom --> Persona["🪞 Persona/"]
+    Bloom["🌿 ~/Bloom/"] --> Persona["🪞 Persona/"]
     Bloom --> Skills["📜 Skills/"]
     Bloom --> Evolutions[Evolutions/]
-    Garden --> Journal["📓 Journal/<br/>{YYYY}/{MM}/"]
+    Bloom --> Objects["🗂️ Objects/"]
 
-    style Garden fill:#d5f5e8
     style Bloom fill:#e8d5f5
 ```
 
@@ -261,7 +242,7 @@ graph LR
 
 | Export | Purpose |
 |--------|---------|
-| `getGardenDir()` | Resolve Garden path (`$BLOOM_GARDEN_DIR` or `~/Garden`) |
+| `getBloomDir()` | Resolve Bloom directory path (`$BLOOM_DIR` or `~/Bloom`) |
 | `safePath(root, ...segments)` | Resolve path under root, blocking traversal |
 | `parseFrontmatter<T>(str)` | Parse YAML frontmatter from markdown |
 | `stringifyFrontmatter(data, content)` | Build markdown with YAML frontmatter |
@@ -271,7 +252,6 @@ graph LR
 | `requireConfirmation(ctx, action)` | Prompt for UI confirmation, returns null or error string |
 | `getServiceRegistry()` | Resolve OCI service registry from env |
 | `nowIso()` | ISO timestamp without milliseconds |
-| `PARA_DIRS` | `["Inbox", "Projects", "Areas", "Resources", "Archive"]` |
 
 ## 🚀 Install
 
@@ -281,7 +261,7 @@ pi install /path/to/bloom
 
 Or for development:
 ```bash
-pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-audit.ts -e ./extensions/bloom-os.ts -e ./extensions/bloom-repo.ts -e ./extensions/bloom-manifest.ts -e ./extensions/bloom-services.ts -e ./extensions/bloom-objects.ts -e ./extensions/bloom-journal.ts -e ./extensions/bloom-garden.ts -e ./extensions/bloom-channels.ts -e ./extensions/bloom-topics.ts
+pi -e ./extensions/bloom-persona.ts -e ./extensions/bloom-audit.ts -e ./extensions/bloom-os.ts -e ./extensions/bloom-repo.ts -e ./extensions/bloom-manifest.ts -e ./extensions/bloom-services.ts -e ./extensions/bloom-objects.ts -e ./extensions/bloom-garden.ts -e ./extensions/bloom-channels.ts -e ./extensions/bloom-topics.ts
 ```
 
 ## 📖 Setup & Deployment Docs

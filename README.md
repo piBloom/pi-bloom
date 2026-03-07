@@ -10,8 +10,7 @@ You "plant" your mini-PC and over time it grows and blooms with you.
 
 Bloom is a **Pi package** — a bundle of extensions, skills, and services that teach Pi about its environment. When installed on a Fedora bootc system, Pi becomes a sovereign personal AI that:
 
-- **Remembers** — flat-file object store with YAML frontmatter, organized using PARA methodology
-- **Journals** — daily entries that build a shared narrative over time
+- **Remembers** — flat-file object store with YAML frontmatter in `~/Bloom/Objects/`
 - **Manages its own OS** — bootc updates, rollbacks, container lifecycle, systemd services
 - **Communicates** — channel bridges (WhatsApp via Baileys) over Unix socket IPC
 - **Evolves** — structured self-improvement workflow, persona that grows from Seed to Bloom
@@ -34,15 +33,15 @@ graph TD
     Pi[🤖 Pi Agent] --> Skills[📜 Skills<br/>Markdown instructions]
     Pi --> Extensions[🧩 Extensions<br/>In-process TypeScript]
     Pi --> Services[📦 Services<br/>OCI Containers]
-    Extensions --> Garden[🌿 Garden Vault<br/>~/Garden/]
-    Services --> Garden
+    Extensions --> BloomDir[🌿 Bloom Directory<br/>~/Bloom/]
+    Services --> BloomDir
     Extensions --> Persona[🪞 Persona<br/>4-layer identity]
 
     style Pi fill:#f5e8d5
     style Skills fill:#d5f5d5
     style Extensions fill:#d5d5f5
     style Services fill:#f5d5d5
-    style Garden fill:#d5f5e8
+    style BloomDir fill:#d5f5e8
     style Persona fill:#e8d5f5
 ```
 
@@ -53,10 +52,11 @@ graph TD
 | `bloom-persona` | Identity injection, safety guardrails, compaction guidance |
 | `bloom-audit` | Tool-call audit trail, retention, and review |
 | `bloom-os` | bootc, Podman, systemd management |
+| `bloom-repo` | Repository management, PR-based self-evolution |
+| `bloom-manifest` | Declarative service manifest management |
 | `bloom-services` | Service lifecycle (scaffold, publish, install, test) |
-| `bloom-objects` | Flat-file memory store (CRUD with YAML frontmatter) |
-| `bloom-journal` | Daily journal entries |
-| `bloom-garden` | Garden vault, blueprint seeding, skill discovery |
+| `bloom-objects` | Flat-file object store (CRUD with YAML frontmatter) |
+| `bloom-garden` | Bloom directory, blueprint seeding, skill discovery |
 | `bloom-channels` | Channel bridge Unix socket server |
 | `bloom-topics` | Topic management and session organization |
 
@@ -79,30 +79,28 @@ Modular capabilities packaged as OCI artifacts, installed via `oras` from GHCR:
 |---------|------|
 | `bloom-svc-whisper` | Speech-to-text (faster-whisper) |
 | `bloom-svc-whatsapp` | WhatsApp bridge (Baileys) |
-| `bloom-svc-tailscale` | Mesh VPN |
-| `bloom-svc-syncthing` | P2P vault sync |
+| `bloom-svc-netbird` | Mesh VPN |
+| `bloom-svc-syncthing` | P2P home sync |
 
 ### 🪞 Persona
 
-Bloom has an [OpenPersona](persona/) 4-layer identity seeded to `~/Garden/Bloom/Persona/` on first boot:
+Bloom has an [OpenPersona](persona/) 4-layer identity seeded to `~/Bloom/Persona/` on first boot:
 
 - **SOUL.md** — Identity, values, voice, boundaries
 - **BODY.md** — Channel adaptation, presence behavior
-- **FACULTY.md** — Reasoning patterns, PARA methodology
+- **FACULTY.md** — Reasoning patterns, decision frameworks
 - **SKILL.md** — Current capabilities inventory
 
-### 🌿 Garden
+### 🌿 Bloom Directory
 
-The Garden (`~/Garden/`) is Bloom's persistent vault — a PARA-organized directory structure synced across devices via Syncthing:
+The Bloom directory (`~/Bloom/`) holds Bloom's configuration and data, synced across devices via Syncthing:
 
 ```
-~/Garden/
-├── Inbox/        # Unprocessed items
-├── Projects/     # Active, deadline-driven work
-├── Areas/        # Ongoing responsibilities
-├── Resources/    # Reference material
-├── Archive/      # Completed items
-└── Bloom/        # Shared persona, skills, evolutions
+~/Bloom/
+├── Persona/      # 4-layer identity files
+├── Skills/       # Installed skill files
+├── Evolutions/   # Proposed system changes
+└── Objects/      # Tracked objects (notes, tasks, etc.)
 ```
 
 ## 🗂️ Project Structure
@@ -146,9 +144,10 @@ Load extensions directly for development:
 pi -e ./extensions/bloom-persona.ts \
    -e ./extensions/bloom-audit.ts \
    -e ./extensions/bloom-os.ts \
+   -e ./extensions/bloom-repo.ts \
+   -e ./extensions/bloom-manifest.ts \
    -e ./extensions/bloom-services.ts \
    -e ./extensions/bloom-objects.ts \
-   -e ./extensions/bloom-journal.ts \
    -e ./extensions/bloom-garden.ts \
    -e ./extensions/bloom-channels.ts \
    -e ./extensions/bloom-topics.ts
@@ -176,7 +175,7 @@ Once the OS is running, the `first-boot` skill walks through setup:
 2. GitHub authentication
 3. Device git identity
 4. Syncthing setup (core sync service)
-5. Optional services (WhatsApp, Whisper, Tailscale)
+5. Optional services (WhatsApp, Whisper, NetBird)
 
 See [docs/pibloom-setup.md](docs/pibloom-setup.md) for the full guide.
 

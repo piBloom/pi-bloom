@@ -50,12 +50,12 @@ Expected local path:
 
 ## 4) 📦 Configure optional service modules (manifest-first)
 
-Declare desired services in `~/Garden/Bloom/manifest.yaml` via tool calls:
+Declare desired services in `~/Bloom/manifest.yaml` via tool calls:
 
 - `manifest_set_service(name="syncthing", image="docker.io/syncthing/syncthing@sha256:...", version="0.1.0", enabled=true)`
 - `manifest_set_service(name="whatsapp", image="ghcr.io/pibloom/bloom-whatsapp:0.1.0", version="0.1.0", enabled=true)`
 - `manifest_set_service(name="whisper", image="docker.io/fedirz/faster-whisper-server@sha256:...", version="0.1.0", enabled=true)`
-- `manifest_set_service(name="tailscale", image="docker.io/tailscale/tailscale@sha256:...", version="0.1.0", enabled=true)`
+- `manifest_set_service(name="netbird", image="docker.io/netbirdio/netbird@sha256:...", version="0.1.0", enabled=true)`
 
 Preview:
 
@@ -91,16 +91,16 @@ Watch logs and pair QR:
 journalctl --user -u bloom-whatsapp -f
 ```
 
-### 📦 Tailscale
+### 📦 NetBird
 
 Check rootless prerequisites before first start:
 
-- user `bloom` must have entries in `/etc/subuid` and `/etc/subgid`
+- user must have entries in `/etc/subuid` and `/etc/subgid`
 
 Then authenticate:
 
 ```bash
-podman exec bloom-tailscale tailscale up
+podman exec bloom-netbird netbird up
 ```
 
 ## 6) 🚀 Mark setup complete

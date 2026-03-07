@@ -27,8 +27,8 @@ Use this as a reference when creating new socket-activated services.
 mkdir -p ~/.config/containers/systemd ~/.config/systemd/user
 cp services/examples/demo-socket-echo/quadlet/bloom-demo-socket-echo.container ~/.config/containers/systemd/
 cp services/examples/demo-socket-echo/quadlet/bloom-demo-socket-echo.socket ~/.config/systemd/user/
-mkdir -p ~/Garden/Bloom/Skills/demo-socket-echo
-cp services/examples/demo-socket-echo/SKILL.md ~/Garden/Bloom/Skills/demo-socket-echo/SKILL.md
+mkdir -p ~/Bloom/Skills/demo-socket-echo
+cp services/examples/demo-socket-echo/SKILL.md ~/Bloom/Skills/demo-socket-echo/SKILL.md
 systemctl --user daemon-reload
 systemctl --user start bloom-demo-socket-echo.socket
 ```

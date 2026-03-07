@@ -1,5 +1,5 @@
 [Unit]
-Description=Bloom Syncthing — Garden vault sync service
+Description=Bloom Syncthing — Home directory sync service
 After=network-online.target
 Wants=network-online.target
 
@@ -11,8 +11,8 @@ Network=host
 # Persistent Syncthing config + index state
 Volume=bloom-syncthing-data:/var/syncthing:Z
 
-# Sync target: Garden vault
-Volume=%h/Garden:/var/syncthing/Garden:Z
+# Sync target: user home directory
+Volume=%h:/var/syncthing/home:Z
 
 Environment=PUID=%U
 Environment=PGID=%G

@@ -2,8 +2,7 @@
 set -euo pipefail
 
 # Bloom first-boot greeting
-BLOOM_DIR="/var/lib/bloom"
-FIRST_RUN_MARKER="${BLOOM_DIR}/.bloom/.initialized"
+FIRST_RUN_MARKER="$HOME/.bloom/.initialized"
 
 if [ ! -f "$FIRST_RUN_MARKER" ]; then
     echo ""
@@ -16,10 +15,10 @@ if [ ! -f "$FIRST_RUN_MARKER" ]; then
     echo "    • LLM API key (Anthropic, OpenAI, etc.)"
     echo "    • GitHub authentication (for self-evolution)"
     echo "    • Optional OCI service modules:"
-    echo "      - Syncthing (Garden sync)"
+    echo "      - Syncthing (home directory sync)"
     echo "      - WhatsApp bridge"
     echo "      - Whisper transcription"
-    echo "      - Tailscale remote access"
+    echo "      - NetBird remote access"
     echo "    • Your preferences and name"
     echo ""
 

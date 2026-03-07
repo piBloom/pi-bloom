@@ -31,7 +31,7 @@ You enforce and evolve the Bloom architecture across three pillars:
 
 **Bloom-Specific Patterns:**
 - Three-tier extension model: Skill → Extension → Service (lightest first)
-- Garden vault (~/Garden/) with PARA structure for user content
+- Bloom directory (~/Bloom/) for persona, skills, objects, evolutions
 - Pi state (~/.pi/) for internal agent state, never synced
 - Guardrails system for blocking dangerous shell patterns
 - Channel system using Unix socket IPC with JSON-newline protocol

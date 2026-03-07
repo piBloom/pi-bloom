@@ -2,10 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	createLogger,
 	errorResult,
-	getGardenDir,
+	getBloomDir,
 	getServiceRegistry,
 	nowIso,
-	PARA_DIRS,
 	parseFrontmatter,
 	requireConfirmation,
 	safePath,
@@ -202,32 +201,32 @@ describe("nowIso", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getGardenDir
+// getBloomDir
 // ---------------------------------------------------------------------------
-describe("getGardenDir", () => {
+describe("getBloomDir", () => {
 	const origEnv = { ...process.env };
 
 	afterEach(() => {
 		process.env = { ...origEnv };
 	});
 
-	it("returns _BLOOM_GARDEN_RESOLVED when set", () => {
-		process.env._BLOOM_GARDEN_RESOLVED = "/resolved";
-		process.env.BLOOM_GARDEN_DIR = "/fallback";
-		expect(getGardenDir()).toBe("/resolved");
+	it("returns _BLOOM_DIR_RESOLVED when set", () => {
+		process.env._BLOOM_DIR_RESOLVED = "/resolved";
+		process.env.BLOOM_DIR = "/fallback";
+		expect(getBloomDir()).toBe("/resolved");
 	});
 
-	it("falls back to BLOOM_GARDEN_DIR", () => {
-		delete process.env._BLOOM_GARDEN_RESOLVED;
-		process.env.BLOOM_GARDEN_DIR = "/custom";
-		expect(getGardenDir()).toBe("/custom");
+	it("falls back to BLOOM_DIR", () => {
+		delete process.env._BLOOM_DIR_RESOLVED;
+		process.env.BLOOM_DIR = "/custom";
+		expect(getBloomDir()).toBe("/custom");
 	});
 
-	it("defaults to ~/Garden", () => {
-		delete process.env._BLOOM_GARDEN_RESOLVED;
-		delete process.env.BLOOM_GARDEN_DIR;
-		const result = getGardenDir();
-		expect(result).toMatch(/\/Garden$/);
+	it("defaults to ~/Bloom", () => {
+		delete process.env._BLOOM_DIR_RESOLVED;
+		delete process.env.BLOOM_DIR;
+		const result = getBloomDir();
+		expect(result).toMatch(/\/Bloom$/);
 	});
 });
 
@@ -351,14 +350,5 @@ describe("getServiceRegistry", () => {
 		delete process.env.BLOOM_SERVICE_REGISTRY;
 		delete process.env.BLOOM_REGISTRY;
 		expect(getServiceRegistry()).toBe("ghcr.io/pibloom");
-	});
-});
-
-// ---------------------------------------------------------------------------
-// PARA_DIRS
-// ---------------------------------------------------------------------------
-describe("PARA_DIRS", () => {
-	it("equals the expected array", () => {
-		expect(PARA_DIRS).toEqual(["Inbox", "Projects", "Areas", "Resources", "Archive"]);
 	});
 });

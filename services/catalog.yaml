@@ -18,15 +18,14 @@ services:
     optional: true
     preflight:
       commands: [oras, podman, systemctl]
-  tailscale:
+  netbird:
     version: "0.1.0"
     category: networking
-    artifact: ghcr.io/pibloom/bloom-svc-tailscale
-    image: docker.io/tailscale/tailscale@sha256:95e528798bebe75f39b10e74e7051cf51188ee615934f232ba7ad06a3390ffa1
+    artifact: ghcr.io/pibloom/bloom-svc-netbird
+    image: netbirdio/netbird@sha256:b3e69490e58cf255caf1b9b6a8bbfcfae4d1b2bbaa3c40a06cfdbba5b8fdc0d2
     optional: true
     preflight:
       commands: [oras, podman, systemctl]
-      rootless_subids: true
   syncthing:
     version: "0.1.0"
     category: sync
