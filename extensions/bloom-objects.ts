@@ -32,9 +32,7 @@ export default function (pi: ExtensionAPI) {
 		label: "Memory Create",
 		description: "Create a new markdown object in ~/Bloom/Objects/",
 		promptSnippet: "Create a new tracked object (task, note, project, etc.)",
-		promptGuidelines: [
-			"Use memory_create when the user mentions something new to track. Always set a title.",
-		],
+		promptGuidelines: ["Use memory_create when the user mentions something new to track. Always set a title."],
 		parameters: Type.Object({
 			type: Type.String({
 				description: "Object type (e.g. task, note, project)",
@@ -128,9 +126,7 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			type: Type.String({ description: "Object type" }),
 			slug: Type.String({ description: "Object slug" }),
-			path: Type.Optional(
-				Type.String({ description: "Optional direct file path relative to home dir" }),
-			),
+			path: Type.Optional(Type.String({ description: "Optional direct file path relative to home dir" })),
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
 			let filepath: string;
@@ -257,9 +253,7 @@ export default function (pi: ExtensionAPI) {
 		promptGuidelines: ["Use memory_list to show all objects of a type, or filter by status, etc."],
 		parameters: Type.Object({
 			type: Type.Optional(Type.String({ description: "Object type to filter by" })),
-			directory: Type.Optional(
-				Type.String({ description: "Directory to walk (default: ~/Bloom/Objects/)" }),
-			),
+			directory: Type.Optional(Type.String({ description: "Directory to walk (default: ~/Bloom/Objects/)" })),
 			filters: Type.Optional(
 				Type.Record(Type.String(), Type.String(), {
 					description: "Frontmatter field filters",

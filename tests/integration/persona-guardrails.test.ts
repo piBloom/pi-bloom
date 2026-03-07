@@ -10,7 +10,7 @@ let temp: TempGarden;
 beforeEach(() => {
 	temp = createTempGarden();
 	// Seed persona files so loadPersona doesn't fail
-	const personaDir = join(temp.gardenDir, "Bloom", "Persona");
+	const personaDir = join(temp.gardenDir, "Persona");
 	mkdirSync(personaDir, { recursive: true });
 	for (const file of ["SOUL.md", "BODY.md", "FACULTY.md", "SKILL.md"]) {
 		writeFileSync(join(personaDir, file), `# ${file}\ntest content`);
@@ -23,9 +23,8 @@ afterEach(() => {
 
 async function setupPersonaExtension(guardrailsYaml?: string) {
 	if (guardrailsYaml) {
-		const guardrailsDir = join(temp.gardenDir, "Bloom");
-		mkdirSync(guardrailsDir, { recursive: true });
-		writeFileSync(join(guardrailsDir, "guardrails.yaml"), guardrailsYaml);
+		mkdirSync(temp.gardenDir, { recursive: true });
+		writeFileSync(join(temp.gardenDir, "guardrails.yaml"), guardrailsYaml);
 	}
 
 	// Each mod.default(api) call creates fresh closures (guardrails starts undefined)

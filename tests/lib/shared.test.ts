@@ -352,4 +352,3 @@ describe("getServiceRegistry", () => {
 		expect(getServiceRegistry()).toBe("ghcr.io/pibloom");
 	});
 });
-

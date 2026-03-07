@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { normalizeCommand } from "../lib/persona-utils.js";
-import { createLogger, getGardenDir } from "../lib/shared.js";
+import { createLogger, getBloomDir } from "../lib/shared.js";
 import { yaml } from "../lib/yaml.js";
 
 const log = createLogger("bloom-persona");
@@ -34,11 +34,11 @@ interface GuardrailsConfig {
 }
 
 function loadGuardrails(): Array<{ tool: string; pattern: RegExp; label: string }> {
-	const gardenDir = getGardenDir();
+	const bloomDir = getBloomDir();
 	const packageDir = join(fileURLToPath(import.meta.url), "../..");
 
 	// User customization takes priority over defaults
-	const gardenPath = join(gardenDir, "Bloom", "guardrails.yaml");
+	const gardenPath = join(bloomDir, "guardrails.yaml");
 	const defaultPath = join(packageDir, "guardrails.yaml");
 	const filePath = existsSync(gardenPath) ? gardenPath : defaultPath;
 
@@ -100,8 +100,8 @@ function loadContext(): BloomContext | null {
 }
 
 function loadPersona(): string {
-	const gardenDir = getGardenDir();
-	const vaultDir = join(gardenDir, "Bloom", "Persona");
+	const bloomDir = getBloomDir();
+	const vaultDir = join(bloomDir, "Persona");
 	const dir = existsSync(join(vaultDir, "SOUL.md")) ? vaultDir : join(fileURLToPath(import.meta.url), "../../persona");
 	const layers: Array<[string, string]> = [
 		["Soul", "SOUL.md"],
@@ -207,7 +207,6 @@ export default function (pi: ExtensionAPI) {
 			"1. Bloom persona identity: values, voice, growth stage, and boundaries.",
 			"2. Human context: name, preferences, recurring topics, and active projects.",
 			"3. Task state: in-progress tasks, open threads, and decisions pending.",
-			"4. PARA structure: known projects, areas, resources, and archive items.",
 			`Tokens before compaction: ${tokensBefore}.`,
 		].join("\n");
 		return {

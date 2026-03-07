@@ -18,7 +18,7 @@ afterEach(() => {
 describe("audit rotation", () => {
 	it("deletes audit files older than 30 days on session_start", async () => {
 		// Create audit directory structure
-		const auditDir = join(temp.gardenDir, "Bloom", "audit");
+		const auditDir = join(temp.gardenDir, "audit");
 		mkdirSync(auditDir, { recursive: true });
 
 		const now = new Date();
@@ -51,7 +51,7 @@ describe("audit rotation", () => {
 	});
 
 	it("keeps files within the retention window", async () => {
-		const auditDir = join(temp.gardenDir, "Bloom", "audit");
+		const auditDir = join(temp.gardenDir, "audit");
 		mkdirSync(auditDir, { recursive: true });
 
 		const now = new Date();

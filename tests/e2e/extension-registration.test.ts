@@ -81,13 +81,7 @@ describe("bloom-objects registration", () => {
 		mod.default(api as never);
 
 		expect(toolNames(api)).toEqual(
-			expect.arrayContaining([
-				"memory_create",
-				"memory_read",
-				"memory_search",
-				"memory_link",
-				"memory_list",
-			]),
+			expect.arrayContaining(["memory_create", "memory_read", "memory_search", "memory_link", "memory_list"]),
 		);
 		expect(toolNames(api)).not.toContain("memory_move");
 		expect(toolNames(api)).not.toContain("garden_reindex");

@@ -47,13 +47,7 @@ describe("bloom-objects registration", () => {
 	});
 
 	it("registers the expected tool names", () => {
-		expect(toolNames()).toEqual([
-			"memory_create",
-			"memory_read",
-			"memory_search",
-			"memory_link",
-			"memory_list",
-		]);
+		expect(toolNames()).toEqual(["memory_create", "memory_read", "memory_search", "memory_link", "memory_list"]);
 	});
 
 	it("has no session_start event handler", () => {

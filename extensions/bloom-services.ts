@@ -23,7 +23,7 @@ import {
 import {
 	createLogger,
 	errorResult,
-	getGardenDir,
+	getBloomDir,
 	getServiceRegistry,
 	parseFrontmatter,
 	truncate,
@@ -355,7 +355,7 @@ export default function (pi: ExtensionAPI) {
 
 				const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
 				const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
-				const skillDir = join(getGardenDir(), "Bloom", "Skills", params.name);
+				const skillDir = join(getBloomDir(), "Skills", params.name);
 				mkdirSync(systemdDir, { recursive: true });
 				mkdirSync(userSystemdDir, { recursive: true });
 				mkdirSync(skillDir, { recursive: true });
@@ -404,24 +404,22 @@ export default function (pi: ExtensionAPI) {
 
 				const meta = extractSkillMetadata(join(skillDir, "SKILL.md"));
 				if (updateManifest) {
-					const gardenDir = getGardenDir();
-					const manifestPath = join(gardenDir, "Bloom", "manifest.yaml");
+					const bloomDir = getBloomDir();
+					const manifestPath = join(bloomDir, "manifest.yaml");
 					const manifest = loadManifest(manifestPath);
 					manifest.services[params.name] = {
 						image: meta.image ?? "unknown",
 						version: version === "latest" ? meta.version : version,
 						enabled: true,
 					};
-					saveManifest(manifest, manifestPath, gardenDir);
+					saveManifest(manifest, manifestPath, bloomDir);
 				}
 
 				return {
 					content: [
 						{
 							type: "text" as const,
-							text: sourceNote
-								? `Installed ${ref} successfully.\n${sourceNote}`
-								: `Installed ${ref} successfully.`,
+							text: sourceNote ? `Installed ${ref} successfully.\n${sourceNote}` : `Installed ${ref} successfully.`,
 						},
 					],
 					details: {
