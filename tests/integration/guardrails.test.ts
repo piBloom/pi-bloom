@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { normalizeCommand } from "../../lib/persona-utils.js";
+import { normalizeCommand } from "../../extensions/bloom-persona.js";
 
 const require = createRequire(import.meta.url);
 const yaml: { load: (str: string) => unknown } = require("js-yaml");

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { parseRef } from "../../extensions/bloom-objects.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
 
@@ -120,5 +121,26 @@ describe("memory_create and memory_read execution", () => {
 
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("not found");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// parseRef (inlined from lib/object-utils.ts)
+// ---------------------------------------------------------------------------
+describe("parseRef", () => {
+	it("parses type/slug", () => {
+		expect(parseRef("task/fix-bike")).toEqual({ type: "task", slug: "fix-bike" });
+	});
+
+	it("throws on missing slash", () => {
+		expect(() => parseRef("noslash")).toThrow("invalid reference format");
+	});
+
+	it("uses first slash only for a/b/c", () => {
+		expect(parseRef("a/b/c")).toEqual({ type: "a", slug: "b/c" });
+	});
+
+	it("handles type with empty slug", () => {
+		expect(parseRef("type/")).toEqual({ type: "type", slug: "" });
 	});
 });

@@ -9,9 +9,7 @@ import os from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { normalizeCommand } from "../lib/persona-utils.js";
-import { createLogger, getBloomDir } from "../lib/shared.js";
-import { yaml } from "../lib/yaml.js";
+import { createLogger, getBloomDir, yaml } from "../lib/shared.js";
 
 const log = createLogger("bloom-persona");
 
@@ -31,6 +29,11 @@ interface GuardrailRule {
 /** Top-level guardrails configuration loaded from guardrails.yaml. */
 interface GuardrailsConfig {
 	rules: GuardrailRule[];
+}
+
+/** Collapse whitespace so `rm  -rf` or `rm\t-rf` can't bypass patterns. */
+export function normalizeCommand(cmd: string): string {
+	return cmd.replace(/\s+/g, " ");
 }
 
 function loadGuardrails(): Array<{ tool: string; pattern: RegExp; label: string }> {

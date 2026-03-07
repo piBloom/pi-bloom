@@ -13,8 +13,14 @@ const matter: (
 	content: string;
 	matter: string;
 } = require("@11ty/gray-matter");
-const jsYaml: { dump: (obj: unknown, opts?: Record<string, unknown>) => string; JSON_SCHEMA: unknown } =
-	require("js-yaml");
+const jsYaml: {
+	load: (str: string) => unknown;
+	dump: (obj: unknown, opts?: Record<string, unknown>) => string;
+	JSON_SCHEMA: unknown;
+} = require("js-yaml");
+
+/** Centralized js-yaml import via createRequire (avoids ESM/CJS interop issues). */
+export const yaml: { load: (str: string) => unknown; dump: (obj: unknown) => string } = jsYaml;
 
 /**
  * Resolve path segments under a root directory, blocking path traversal.
@@ -157,4 +163,12 @@ export function createLogger(component: string) {
 		warn: (msg: string, extra?: Record<string, unknown>) => log("warn", msg, extra),
 		error: (msg: string, extra?: Record<string, unknown>) => log("error", msg, extra),
 	};
+}
+
+/** Validate that a service/unit name matches `bloom-[a-z0-9-]+`. Returns error message or null. */
+export function guardBloom(name: string): string | null {
+	if (!/^bloom-[a-z0-9][a-z0-9-]*$/.test(name)) {
+		return `Security error: name must match bloom-[a-z0-9-]+, got "${name}"`;
+	}
+	return null;
 }

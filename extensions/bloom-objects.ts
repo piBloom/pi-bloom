@@ -9,7 +9,6 @@ import os from "node:os";
 import path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { parseRef } from "../lib/object-utils.js";
 import {
 	errorResult,
 	getBloomDir,
@@ -19,6 +18,13 @@ import {
 	stringifyFrontmatter,
 	truncate,
 } from "../lib/shared.js";
+
+/** Parse a `type/slug` reference string into its components. Throws if format is invalid. */
+export function parseRef(ref: string): { type: string; slug: string } {
+	const slash = ref.indexOf("/");
+	if (slash === -1) throw new Error(`invalid reference format: '${ref}' (expected type/slug)`);
+	return { type: ref.slice(0, slash), slug: ref.slice(slash + 1) };
+}
 
 export default function (pi: ExtensionAPI) {
 	/** Walk a directory recursively for .md files. */

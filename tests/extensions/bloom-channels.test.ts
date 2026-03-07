@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { extractResponseText } from "../../lib/channel-utils.js";
+import { extractResponseText } from "../../extensions/bloom-channels.js";
 
+// ---------------------------------------------------------------------------
+// extractResponseText (inlined from lib/channel-utils.ts)
+// ---------------------------------------------------------------------------
 describe("extractResponseText", () => {
 	it("extracts string content (post-compaction)", () => {
 		const messages = [{ role: "assistant", content: "summarized text" }];

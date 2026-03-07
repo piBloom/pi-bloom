@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { normalizeCommand } from "../../extensions/bloom-persona.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
 
@@ -139,5 +140,22 @@ describe("bloom-persona guardrails", () => {
 			input: { command: "git status" },
 		});
 		expect(result).toBeUndefined();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// normalizeCommand (inlined from lib/persona-utils.ts)
+// ---------------------------------------------------------------------------
+describe("normalizeCommand", () => {
+	it("collapses multiple spaces to single space", () => {
+		expect(normalizeCommand("rm  -rf   /")).toBe("rm -rf /");
+	});
+
+	it("collapses tabs and newlines", () => {
+		expect(normalizeCommand("rm\t-rf\n/")).toBe("rm -rf /");
+	});
+
+	it("leaves normal text unchanged", () => {
+		expect(normalizeCommand("ls -la")).toBe("ls -la");
 	});
 });

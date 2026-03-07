@@ -12,8 +12,7 @@ import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { run } from "../lib/exec.js";
-import { guardBloom } from "../lib/os-utils.js";
-import { errorResult, requireConfirmation, truncate } from "../lib/shared.js";
+import { errorResult, guardBloom, requireConfirmation, truncate } from "../lib/shared.js";
 
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({

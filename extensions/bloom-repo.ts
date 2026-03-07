@@ -5,14 +5,34 @@
  * @see {@link ../AGENTS.md#bloom-os} Extension reference
  */
 import { mkdirSync } from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { run } from "../lib/exec.js";
-import { parseGithubSlugFromUrl, slugifyBranchPart } from "../lib/os-utils.js";
 import { getRemoteUrl, inferRepoUrl } from "../lib/repo.js";
 import { errorResult, requireConfirmation } from "../lib/shared.js";
+
+const require = createRequire(import.meta.url);
+const HostedGitInfo: { fromUrl(url: string): { type: string; user: string; project: string } | undefined } =
+	require("hosted-git-info");
+
+/** Extract `owner/repo` slug from a GitHub URL (HTTPS, SSH, or ssh:// format). Returns null if not a valid GitHub URL. */
+export function parseGithubSlugFromUrl(url: string): string | null {
+	const info = HostedGitInfo.fromUrl(url.trim());
+	if (info && info.type === "github") return `${info.user}/${info.project}`;
+	return null;
+}
+
+/** Convert a string to a safe git branch name segment (lowercase, alphanumeric + hyphens, max 48 chars). */
+export function slugifyBranchPart(input: string): string {
+	return input
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, 48);
+}
 
 export default function (pi: ExtensionAPI) {
 	const bloomDir = join(os.homedir(), ".bloom");
