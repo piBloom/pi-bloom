@@ -28,6 +28,7 @@ RUN dnf install -y \
     oras \
     qemu-system-x86 \
     edk2-ovmf \
+    chromium \
     sway \
     greetd \
     tuigreet \
@@ -118,6 +119,17 @@ COPY os/sysconfig/bloom-update-check.service /usr/lib/systemd/system/bloom-updat
 COPY os/sysconfig/bloom-update-check.sh /usr/local/bin/bloom-update-check.sh
 RUN chmod +x /usr/local/bin/bloom-update-check.sh
 RUN systemctl enable bloom-update-check.timer
+
+# Optional: pre-configure WiFi for headless first-boot
+# Usage: podman build --build-arg WIFI_SSID="MyNetwork" --build-arg WIFI_PSK="secret" ...
+ARG WIFI_SSID=""
+ARG WIFI_PSK=""
+RUN if [ -n "$WIFI_SSID" ]; then \
+    printf '[connection]\nid=%s\ntype=wifi\nautoconnect=true\n\n[wifi]\nmode=infrastructure\nssid=%s\n\n[wifi-security]\nkey-mgmt=wpa-psk\npsk=%s\n\n[ipv4]\nmethod=auto\n\n[ipv6]\nmethod=auto\n' \
+        "$WIFI_SSID" "$WIFI_SSID" "$WIFI_PSK" \
+        > /etc/NetworkManager/system-connections/wifi.nmconnection && \
+    chmod 600 /etc/NetworkManager/system-connections/wifi.nmconnection; \
+fi
 
 # bootc installation config
 COPY os/bootc/config.toml /usr/lib/bootc/install/config.toml

@@ -1,11 +1,15 @@
 # Bloom OS — bootc-image-builder user configuration
 # Copy this file to bib-config.toml and fill in your SSH key.
 # NEVER commit bib-config.toml — it is gitignored.
+#
+# WiFi — to pre-configure WiFi for headless first-boot, pass build args:
+#   podman build --build-arg WIFI_SSID="MyNetwork" --build-arg WIFI_PSK="secret" ...
+# Or configure after boot via: nmtui
 
 [customizations]
 
 [[customizations.user]]
 name = "bloom"
 # SSH key only — no password auth. Paste your public key below.
-key = "ssh-ed25519 AAAA... you@host"
+key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBynaoLubnHPtUl+LsSUlYzZ6uidMnxuVBBQnllga8NZ alex@toolbx"
 groups = ["wheel"]
