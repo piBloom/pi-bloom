@@ -9,10 +9,8 @@ let api: MockExtensionAPI;
 
 beforeEach(async () => {
 	temp = createTempGarden();
-	// Create PARA directories so the extension can index them
-	for (const dir of ["Inbox", "Projects", "Areas", "Resources", "Archive"]) {
-		fs.mkdirSync(path.join(temp.gardenDir, dir), { recursive: true });
-	}
+	// Create Objects directory
+	fs.mkdirSync(path.join(temp.gardenDir, "Objects"), { recursive: true });
 	api = createMockExtensionAPI();
 	const mod = await import("../../extensions/bloom-objects.js");
 	mod.default(api as never);
@@ -44,8 +42,8 @@ function getExecute(name: string): ToolExecute {
 // Registration
 // ---------------------------------------------------------------------------
 describe("bloom-objects registration", () => {
-	it("registers exactly 7 tools", () => {
-		expect(api._registeredTools).toHaveLength(7);
+	it("registers exactly 5 tools", () => {
+		expect(api._registeredTools).toHaveLength(5);
 	});
 
 	it("registers the expected tool names", () => {
@@ -55,14 +53,11 @@ describe("bloom-objects registration", () => {
 			"memory_search",
 			"memory_link",
 			"memory_list",
-			"memory_move",
-			"garden_reindex",
 		]);
 	});
 
-	it("has a session_start event handler", () => {
-		expect(api._eventHandlers.has("session_start")).toBe(true);
-		expect(api._eventHandlers.get("session_start")).toHaveLength(1);
+	it("has no session_start event handler", () => {
+		expect(api._eventHandlers.has("session_start")).toBe(false);
 	});
 
 	it("each tool has name, label, description, and execute", () => {
@@ -104,8 +99,8 @@ describe("memory_create and memory_read execution", () => {
 
 		expect(createResult.content[0].text).toContain("created note/test-note");
 
-		// Verify file was actually written
-		const filepath = path.join(temp.gardenDir, "Inbox", "test-note.md");
+		// Verify file was actually written to Objects/
+		const filepath = path.join(temp.gardenDir, "Objects", "test-note.md");
 		expect(fs.existsSync(filepath)).toBe(true);
 
 		const readResult = await read("call-2", { type: "note", slug: "test-note" });
@@ -131,26 +126,5 @@ describe("memory_create and memory_read execution", () => {
 
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("not found");
-	});
-});
-
-// ---------------------------------------------------------------------------
-// Tool execution: garden_reindex
-// ---------------------------------------------------------------------------
-describe("garden_reindex execution", () => {
-	it("returns count of indexed objects", async () => {
-		const reindex = getExecute("garden_reindex");
-		const create = getExecute("memory_create");
-
-		// Empty garden should index 0 objects
-		const emptyResult = await reindex("call-1", {});
-		expect(emptyResult.content[0].text).toBe("indexed 0 objects");
-
-		// Create some objects first
-		await create("call-2", { type: "note", slug: "alpha", fields: { title: "Alpha" } });
-		await create("call-3", { type: "task", slug: "beta", fields: { title: "Beta" } });
-
-		const result = await reindex("call-4", {});
-		expect(result.content[0].text).toBe("indexed 2 objects");
 	});
 });

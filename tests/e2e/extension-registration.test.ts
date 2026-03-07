@@ -90,7 +90,7 @@ describe("bloom-journal registration", () => {
 // bloom-objects
 // ---------------------------------------------------------------------------
 describe("bloom-objects registration", () => {
-	it("registers expected tools and events", async () => {
+	it("registers expected tools (no events)", async () => {
 		const mod = await import("../../extensions/bloom-objects.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
@@ -102,11 +102,11 @@ describe("bloom-objects registration", () => {
 				"memory_search",
 				"memory_link",
 				"memory_list",
-				"memory_move",
-				"garden_reindex",
 			]),
 		);
-		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start"]));
+		expect(toolNames(api)).not.toContain("memory_move");
+		expect(toolNames(api)).not.toContain("garden_reindex");
+		expect(eventNames(api)).toEqual([]);
 	});
 });
 

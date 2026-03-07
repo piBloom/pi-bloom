@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parseFrontmatter } from "../../lib/shared.js";
@@ -10,6 +10,8 @@ let temp: TempGarden;
 
 beforeEach(() => {
 	temp = createTempGarden();
+	// Create Objects directory
+	mkdirSync(join(temp.gardenDir, "Objects"), { recursive: true });
 });
 
 afterEach(() => {
@@ -21,8 +23,6 @@ async function setupObjectsExtension() {
 	const api = createMockExtensionAPI();
 	const ctx = createMockExtensionContext();
 	mod.default(api as never);
-	// Trigger session_start to build index
-	await api.fireEvent("session_start", {}, ctx);
 	return { api, ctx };
 }
 
@@ -54,13 +54,13 @@ describe("object lifecycle", () => {
 		const result = await executeTool(api, "memory_create", {
 			type: "task",
 			slug: "fix-bike",
-			fields: { title: "Fix bike tire", project: "maintenance" },
+			fields: { title: "Fix bike tire" },
 		});
 
 		expect(result.isError).toBeUndefined();
 		expect(result.content[0].text).toContain("created task/fix-bike");
 
-		const filepath = join(temp.gardenDir, "Projects", "maintenance", "fix-bike.md");
+		const filepath = join(temp.gardenDir, "Objects", "fix-bike.md");
 		expect(existsSync(filepath)).toBe(true);
 
 		const raw = readFileSync(filepath, "utf-8");
@@ -105,26 +105,6 @@ describe("object lifecycle", () => {
 		const readB = await executeTool(api, "memory_read", { type: "task", slug: "b" });
 		expect(readA.content[0].text).toContain("task/b");
 		expect(readB.content[0].text).toContain("task/a");
-	});
-
-	it("memory_move relocates object to project", async () => {
-		const { api } = await setupObjectsExtension();
-
-		await executeTool(api, "memory_create", { type: "task", slug: "moveme" });
-
-		// Initially in Inbox
-		expect(existsSync(join(temp.gardenDir, "Inbox", "moveme.md"))).toBe(true);
-
-		const result = await executeTool(api, "memory_move", {
-			type: "task",
-			slug: "moveme",
-			project: "garden",
-		});
-		expect(result.content[0].text).toContain("moved task/moveme");
-
-		// Gone from Inbox, now in Projects
-		expect(existsSync(join(temp.gardenDir, "Inbox", "moveme.md"))).toBe(false);
-		expect(existsSync(join(temp.gardenDir, "Projects", "garden", "moveme.md"))).toBe(true);
 	});
 
 	it("memory_list finds created objects", async () => {

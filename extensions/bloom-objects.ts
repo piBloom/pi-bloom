@@ -1,21 +1,19 @@
 /**
- * 🗂️ bloom-objects — Flat-file object store with YAML frontmatter in the Garden vault.
+ * bloom-objects — Flat-file object store with YAML frontmatter in ~/Bloom/Objects/.
  *
- * @tools memory_create, memory_read, memory_search, memory_link, memory_list, memory_move, garden_reindex
- * @hooks session_start
+ * @tools memory_create, memory_read, memory_search, memory_link, memory_list
  * @see {@link ../AGENTS.md#bloom-objects} Extension reference
  */
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { parseRef, resolveCreatePath } from "../lib/object-utils.js";
+import { parseRef } from "../lib/object-utils.js";
 import {
 	errorResult,
-	getGardenDir,
+	getBloomDir,
 	nowIso,
-	PARA_DIRS,
 	parseFrontmatter,
 	safePath,
 	stringifyFrontmatter,
@@ -23,107 +21,19 @@ import {
 } from "../lib/shared.js";
 
 export default function (pi: ExtensionAPI) {
-	// --- In-memory index ---
-
-	/** In-memory index entry for a Garden vault object. */
-	interface IndexEntry {
-		ref: string;
-		path: string;
-		title?: string;
-		project?: string;
-		area?: string;
-		type: string;
-		slug: string;
-	}
-
-	const index: Map<string, IndexEntry> = new Map();
-
-	function buildIndex(gardenDir: string): void {
-		index.clear();
-		for (const paraDir of PARA_DIRS) {
-			const dir = path.join(gardenDir, paraDir);
-			if (!fs.existsSync(dir)) continue;
-			const files = fs.globSync("**/*.md", { cwd: dir });
-			for (const file of files) {
-				if (file.endsWith(".pi.md")) continue;
-				indexFile(path.join(dir, file));
-			}
-		}
-	}
-
-	function indexFile(filepath: string): void {
-		try {
-			const raw = fs.readFileSync(filepath, "utf-8");
-			const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
-			if (!attributes.type) return;
-			const type = String(attributes.type);
-			const slug = String(attributes.slug ?? path.basename(filepath, ".md"));
-			const ref = `${type}/${slug}`;
-			index.set(ref, {
-				ref,
-				path: filepath,
-				title: attributes.title as string | undefined,
-				project: attributes.project as string | undefined,
-				area: attributes.area as string | undefined,
-				type,
-				slug,
-			});
-		} catch {
-			// Skip unreadable files
-		}
-	}
-
-	function findFileByName(dir: string, filename: string, type: string): string | null {
-		if (!fs.existsSync(dir)) return null;
-		const matches = fs.globSync(`**/${filename}`, { cwd: dir });
-		for (const match of matches) {
-			const filepath = path.join(dir, match);
-			const raw = fs.readFileSync(filepath, "utf-8");
-			const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
-			if (String(attributes.type ?? "") === type) return filepath;
-		}
-		return null;
-	}
-
-	function findObject(gardenDir: string, type: string, slug: string): string | null {
-		const ref = `${type}/${slug}`;
-		const entry = index.get(ref);
-		if (entry && fs.existsSync(entry.path)) return entry.path;
-
-		// Validate slug does not escape garden
-		try {
-			safePath(gardenDir, slug);
-		} catch {
-			return null;
-		}
-
-		const filename = `${slug}.md`;
-		for (const paraDir of PARA_DIRS) {
-			const found = findFileByName(path.join(gardenDir, paraDir), filename, type);
-			if (found) {
-				indexFile(found);
-				return found;
-			}
-		}
-		return null;
-	}
-
+	/** Walk a directory recursively for .md files. */
 	function walkMdFiles(dir: string): string[] {
 		if (!fs.existsSync(dir)) return [];
 		return fs.globSync("**/*.md", { cwd: dir }).map((f) => path.join(dir, f));
 	}
 
-	pi.on("session_start", () => {
-		buildIndex(getGardenDir());
-	});
-
 	pi.registerTool({
 		name: "memory_create",
 		label: "Memory Create",
-		description: "Create a new markdown object in the Garden vault",
+		description: "Create a new markdown object in ~/Bloom/Objects/",
 		promptSnippet: "Create a new tracked object (task, note, project, etc.)",
 		promptGuidelines: [
-			"Use memory_create when the user mentions something new to track. Always set a title. Suggest PARA fields (project, area) when relevant.",
+			"Use memory_create when the user mentions something new to track. Always set a title.",
 		],
 		parameters: Type.Object({
 			type: Type.String({
@@ -137,15 +47,27 @@ export default function (pi: ExtensionAPI) {
 					description: "Additional frontmatter fields",
 				}),
 			),
+			path: Type.Optional(
+				Type.String({
+					description: "Optional file path relative to home dir (default: Bloom/Objects/{slug}.md)",
+				}),
+			),
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const gardenDir = getGardenDir();
-			const fields = params.fields ?? {};
-			const filepath = resolveCreatePath(gardenDir, params.slug, fields);
+			const bloomDir = getBloomDir();
+			let filepath: string;
+			try {
+				filepath = params.path
+					? safePath(os.homedir(), params.path)
+					: safePath(bloomDir, "Objects", `${params.slug}.md`);
+			} catch {
+				return errorResult("Path traversal blocked: invalid path");
+			}
 			fs.mkdirSync(path.dirname(filepath), { recursive: true });
 
+			const fields = params.fields ?? {};
 			const now = nowIso();
-			const priorityKeys = ["type", "slug", "title", "status", "priority", "project", "area"];
+			const priorityKeys = ["type", "slug", "title", "status", "priority"];
 			const data: Record<string, unknown> = {
 				type: params.type,
 				slug: params.slug,
@@ -185,16 +107,6 @@ export default function (pi: ExtensionAPI) {
 				return errorResult(`failed to create object: ${(err as Error).message}`);
 			}
 
-			index.set(`${params.type}/${params.slug}`, {
-				ref: `${params.type}/${params.slug}`,
-				path: filepath,
-				title,
-				project: fields.project,
-				area: fields.area,
-				type: params.type,
-				slug: params.slug,
-			});
-
 			return {
 				content: [
 					{
@@ -210,17 +122,30 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "memory_read",
 		label: "Memory Read",
-		description: "Read a markdown object from the Garden vault",
+		description: "Read a markdown object from ~/Bloom/Objects/",
 		promptSnippet: "Read a specific object by type and slug",
 		promptGuidelines: ["Use memory_read to retrieve a specific object by type and slug."],
 		parameters: Type.Object({
 			type: Type.String({ description: "Object type" }),
 			slug: Type.String({ description: "Object slug" }),
+			path: Type.Optional(
+				Type.String({ description: "Optional direct file path relative to home dir" }),
+			),
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const gardenDir = getGardenDir();
-			const filepath = findObject(gardenDir, params.type, params.slug);
-			if (!filepath) {
+			let filepath: string;
+			if (params.path) {
+				try {
+					filepath = safePath(os.homedir(), params.path);
+				} catch {
+					return errorResult("Path traversal blocked: invalid path");
+				}
+			} else {
+				const bloomDir = getBloomDir();
+				filepath = path.join(bloomDir, "Objects", `${params.slug}.md`);
+			}
+
+			if (!fs.existsSync(filepath)) {
 				return errorResult(`object not found: ${params.type}/${params.slug}`);
 			}
 			const raw = fs.readFileSync(filepath, "utf-8");
@@ -234,7 +159,7 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "memory_search",
 		label: "Memory Search",
-		description: "Search all objects for a pattern (simple string match)",
+		description: "Search markdown files for a pattern (simple string match)",
 		promptSnippet: "Search objects by content pattern",
 		promptGuidelines: ["Use memory_search when the user remembers content but not the exact object name."],
 		parameters: Type.Object({
@@ -243,24 +168,26 @@ export default function (pi: ExtensionAPI) {
 			}),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-			const gardenDir = getGardenDir();
+			const homeDir = os.homedir();
+			const excludes = ["node_modules", ".git", ".cache", ".local", ".pi"];
 			const matches: string[] = [];
 
-			for (const paraDir of PARA_DIRS) {
+			const files = fs.globSync("**/*.md", { cwd: homeDir });
+			for (const file of files) {
 				if (signal?.aborted) break;
-				for (const filepath of walkMdFiles(path.join(gardenDir, paraDir))) {
-					try {
-						const raw = fs.readFileSync(filepath, "utf-8");
-						if (!raw.includes(params.pattern)) continue;
-						const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
-						const type = String(attributes.type ?? "note");
-						const slug = String(attributes.slug ?? path.basename(filepath, ".md"));
-						const ref = `${type}/${slug}`;
-						const title = attributes.title ? ` — ${attributes.title}` : "";
-						matches.push(`${ref}${title}`);
-					} catch {
-						// Skip unreadable files
-					}
+				if (excludes.some((ex) => file.includes(ex))) continue;
+				try {
+					const filepath = path.join(homeDir, file);
+					const raw = fs.readFileSync(filepath, "utf-8");
+					if (!raw.includes(params.pattern)) continue;
+					const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
+					const type = String(attributes.type ?? "note");
+					const slug = String(attributes.slug ?? path.basename(filepath, ".md"));
+					const ref = `${type}/${slug}`;
+					const title = attributes.title ? ` — ${attributes.title}` : "";
+					matches.push(`${ref}${title}`);
+				} catch {
+					// Skip unreadable files
 				}
 			}
 
@@ -287,14 +214,14 @@ export default function (pi: ExtensionAPI) {
 			}),
 		}),
 		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const gardenDir = getGardenDir();
+			const bloomDir = getBloomDir();
 			const a = parseRef(params.ref_a);
 			const b = parseRef(params.ref_b);
-			const pathA = findObject(gardenDir, a.type, a.slug);
-			const pathB = findObject(gardenDir, b.type, b.slug);
+			const pathA = path.join(bloomDir, "Objects", `${a.slug}.md`);
+			const pathB = path.join(bloomDir, "Objects", `${b.slug}.md`);
 
-			if (!pathA) return errorResult(`object not found: ${params.ref_a}`);
-			if (!pathB) return errorResult(`object not found: ${params.ref_b}`);
+			if (!fs.existsSync(pathA)) return errorResult(`object not found: ${params.ref_a}`);
+			if (!fs.existsSync(pathB)) return errorResult(`object not found: ${params.ref_b}`);
 
 			function addLink(fp: string, linkRef: string): void {
 				const raw = fs.readFileSync(fp, "utf-8");
@@ -325,12 +252,14 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "memory_list",
 		label: "Memory List",
-		description: "List objects, optionally filtered by type, frontmatter fields, or PARA category",
-		promptSnippet: "List objects by type, filter, or PARA category",
-		promptGuidelines: ["Use memory_list to show all objects of a type, or filter by status, area, para category, etc."],
+		description: "List objects, optionally filtered by type or frontmatter fields",
+		promptSnippet: "List objects by type or filter",
+		promptGuidelines: ["Use memory_list to show all objects of a type, or filter by status, etc."],
 		parameters: Type.Object({
 			type: Type.Optional(Type.String({ description: "Object type to filter by" })),
-			para: Type.Optional(StringEnum(["Inbox", "Projects", "Areas", "Resources", "Archive"] as const)),
+			directory: Type.Optional(
+				Type.String({ description: "Directory to walk (default: ~/Bloom/Objects/)" }),
+			),
 			filters: Type.Optional(
 				Type.Record(Type.String(), Type.String(), {
 					description: "Frontmatter field filters",
@@ -338,152 +267,57 @@ export default function (pi: ExtensionAPI) {
 			),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
-			const gardenDir = getGardenDir();
+			const bloomDir = getBloomDir();
 			const filters = params.filters ?? {};
 			const results: string[] = [];
 
-			const dirsToSearch = params.para
-				? [path.join(gardenDir, params.para)]
-				: PARA_DIRS.map((d) => path.join(gardenDir, d));
+			let dir: string;
+			if (params.directory) {
+				try {
+					dir = safePath(os.homedir(), params.directory);
+				} catch {
+					return errorResult("Path traversal blocked: invalid directory");
+				}
+			} else {
+				dir = path.join(bloomDir, "Objects");
+			}
 
-			for (const dir of dirsToSearch) {
+			for (const filepath of walkMdFiles(dir)) {
 				if (signal?.aborted) break;
-				for (const filepath of walkMdFiles(dir)) {
-					try {
-						const raw = fs.readFileSync(filepath, "utf-8");
-						const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
-						const type = String(attributes.type ?? "note");
-						if (params.type && type !== params.type) continue;
+				try {
+					const raw = fs.readFileSync(filepath, "utf-8");
+					const { attributes } = parseFrontmatter<Record<string, unknown>>(raw);
+					const type = String(attributes.type ?? "note");
+					if (params.type && type !== params.type) continue;
 
-						let match = true;
-						for (const [key, val] of Object.entries(filters)) {
-							if (key === "tag") {
-								const tags = Array.isArray(attributes.tags) ? attributes.tags : [];
-								if (!(tags as string[]).includes(val)) {
-									match = false;
-									break;
-								}
-							} else {
-								if (String(attributes[key] ?? "") !== val) {
-									match = false;
-									break;
-								}
+					let match = true;
+					for (const [key, val] of Object.entries(filters)) {
+						if (key === "tag") {
+							const tags = Array.isArray(attributes.tags) ? attributes.tags : [];
+							if (!(tags as string[]).includes(val)) {
+								match = false;
+								break;
+							}
+						} else {
+							if (String(attributes[key] ?? "") !== val) {
+								match = false;
+								break;
 							}
 						}
-						if (!match) continue;
-
-						const slug = String(attributes.slug ?? "unknown");
-						const title = attributes.title ? ` — ${attributes.title}` : "";
-						results.push(`${type}/${slug}${title}`);
-					} catch {
-						// Skip unreadable files
 					}
+					if (!match) continue;
+
+					const slug = String(attributes.slug ?? "unknown");
+					const title = attributes.title ? ` — ${attributes.title}` : "";
+					results.push(`${type}/${slug}${title}`);
+				} catch {
+					// Skip unreadable files
 				}
 			}
 
 			const text = results.length > 0 ? results.join("\n") : "No objects found";
 			return {
 				content: [{ type: "text" as const, text: truncate(text) }],
-				details: {},
-			};
-		},
-	});
-
-	pi.registerTool({
-		name: "memory_move",
-		label: "Memory Move",
-		description: "Relocate an object between PARA categories",
-		promptSnippet: "Move an object between PARA categories",
-		promptGuidelines: ["Use memory_move to relocate an object to a different project, area, or archive."],
-		parameters: Type.Object({
-			type: Type.String({ description: "Object type" }),
-			slug: Type.String({ description: "Object slug" }),
-			project: Type.Optional(Type.String({ description: "Target project name" })),
-			area: Type.Optional(Type.String({ description: "Target area name" })),
-			archive: Type.Optional(Type.Boolean({ description: "Move to Archive" })),
-		}),
-		async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-			const gardenDir = getGardenDir();
-			const oldPath = findObject(gardenDir, params.type, params.slug);
-			if (!oldPath) return errorResult(`object not found: ${params.type}/${params.slug}`);
-
-			const raw = fs.readFileSync(oldPath, "utf-8");
-			const { attributes, body } = parseFrontmatter<Record<string, unknown>>(raw);
-
-			if (params.archive) {
-				delete attributes.project;
-				delete attributes.area;
-			} else if (params.project) {
-				attributes.project = params.project;
-				delete attributes.area;
-			} else if (params.area) {
-				attributes.area = params.area;
-				delete attributes.project;
-			} else {
-				delete attributes.project;
-				delete attributes.area;
-			}
-			attributes.modified = nowIso();
-
-			let newPath: string;
-			try {
-				if (params.archive) {
-					newPath = safePath(gardenDir, "Archive", `${params.slug}.md`);
-				} else if (params.project) {
-					newPath = safePath(gardenDir, "Projects", params.project, `${params.slug}.md`);
-				} else if (params.area) {
-					newPath = safePath(gardenDir, "Areas", params.area, `${params.slug}.md`);
-				} else {
-					newPath = safePath(gardenDir, "Inbox", `${params.slug}.md`);
-				}
-			} catch {
-				return errorResult("Path traversal blocked: invalid slug, project, or area name");
-			}
-
-			fs.mkdirSync(path.dirname(newPath), { recursive: true });
-			fs.writeFileSync(newPath, stringifyFrontmatter(attributes, body));
-			fs.unlinkSync(oldPath);
-
-			const ref = `${params.type}/${params.slug}`;
-			index.set(ref, {
-				ref,
-				path: newPath,
-				title: attributes.title as string | undefined,
-				project: params.project,
-				area: params.area,
-				type: params.type,
-				slug: params.slug,
-			});
-
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: `moved ${ref} → ${newPath}`,
-					},
-				],
-				details: {},
-			};
-		},
-	});
-
-	pi.registerTool({
-		name: "garden_reindex",
-		label: "Garden Reindex",
-		description: "Rebuild the in-memory object index",
-		promptSnippet: "Force rebuild the Garden index",
-		promptGuidelines: ["Use garden_reindex after external file changes to update the index."],
-		parameters: Type.Object({}),
-		async execute(_toolCallId, _params, signal, _onUpdate, _ctx) {
-			if (signal?.aborted) return errorResult("aborted");
-			buildIndex(getGardenDir());
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: `indexed ${index.size} objects`,
-					},
-				],
 				details: {},
 			};
 		},
