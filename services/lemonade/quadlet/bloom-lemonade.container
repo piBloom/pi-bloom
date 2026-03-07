@@ -14,13 +14,14 @@ Network=bloom.network
 PublishPort=127.0.0.1:8000:8000
 
 # Model cache persists across restarts
-Volume=bloom-lemonade-models:/root/.cache/huggingface:Z
+Volume=bloom-lemonade-models:/root/.cache/huggingface
 
 # Media files for transcription (read-only)
-Volume=/var/lib/bloom/media:/media:ro,Z
+Volume=/var/lib/bloom/media:/media:ro
 
 Environment=LEMONADE_LLAMACPP_BACKEND=cpu
 PodmanArgs=--memory=4g
+PodmanArgs=--security-opt label=disable
 HealthCmd=curl -sf http://localhost:8000/health || exit 1
 HealthInterval=30s
 HealthRetries=3

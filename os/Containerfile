@@ -49,6 +49,13 @@ RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
     dnf clean all && \
     rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log /var/cache/ldconfig/aux-cache
 
+# Install NetBird (system-level mesh networking — needs real CAP_NET_ADMIN)
+RUN printf '[netbird]\nname=netbird\nbaseurl=https://pkgs.netbird.io/yum/\nenabled=1\ngpgcheck=0\nrepo_gpgcheck=1\ngpgkey=https://pkgs.netbird.io/yum/repodata/repomd.xml.key\n' > /etc/yum.repos.d/netbird.repo && \
+    dnf install -y netbird && \
+    dnf clean all && \
+    rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log /var/cache/ldconfig/aux-cache
+RUN systemctl enable netbird
+
 # Wheel group sudo (Anaconda creates user at install time)
 COPY os/sysconfig/bloom-sudoers /etc/sudoers.d/10-bloom
 RUN chmod 0440 /etc/sudoers.d/10-bloom
