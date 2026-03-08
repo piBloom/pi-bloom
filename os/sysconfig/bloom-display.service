@@ -1,12 +1,12 @@
 [Unit]
-Description=Bloom Display (Xpra + Xvfb + i3)
+Description=Bloom Display (Xpra + Xvfb)
 After=network.target
 
 [Service]
 User=bloom
 Environment=DISPLAY=:99
 ExecStart=/usr/bin/xpra start :99 \
-    --start=i3 \
+    --opengl=no \
     --bind-tcp=0.0.0.0:14500 \
     --html=on \
     --no-daemon

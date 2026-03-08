@@ -10,8 +10,8 @@ ContainerName=bloom-llm
 # Bridge network for isolation
 Network=bloom.network
 
-# Expose OpenAI-compatible API on localhost
-PublishPort=127.0.0.1:8080:8080
+# Expose OpenAI-compatible API (localhost + NetBird mesh, firewall-protected)
+PublishPort=0.0.0.0:8080:8080
 
 # Model storage persists across restarts
 Volume=bloom-llm-models:/models

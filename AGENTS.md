@@ -148,9 +148,9 @@ Conversation topic management and session organization.
 
 ### 🖥️ bloom-display
 
-AI agent computer use: screenshots, input injection, accessibility tree, and window management on the Xvfb+i3 display.
+AI agent computer use: screenshots, input injection, accessibility tree, and window management on the Xvfb+Xpra display.
 
-**Tools:** `display` (actions: screenshot, click, type, key, move, scroll, ui_tree, windows, workspace, launch, focus)
+**Tools:** `display` (actions: screenshot, click, type, key, move, scroll, ui_tree, windows, launch, focus)
 
 ## 🧩 All Registered Tools (27)
 

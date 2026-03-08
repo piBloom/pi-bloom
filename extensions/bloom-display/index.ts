@@ -18,7 +18,6 @@ import {
 	handleType,
 	handleUiTree,
 	handleWindows,
-	handleWorkspace,
 } from "./actions.js";
 
 export default function (pi: ExtensionAPI) {
@@ -27,27 +26,15 @@ export default function (pi: ExtensionAPI) {
 		label: "Display Control",
 		description:
 			"AI computer use: take screenshots, inject mouse/keyboard input, read the accessibility tree, and manage windows. " +
-			"Actions: screenshot, click, type, key, move, scroll, ui_tree, windows, workspace, launch, focus.",
+			"Actions: screenshot, click, type, key, move, scroll, ui_tree, windows, launch, focus.",
 		parameters: Type.Object({
 			action: StringEnum(
-				[
-					"screenshot",
-					"click",
-					"type",
-					"key",
-					"move",
-					"scroll",
-					"ui_tree",
-					"windows",
-					"workspace",
-					"launch",
-					"focus",
-				] as const,
+				["screenshot", "click", "type", "key", "move", "scroll", "ui_tree", "windows", "launch", "focus"] as const,
 				{
 					description:
 						"screenshot: capture screen. click: click at coordinates. type: type text. key: send key combo. " +
 						"move: move mouse. scroll: scroll at position. ui_tree: AT-SPI2 accessibility tree. " +
-						"windows: list windows via i3. workspace: switch workspace. launch: start an app. focus: focus a window.",
+						"windows: list windows. launch: start an app. focus: focus a window.",
 				},
 			),
 			x: Type.Optional(Type.Number({ description: "X coordinate (click, move, scroll)" })),
@@ -60,7 +47,6 @@ export default function (pi: ExtensionAPI) {
 			),
 			clicks: Type.Optional(Type.Number({ description: "Number of scroll clicks (scroll, default 3)" })),
 			command: Type.Optional(Type.String({ description: "Command to launch (launch action)" })),
-			number: Type.Optional(Type.Number({ description: "Workspace number (workspace action)" })),
 			target: Type.Optional(Type.String({ description: "Window title or ID to focus (focus action)" })),
 			app: Type.Optional(Type.String({ description: "Filter by app name (ui_tree action)" })),
 			region: Type.Optional(
@@ -93,8 +79,6 @@ export default function (pi: ExtensionAPI) {
 					return handleUiTree(params, signal);
 				case "windows":
 					return handleWindows(signal);
-				case "workspace":
-					return handleWorkspace(params, signal);
 				case "launch":
 					return handleLaunch(params, signal);
 				case "focus":

@@ -390,8 +390,10 @@ apply_hardening() {
 	# Set bloom as the default zone
 	firewall-cmd --permanent --set-default-zone=bloom >/dev/null 2>&1 || true
 
-	# Allow all traffic on the NetBird mesh interface (wt0)
-	firewall-cmd --permanent --zone=bloom --add-interface=wt0 >/dev/null 2>&1 || true
+	# NetBird mesh (wt0) is trusted — allow all traffic from mesh peers
+	firewall-cmd --permanent --zone=trusted --add-interface=wt0 >/dev/null 2>&1 || true
+
+	# Default zone only allows SSH from local subnets
 	firewall-cmd --permanent --zone=bloom --add-service=ssh >/dev/null 2>&1 || true
 
 	# Detect local RFC1918 subnets from active interfaces and allow SSH from them
@@ -452,8 +454,8 @@ setup_netbird() {
 	printf "  %sThis step is optional — you can set up NetBird later.%s\n" "$DIM" "$RESET"
 	printf "\n"
 
-	# Check for basic network connectivity
-	if ! curl -sf --max-time 5 https://api.netbird.io >/dev/null 2>&1; then
+	# Check for basic network connectivity (don't use -f: API may return non-2xx even when internet works)
+	if ! curl -so /dev/null --max-time 5 https://api.netbird.io 2>&1; then
 		warn "No internet connection detected."
 		printf "  %sNetBird requires internet. Connect to a network first,%s\n" "$DIM" "$RESET"
 		printf "  %sor skip and set up NetBird later with: sudo netbird up%s\n" "$DIM" "$RESET"
@@ -506,19 +508,56 @@ setup_netbird() {
 			esac
 		fi
 
-		# Poll for connection (up to 30 seconds)
+		# Poll for connection (up to 60 seconds), checking for auth failures
 		local connected=false
-		for ((i = 0; i < 15; i++)); do
-			if netbird status 2>/dev/null | grep -qi "connected"; then
+		local failed=false
+		for ((i = 0; i < 30; i++)); do
+			local nb_status
+			nb_status=$(netbird status 2>/dev/null)
+
+			# Check for successful connection (Management: Connected)
+			if echo "$nb_status" | grep -qP 'Management:\s+Connected'; then
 				connected=true
 				break
 			fi
-			printf "  %sWaiting for connection... (%d/30s)%s\r" "$DIM" $(((i + 1) * 2)) "$RESET"
+
+			# Check for auth failure via log (invalid setup key)
+			if [[ -f /var/log/netbird/client.log ]] && \
+				grep -q "setup key is invalid" /var/log/netbird/client.log 2>/dev/null; then
+				failed=true
+				break
+			fi
+
+			# Check for LoginFailed status
+			if echo "$nb_status" | grep -qi "LoginFailed"; then
+				failed=true
+				break
+			fi
+
+			printf "  %sWaiting for connection... (%d/60s)%s\r" "$DIM" $(((i + 1) * 2)) "$RESET"
 			sleep 2
 		done
 		printf "\033[K" # Clear the waiting line
 
-		if $connected; then
+		if $failed; then
+			# Stop the failing netbird to prevent endless retries
+			netbird down >/dev/null 2>&1 || true
+			printf "\n"
+			error "Setup key is invalid or expired."
+			printf "  %sCreate a new key at https://app.netbird.io → Setup Keys%s\n" "$DIM" "$RESET"
+			printf "\n"
+			local nb_retry
+			show_prompt "Press r to retry with a new key, or s to skip:"
+			read -r nb_retry
+			case "${nb_retry,,}" in
+			s)
+				info "Skipping NetBird setup."
+				sleep 1
+				return 0
+				;;
+			*) continue ;;
+			esac
+		elif $connected; then
 			printf "\n"
 			success "NetBird connected! Your Bloom is on the mesh."
 
@@ -529,15 +568,13 @@ setup_netbird() {
 				info "Your NetBird IP: ${BOLD}${nb_ip}${RESET}"
 			fi
 
-			printf "\n"
-			info "Applying security hardening automatically..."
-			printf "\n"
-			apply_hardening
 			sleep 2
 			return 0
 		else
+			# Timed out without clear failure — stop and let user decide
+			netbird down >/dev/null 2>&1 || true
 			printf "\n"
-			error "Couldn't reach NetBird. Check your internet connection and the setup key."
+			error "Connection timed out. Check your internet and setup key."
 			printf "\n"
 			local nb_retry
 			show_prompt "Press r to retry, or s to skip:"
@@ -557,6 +594,13 @@ setup_netbird() {
 # ── Finish ──────────────────────────────────────────────────────────
 
 finish() {
+	# Always apply security hardening (firewall + SSH) regardless of NetBird setup
+	clear
+	step_header "Security Hardening" \
+		"Configuring firewall and SSH for safe network access." \
+		"Protects your Bloom whether or not NetBird is active."
+	apply_hardening
+
 	# Create the marker file so the wizard doesn't run again
 	touch /bloom-setup-done
 

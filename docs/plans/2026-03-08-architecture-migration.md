@@ -308,7 +308,7 @@ Follow migration pattern. This is the simplest extension — good first test.
 ### Task 9: Migrate bloom-display (320 lines)
 
 - `index.ts`: display tool registration
-- `actions.ts`: screenshot capture, xdotool input, i3 integration, ui-tree, all 11 action handlers
+- `actions.ts`: screenshot capture, xdotool input, xpra WM, ui-tree, all 10 action handlers
 - `types.ts`: action parameter types if any
 - Update lib imports: `../../lib/exec.js`, `../../lib/shared.js`
 

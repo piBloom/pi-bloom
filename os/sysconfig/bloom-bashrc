@@ -1,3 +1,4 @@
 export BLOOM_DIR="$HOME/Bloom"
 export DISPLAY=":99"
+export BROWSER="chromium"
 export PATH="/usr/local/share/bloom/node_modules/.bin:$PATH"

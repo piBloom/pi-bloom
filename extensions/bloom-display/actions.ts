@@ -159,76 +159,26 @@ export async function handleUiTree(params: { app?: string }, signal?: AbortSigna
 	};
 }
 
-/** List windows via i3. */
+/** List windows via xdotool. */
 export async function handleWindows(signal?: AbortSignal) {
-	const result = await runDisplay("i3-msg", ["-t", "get_tree"], signal);
+	const result = await runDisplay("xdotool", ["search", "--onlyvisible", "--name", ""], signal);
 	if (result.exitCode !== 0) {
-		return errorResult(`i3 get_tree failed:\n${result.stderr}`);
+		return errorResult(`Window search failed:\n${result.stderr}`);
 	}
-	try {
-		const tree = JSON.parse(result.stdout);
-		const windows: Array<{
-			id: number;
-			name: string;
-			focused: boolean;
-			workspace: string;
-			rect: unknown;
-		}> = [];
-		function walk(
-			node: {
-				id?: number;
-				name?: string;
-				focused?: boolean;
-				type?: string;
-				num?: number;
-				nodes?: unknown[];
-				floating_nodes?: unknown[];
-				rect?: unknown;
-			},
-			wsName: string,
-		) {
-			const currentWs = node.type === "workspace" ? String(node.num ?? node.name ?? wsName) : wsName;
-			if (node.type === "con" && node.name) {
-				windows.push({
-					id: node.id ?? 0,
-					name: node.name ?? "",
-					focused: node.focused ?? false,
-					workspace: currentWs,
-					rect: node.rect,
-				});
-			}
-			for (const child of (node.nodes ?? []) as (typeof node)[]) {
-				walk(child, currentWs);
-			}
-			for (const child of (node.floating_nodes ?? []) as (typeof node)[]) {
-				walk(child, currentWs);
-			}
+	const ids = (result.stdout ?? "").trim().split("\n").filter(Boolean);
+	const windows: Array<{ id: string; name: string; focused: boolean }> = [];
+	const activeResult = await runDisplay("xdotool", ["getactivewindow"], signal);
+	const activeId = activeResult.exitCode === 0 ? (activeResult.stdout ?? "").trim() : "";
+	for (const id of ids) {
+		const nameResult = await runDisplay("xdotool", ["getwindowname", id], signal);
+		const name = nameResult.exitCode === 0 ? (nameResult.stdout ?? "").trim() : "";
+		if (name) {
+			windows.push({ id, name, focused: id === activeId });
 		}
-		walk(tree, "");
-		return {
-			content: [{ type: "text" as const, text: JSON.stringify(windows, null, 2) }],
-			details: { count: windows.length },
-		};
-	} catch {
-		return {
-			content: [{ type: "text" as const, text: truncate(result.stdout) }],
-			details: {},
-		};
-	}
-}
-
-/** Switch workspace. */
-export async function handleWorkspace(params: { number?: number }, signal?: AbortSignal) {
-	if (params.number === undefined) {
-		return errorResult("workspace requires number parameter.");
-	}
-	const result = await runDisplay("i3-msg", ["workspace", String(params.number)], signal);
-	if (result.exitCode !== 0) {
-		return errorResult(`Workspace switch failed:\n${result.stderr}`);
 	}
 	return {
-		content: [{ type: "text" as const, text: `Switched to workspace ${params.number}.` }],
-		details: { workspace: params.number },
+		content: [{ type: "text" as const, text: JSON.stringify(windows, null, 2) }],
+		details: { count: windows.length },
 	};
 }
 
@@ -237,7 +187,7 @@ export async function handleLaunch(params: { command?: string }, signal?: AbortS
 	if (!params.command) {
 		return errorResult("launch requires command parameter.");
 	}
-	const result = await runDisplay("i3-msg", ["exec", "--no-startup-id", params.command], signal);
+	const result = await runDisplay("bash", ["-c", `${params.command} &`], signal);
 	if (result.exitCode !== 0) {
 		return errorResult(`Launch failed:\n${result.stderr}`);
 	}
@@ -253,8 +203,10 @@ export async function handleFocus(params: { target?: string }, signal?: AbortSig
 		return errorResult("focus requires target parameter (window title or ID).");
 	}
 	const isNumeric = /^\d+$/.test(params.target);
-	const criteria = isNumeric ? `[con_id=${params.target}]` : `[title="${params.target}"]`;
-	const result = await runDisplay("i3-msg", [`${criteria} focus`], signal);
+	const args = isNumeric
+		? ["windowactivate", "--sync", params.target]
+		: ["search", "--name", params.target, "windowactivate", "--sync"];
+	const result = await runDisplay("xdotool", args, signal);
 	if (result.exitCode !== 0) {
 		return errorResult(`Focus failed:\n${result.stderr}`);
 	}

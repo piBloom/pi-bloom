@@ -1,7 +1,7 @@
 # Bloom OS — Fedora bootc 42 with Pi coding agent
 # Build: podman build -f os/Containerfile -t bloom-os:latest .
 # Install: sudo bootc install to-disk /dev/sdX --source-imgref containers-storage:bloom-os:latest
-FROM quay.io/fedora/fedora-bootc:42@sha256:6a0c0c8195b01292a39453c6902e69144d91f95419516af9412d085834541810
+FROM quay.io/fedora/fedora-bootc:42@sha256:a90b096f947775c422a3ca2ffb8e0b4c290241258bca9535d3c2e9e7d9930674
 
 # System + development packages
 RUN dnf install -y \
@@ -30,7 +30,6 @@ RUN dnf install -y \
     chromium \
     xpra \
     xorg-x11-server-Xvfb \
-    i3 \
     xdotool \
     scrot \
     at-spi2-core \
@@ -92,9 +91,7 @@ RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
 COPY os/sysconfig/bloom-bashrc /etc/skel/.bashrc
 COPY os/sysconfig/bloom-bash_profile /etc/skel/.bash_profile
 
-# Display stack: Xpra + Xvfb + i3 (agent-native, headless-first)
-RUN mkdir -p /etc/xdg/i3
-COPY os/sysconfig/i3-config /etc/xdg/i3/config
+# Display stack: Xpra + Xvfb (agent-native, headless-first)
 COPY os/sysconfig/bloom-display.service /usr/lib/systemd/system/bloom-display.service
 RUN systemctl enable bloom-display.service
 

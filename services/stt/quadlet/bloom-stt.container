@@ -10,8 +10,8 @@ ContainerName=bloom-stt
 # Bridge network for isolation
 Network=bloom.network
 
-# Expose API on localhost (8080 inside -> 8081 outside)
-PublishPort=127.0.0.1:8081:8080
+# Expose API (8080 inside -> 8081 outside, localhost + NetBird mesh, firewall-protected)
+PublishPort=0.0.0.0:8081:8080
 
 # Model storage persists across restarts
 Volume=bloom-stt-models:/models
