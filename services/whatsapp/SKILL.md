@@ -12,19 +12,14 @@ Connects WhatsApp to Bloom via the channel protocol (Unix socket at `$XDG_RUNTIM
 ## Setup
 
 1. Install the service package: `service_install(name="whatsapp")`
-2. Watch logs for QR code: `journalctl --user -u bloom-whatsapp -f`
+   - STT (whisper.cpp) is auto-installed as a dependency for voice message transcription
+2. Pair: `service_pair(name="whatsapp")` — displays QR code inline
 3. Scan the QR code with WhatsApp mobile app (Settings > Linked Devices > Link a Device)
-4. Verify: `systemctl --user status bloom-whatsapp`
+4. Verify: `service_test(name="whatsapp")`
 
 ## Pairing
 
-On first start, a QR code is printed to the service logs. View it with:
-
-```bash
-journalctl --user -u bloom-whatsapp -f
-```
-
-Scan the QR code with your WhatsApp mobile app to pair. Auth state persists in the `bloom-whatsapp-auth` volume — you only need to pair once.
+Use `service_pair(name="whatsapp")` to get a fresh QR code inline in conversation. Auth state persists in the `bloom-whatsapp-auth` volume — you only need to pair once.
 
 ## Sending Messages
 

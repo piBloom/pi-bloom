@@ -11,44 +11,27 @@ Bridges Signal messages to Pi via the bloom-channels Unix socket protocol. Uses 
 
 ## Setup
 
-### 1) Build the container image
-
-```bash
-cd services/signal
-npm install && npm run build
-podman build -t bloom-signal:latest .
-```
-
-### 2) Configure your Signal account
+### 1) Configure your Signal account
 
 ```bash
 mkdir -p ~/.config/bloom
 echo "SIGNAL_ACCOUNT=+1234567890" > ~/.config/bloom/signal.env
 ```
 
-### 3) Install and start
+### 2) Install and start
 
-```bash
-service_install(name="signal")
-systemctl --user start bloom-signal.service
-```
+Install the service package: `service_install(name="signal")`
+- The container image is built automatically
+- STT (whisper.cpp) is auto-installed as a dependency for voice message transcription
 
-### 4) Link to your Signal account
+### 3) Pair with your Signal account
 
-Watch logs for the device linking URI:
+Run: `service_pair(name="signal")` — displays QR code inline.
+Open Signal on your phone: Settings > Linked Devices > Link New Device > scan.
 
-```bash
-journalctl --user -u bloom-signal -f
-```
+### 4) Verify
 
-When you see a `tsdevice://` URI, open Signal on your phone:
-Settings > Linked Devices > Link New Device > scan the QR code (or paste the URI).
-
-### 5) Verify
-
-```bash
-service_test(name="signal")
-```
+`service_test(name="signal")`
 
 ## Sending Messages
 
