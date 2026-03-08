@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { extractResponseText, getPairingData, setPairingData, clearPairingData } from "../../extensions/bloom-channels.js";
+import {
+	clearPairingData,
+	extractResponseText,
+	getPairingData,
+	setPairingData,
+} from "../../extensions/bloom-channels.js";
 
 // ---------------------------------------------------------------------------
 // extractResponseText (inlined from lib/channel-utils.ts)

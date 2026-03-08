@@ -13,7 +13,6 @@ import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-age
 import { Type } from "@sinclair/typebox";
 import QRCode from "qrcode";
 import { run } from "../lib/exec.js";
-import { clearPairingData, getPairingData } from "./bloom-channels.js";
 import {
 	buildLocalImage,
 	detectRunningServices,
@@ -34,6 +33,7 @@ import {
 	requireConfirmation,
 	truncate,
 } from "../lib/shared.js";
+import { clearPairingData, getPairingData } from "./bloom-channels.js";
 
 const log = createLogger("bloom-services");
 
@@ -379,9 +379,7 @@ export default function (pi: ExtensionAPI) {
 			name: StringEnum(["whatsapp", "signal"] as const, {
 				description: "Service to pair",
 			}),
-			timeout_sec: Type.Optional(
-				Type.Number({ description: "Max seconds to wait for QR data", default: 60 }),
-			),
+			timeout_sec: Type.Optional(Type.Number({ description: "Max seconds to wait for QR data", default: 60 })),
 		}),
 		async execute(_toolCallId, params, signal) {
 			const serviceName = params.name;
@@ -391,9 +389,7 @@ export default function (pi: ExtensionAPI) {
 			// Check service is installed
 			const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
 			if (!existsSync(join(systemdDir, `bloom-${serviceName}.container`))) {
-				return errorResult(
-					`${serviceName} is not installed. Run service_install(name="${serviceName}") first.`,
-				);
+				return errorResult(`${serviceName} is not installed. Run service_install(name="${serviceName}") first.`);
 			}
 
 			// Restart service to trigger fresh QR/linking

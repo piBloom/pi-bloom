@@ -2,15 +2,15 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { createServer as createHttpServer } from "node:http";
 import { createConnection, type Socket } from "node:net";
+import type { Boom } from "@hapi/boom";
 import makeWASocket, {
-	type DownloadableMessage,
 	DisconnectReason,
+	type DownloadableMessage,
 	downloadContentFromMessage,
 	getContentType,
 	type MediaType,
 	useMultiFileAuthState,
 } from "@whiskeysockets/baileys";
-import { Boom } from "@hapi/boom";
 import pino from "pino";
 import qrcode from "qrcode-terminal";
 import { isChannelMessage, mimeToExt } from "./utils.js";

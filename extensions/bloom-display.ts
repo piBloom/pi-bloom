@@ -61,9 +61,7 @@ export default function (pi: ExtensionAPI) {
 			y: Type.Optional(Type.Number({ description: "Y coordinate (click, move, scroll)" })),
 			text: Type.Optional(Type.String({ description: "Text to type (type action)" })),
 			keys: Type.Optional(Type.String({ description: "Key combo e.g. 'ctrl+l', 'Return' (key action)" })),
-			button: Type.Optional(
-				Type.Number({ description: "Mouse button 1=left 2=middle 3=right (click, default 1)" }),
-			),
+			button: Type.Optional(Type.Number({ description: "Mouse button 1=left 2=middle 3=right (click, default 1)" })),
 			direction: Type.Optional(
 				StringEnum(["up", "down"] as const, { description: "Scroll direction (scroll action)" }),
 			),
@@ -130,11 +128,7 @@ export default function (pi: ExtensionAPI) {
 					if (!params.text) {
 						return errorResult("type requires text parameter.");
 					}
-					const result = await runDisplay(
-						"xdotool",
-						["type", "--delay", "50", "--", params.text],
-						signal,
-					);
+					const result = await runDisplay("xdotool", ["type", "--delay", "50", "--", params.text], signal);
 					if (result.exitCode !== 0) {
 						return errorResult(`Type failed:\n${result.stderr}`);
 					}
@@ -247,8 +241,7 @@ export default function (pi: ExtensionAPI) {
 							},
 							wsName: string,
 						) {
-							const currentWs =
-								node.type === "workspace" ? String(node.num ?? node.name ?? wsName) : wsName;
+							const currentWs = node.type === "workspace" ? String(node.num ?? node.name ?? wsName) : wsName;
 							if (node.type === "con" && node.name) {
 								windows.push({
 									id: node.id ?? 0,
@@ -296,11 +289,7 @@ export default function (pi: ExtensionAPI) {
 					if (!params.command) {
 						return errorResult("launch requires command parameter.");
 					}
-					const result = await runDisplay(
-						"i3-msg",
-						["exec", "--no-startup-id", params.command],
-						signal,
-					);
+					const result = await runDisplay("i3-msg", ["exec", "--no-startup-id", params.command], signal);
 					if (result.exitCode !== 0) {
 						return errorResult(`Launch failed:\n${result.stderr}`);
 					}
@@ -315,9 +304,7 @@ export default function (pi: ExtensionAPI) {
 						return errorResult("focus requires target parameter (window title or ID).");
 					}
 					const isNumeric = /^\d+$/.test(params.target);
-					const criteria = isNumeric
-						? `[con_id=${params.target}]`
-						: `[title="${params.target}"]`;
+					const criteria = isNumeric ? `[con_id=${params.target}]` : `[title="${params.target}"]`;
 					const result = await runDisplay("i3-msg", [`${criteria} focus`], signal);
 					if (result.exitCode !== 0) {
 						return errorResult(`Focus failed:\n${result.stderr}`);
