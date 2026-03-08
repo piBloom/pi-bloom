@@ -63,6 +63,12 @@ export interface ServiceCatalogEntry {
 	category?: string;
 	image?: string;
 	optional?: boolean;
+	depends?: string[];
+	models?: Array<{
+		volume: string;
+		path: string;
+		url: string;
+	}>;
 	preflight?: {
 		commands?: string[];
 		rootless_subids?: boolean;

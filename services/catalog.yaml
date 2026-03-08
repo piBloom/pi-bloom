@@ -5,7 +5,7 @@ services:
     version: "0.1.0"
     category: ai
     image: ghcr.io/ggml-org/llama.cpp:server
-    optional: false
+    optional: true
     preflight:
       commands: [podman, systemctl]
   stt:
@@ -13,6 +13,10 @@ services:
     category: ai
     image: ghcr.io/ggml-org/whisper.cpp:main
     optional: true
+    models:
+      - volume: bloom-stt-models
+        path: /models/ggml-base.en.bin
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin"
     preflight:
       commands: [podman, systemctl]
   whatsapp:
@@ -20,6 +24,7 @@ services:
     category: communication
     image: localhost/bloom-whatsapp:latest
     optional: true
+    depends: [stt]
     preflight:
       commands: [podman, systemctl]
   signal:
@@ -27,6 +32,7 @@ services:
     category: communication
     image: localhost/bloom-signal:latest
     optional: true
+    depends: [stt]
     preflight:
       commands: [podman, systemctl]
   dufs:

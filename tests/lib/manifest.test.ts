@@ -168,6 +168,36 @@ describe("loadServiceCatalog", () => {
 		expect(catalog.llm.category).toBe("ai");
 	});
 
+	it("loads catalog with depends and models fields", () => {
+		const catalogDir = join(tempDir, "services");
+		mkdirSync(catalogDir, { recursive: true });
+		writeFileSync(
+			join(catalogDir, "catalog.yaml"),
+			[
+				"services:",
+				"  whatsapp:",
+				"    version: '0.3.0'",
+				"    category: communication",
+				"    image: localhost/bloom-whatsapp:latest",
+				"    depends: [stt]",
+				"  stt:",
+				"    version: '0.1.0'",
+				"    category: ai",
+				"    image: ghcr.io/ggml-org/whisper.cpp:main",
+				"    models:",
+				"      - volume: bloom-stt-models",
+				"        path: /models/ggml-base.en.bin",
+				"        url: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin",
+			].join("\n"),
+		);
+		const catalog = loadServiceCatalog(tempDir);
+		expect(catalog.whatsapp.depends).toEqual(["stt"]);
+		expect(catalog.stt.models).toHaveLength(1);
+		expect(catalog.stt.models![0].volume).toBe("bloom-stt-models");
+		expect(catalog.stt.models![0].path).toBe("/models/ggml-base.en.bin");
+		expect(catalog.stt.models![0].url).toContain("huggingface.co");
+	});
+
 	it("skips catalog without services key and falls through", () => {
 		// This tests the branch where doc.services is falsy
 		const catalogDir = join(tempDir, "services");
