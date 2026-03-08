@@ -10,7 +10,7 @@ const EXPECTED_TOOL_NAMES = ["display"];
 beforeEach(async () => {
 	temp = createTempGarden();
 	api = createMockExtensionAPI();
-	const mod = await import("../../extensions/bloom-display.js");
+	const mod = await import("../../extensions/bloom-display/index.js");
 	mod.default(api as never);
 });
 
