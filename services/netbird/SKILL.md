@@ -8,7 +8,7 @@ description: Secure mesh networking via NetBird (system service)
 
 EU-hosted mesh networking for secure remote access to your Bloom device. Uses NetBird cloud management (free tier, up to 5 peers).
 
-NetBird provides the security layer for remote desktop (wayvnc) and file access (dufs).
+NetBird provides the security layer for remote desktop (Xpra) and file access (dufs).
 
 NetBird is installed as a native system service (not a container) because WireGuard requires real kernel-level CAP_NET_ADMIN.
 

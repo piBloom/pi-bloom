@@ -110,25 +110,21 @@ Replace `/dev/sdX` with the target disk.
 
 ---
 
-## 💻 Optional: Remote desktop (Sway + wayvnc)
+## Remote desktop (Xpra HTML5)
 
-Bloom OS boots to `graphical.target` with `greetd` and starts a Sway session for user `bloom`.
-The Sway config starts `wayvnc` on `127.0.0.1:5901`.
-
-Recommended access pattern — connect over the NetBird mesh:
+Bloom OS boots to `graphical.target` with a virtual display (Xvfb :99) managed by Xpra.
+The Xpra HTML5 client is available on port 14500.
 
 ```bash
-# wayvnc binds 0.0.0.0:5901, reachable via NetBird IP
-vncviewer <netbird-ip>:5901
+# Connect via browser — open in any web browser
+http://<netbird-ip>:14500
+
+# Or connect via native Xpra client
+xpra attach tcp://<netbird-ip>:14500
 ```
 
-Or via SSH tunnel if NetBird is not available:
-
-```bash
-ssh -N -L 5901:127.0.0.1:5901 bloom@<host>
-```
-
-Then connect your VNC client to `localhost:5901`.
+The display runs headless — no physical monitor needed. If a monitor is connected,
+greetd auto-attaches to the Xpra session on login.
 
 ## 🔗 Related
 
