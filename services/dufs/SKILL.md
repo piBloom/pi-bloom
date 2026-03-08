@@ -13,7 +13,7 @@ Lightweight WebDAV file server exposing your home directory. Accessible from any
 
 WebDAV endpoint: `http://<bloom-device>:5000`
 - Requires NetBird mesh connectivity
-- Authenticated with username `admin` and auto-generated password
+- No authentication — NetBird provides the access control
 
 ## Client Setup
 
@@ -29,13 +29,6 @@ Use FolderSync, Solid Explorer, or any WebDAV-capable file manager.
 
 ### macOS
 Finder > Go > Connect to Server > `http://<bloom-device>:5000`
-
-## Credentials
-
-The WebDAV password is auto-generated during installation and stored at:
-`~/.config/bloom/channel-tokens/dufs.env`
-
-View it with: `cat ~/.config/bloom/channel-tokens/dufs.env`
 
 ## Service Control
 
