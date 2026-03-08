@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import jsYaml from "js-yaml";
 import { describe, expect, it } from "vitest";
-import { normalizeCommand } from "../../extensions/bloom-persona.js";
+import { normalizeCommand } from "../../extensions/bloom-persona/index.js";
 
 const yaml: { load: (str: string) => unknown } = jsYaml;
 

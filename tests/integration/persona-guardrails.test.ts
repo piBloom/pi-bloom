@@ -28,7 +28,7 @@ async function setupPersonaExtension(guardrailsYaml?: string) {
 	}
 
 	// Each mod.default(api) call creates fresh closures (guardrails starts undefined)
-	const mod = await import("../../extensions/bloom-persona.js");
+	const mod = await import("../../extensions/bloom-persona/index.js");
 	const api = createMockExtensionAPI();
 	const ctx = createMockExtensionContext();
 	mod.default(api as never);
