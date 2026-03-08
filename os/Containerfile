@@ -153,5 +153,8 @@ LABEL com.github.containers.toolbox="false"
 LABEL bloom.version="0.0.1"
 LABEL description="Bloom — Pi-native AI companion OS"
 
+# Set hostname (shows in login prompt and shell PS1)
+RUN echo "bloom" > /etc/hostname
+
 # Validate bootc image (must be after all labels)
 RUN bootc container lint
