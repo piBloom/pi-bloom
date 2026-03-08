@@ -84,7 +84,7 @@ export default function (pi: ExtensionAPI) {
 				),
 			),
 		}),
-		async execute(_toolCallId, params, signal) {
+		async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
 			const { action } = params;
 
 			switch (action) {
@@ -102,12 +102,7 @@ export default function (pi: ExtensionAPI) {
 					const buf = await readFile("/tmp/bloom-screenshot.png");
 					const base64 = buf.toString("base64");
 					return {
-						content: [
-							{
-								type: "image",
-								source: { type: "base64", media_type: "image/png", data: base64 },
-							},
-						],
+						content: [{ type: "image" as const, data: base64, mimeType: "image/png" }],
 						details: { path: "/tmp/bloom-screenshot.png" },
 					};
 				}
