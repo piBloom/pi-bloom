@@ -1,16 +1,11 @@
 [Unit]
-Description=Bloom Display (Xpra + Xvfb)
+Description=Bloom Display (Xvfb headless framebuffer)
 After=network.target
 
 [Service]
 User=bloom
 Environment=DISPLAY=:99
-ExecStart=/usr/bin/xpra start :99 \
-    --opengl=no \
-    --bind-tcp=0.0.0.0:14500 \
-    --html=on \
-    --no-daemon
-ExecStop=/usr/bin/xpra stop :99
+ExecStart=/usr/bin/Xvfb :99 -screen 0 1280x1024x24
 Restart=on-failure
 RestartSec=5
 
