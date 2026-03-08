@@ -1,7 +1,7 @@
 FROM docker.io/library/eclipse-temurin:21-jre AS base
 
 # Install signal-cli
-ARG SIGNAL_CLI_VERSION=0.13.12
+ARG SIGNAL_CLI_VERSION=0.14.1
 RUN apt-get update && apt-get install -y --no-install-recommends curl bash ca-certificates && \
     curl -L -o /tmp/signal-cli.tar.gz \
       "https://github.com/AsamK/signal-cli/releases/download/v${SIGNAL_CLI_VERSION}/signal-cli-${SIGNAL_CLI_VERSION}.tar.gz" && \

@@ -4,7 +4,14 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer as createHttpServer } from "node:http";
 import { createConnection, type Socket } from "node:net";
 import { createInterface } from "node:readline";
-import { isChannelMessage, mimeToExt } from "./utils.js";
+import {
+	isChannelMessage,
+	isJsonRpcResponse,
+	isSenderAllowed,
+	type JsonRpcResponse,
+	mimeToExt,
+	parseAllowedSenders,
+} from "./utils.js";
 
 // --- Configuration ---
 
@@ -16,6 +23,10 @@ const CHANNELS_SOCKET = process.env.BLOOM_CHANNELS_SOCKET ?? defaultSocketPath;
 const MEDIA_DIR = process.env.BLOOM_MEDIA_DIR ?? "/media/bloom";
 const CHANNEL_TOKEN = process.env.BLOOM_CHANNEL_TOKEN ?? "";
 const HEALTH_PORT = Number(process.env.BLOOM_HEALTH_PORT ?? "18802");
+const DEVICE_NAME = process.env.BLOOM_DEVICE_NAME ?? "Bloom";
+
+// Sender allowlist: comma-separated phone numbers (E.164). Empty = allow all.
+const ALLOWED_SENDERS = parseAllowedSenders(process.env.BLOOM_ALLOWED_SENDERS ?? "");
 
 const RECONNECT_BASE_MS = 2_000;
 const RECONNECT_MAX_MS = 30_000;
@@ -30,6 +41,12 @@ let tcpConnecting = false;
 let shuttingDown = false;
 let signalConnected = false;
 let signalProcess: ChildProcess | null = null;
+let linkedAccount = SIGNAL_ACCOUNT; // discovered during link or from env
+let pairingInProgress = false;
+
+// JSON-RPC tracking
+let jsonRpcId = 1;
+const pendingRpcs = new Map<number, { resolve: (val: unknown) => void; reject: (err: Error) => void }>();
 
 // --- Helpers ---
 
@@ -75,6 +92,35 @@ healthServer.listen(HEALTH_PORT, "0.0.0.0", () => {
 	console.log(`[health] listening on :${HEALTH_PORT}`);
 });
 
+// --- JSON-RPC ---
+
+function sendRpc(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
+	return new Promise((resolve, reject) => {
+		if (!signalProcess?.stdin?.writable) {
+			reject(new Error("daemon stdin not writable"));
+			return;
+		}
+		const id = jsonRpcId++;
+		pendingRpcs.set(id, { resolve, reject });
+		const rpc = { jsonrpc: "2.0", method, id, params };
+		signalProcess.stdin.write(`${JSON.stringify(rpc)}\n`);
+	});
+}
+
+function handleRpcResponse(resp: JsonRpcResponse): void {
+	const pending = pendingRpcs.get(resp.id);
+	if (!pending) {
+		console.warn(`[rpc] unexpected response for id=${resp.id}`);
+		return;
+	}
+	pendingRpcs.delete(resp.id);
+	if (resp.error) {
+		pending.reject(new Error(`${resp.error.message} (code=${resp.error.code})`));
+	} else {
+		pending.resolve(resp.result);
+	}
+}
+
 // --- signal-cli daemon ---
 
 interface SignalEnvelope {
@@ -94,51 +140,28 @@ interface SignalEnvelope {
 	};
 }
 
-let jsonRpcId = 1;
-
 function sendSignalMessage(recipient: string, text: string): void {
-	if (!signalProcess?.stdin?.writable) {
-		console.warn("[signal] daemon stdin not writable — dropping message.");
-		return;
-	}
-	const rpc = {
-		jsonrpc: "2.0",
-		method: "send",
-		id: jsonRpcId++,
-		params: {
-			recipient: [recipient],
-			message: text,
-		},
+	const params: Record<string, unknown> = {
+		recipient: [recipient],
+		message: text,
 	};
-	signalProcess.stdin.write(`${JSON.stringify(rpc)}\n`);
+	if (linkedAccount) {
+		params.account = linkedAccount;
+	}
+	sendRpc("send", params).catch((err: unknown) => {
+		console.error(`[signal] send error: ${(err as Error).message}`);
+	});
 	console.log(`[signal] sending to ${recipient}: ${text.slice(0, 80)}`);
 }
 
 function startSignalDaemon(): void {
 	if (shuttingDown) return;
 
-	if (!SIGNAL_ACCOUNT) {
-		console.error("[signal] SIGNAL_ACCOUNT not set. Set it to your phone number (e.g. +1234567890).");
-		process.exit(1);
-	}
+	const args = ["--config", SIGNAL_CONFIG_DIR, "--output=json", "daemon", "--receive-mode=on-connection"];
 
-	console.log(`[signal] starting signal-cli daemon for ${SIGNAL_ACCOUNT}...`);
+	console.log("[signal] starting signal-cli daemon (multi-account)...");
 
-	const proc = spawn(
-		SIGNAL_CLI,
-		[
-			"--config",
-			SIGNAL_CONFIG_DIR,
-			"--account",
-			SIGNAL_ACCOUNT,
-			"--output=json",
-			"daemon",
-			"--receive-mode=on-connection",
-		],
-		{
-			stdio: ["pipe", "pipe", "pipe"],
-		},
-	);
+	const proc = spawn(SIGNAL_CLI, args, { stdio: ["pipe", "pipe", "pipe"] });
 
 	signalProcess = proc;
 
@@ -146,13 +169,7 @@ function startSignalDaemon(): void {
 		const line = chunk.toString().trim();
 		if (line) console.error(`[signal-cli] ${line}`);
 
-		// Capture device linking URI
-		const linkMatch = line.match(/(sgnl:\/\/linkdevice\?[^\s]+)/);
-		if (linkMatch) {
-			sendToChannels({ type: "pairing", channel: "signal", data: linkMatch[1] });
-		}
-
-		if (line.includes("Connected") || line.includes("Listening")) {
+		if (line.includes("Listening")) {
 			signalConnected = true;
 			tcpReconnectDelay = RECONNECT_BASE_MS;
 			clearTcpReconnectTimer();
@@ -166,8 +183,12 @@ function startSignalDaemon(): void {
 		rl.on("line", (line: string) => {
 			if (!line.trim()) return;
 			try {
-				const parsed = JSON.parse(line) as SignalEnvelope;
-				handleSignalMessage(parsed);
+				const parsed = JSON.parse(line) as unknown;
+				if (isJsonRpcResponse(parsed)) {
+					handleRpcResponse(parsed);
+				} else {
+					handleSignalMessage(parsed as SignalEnvelope);
+				}
 			} catch (err) {
 				console.error("[signal] parse error:", (err as Error).message, "| raw:", line.slice(0, 120));
 			}
@@ -177,6 +198,11 @@ function startSignalDaemon(): void {
 	proc.on("close", (code) => {
 		signalConnected = false;
 		signalProcess = null;
+		// Reject any pending RPCs
+		for (const [id, pending] of pendingRpcs) {
+			pending.reject(new Error("daemon exited"));
+			pendingRpcs.delete(id);
+		}
 		console.log(`[signal] daemon exited with code ${code}.`);
 
 		if (!shuttingDown) {
@@ -186,12 +212,53 @@ function startSignalDaemon(): void {
 	});
 }
 
+async function handlePairRequest(): Promise<void> {
+	if (pairingInProgress) {
+		console.warn("[signal] pairing already in progress");
+		sendToChannels({ type: "error", channel: "signal", error: "Pairing already in progress" });
+		return;
+	}
+	pairingInProgress = true;
+	try {
+		console.log("[signal] starting device link...");
+		const startResult = (await sendRpc("startLink")) as { deviceLinkUri?: string } | undefined;
+		const uri = startResult?.deviceLinkUri;
+		if (!uri) {
+			throw new Error("startLink did not return deviceLinkUri");
+		}
+		console.log(`[signal] link URI: ${uri.slice(0, 40)}...`);
+		sendToChannels({ type: "pairing", channel: "signal", data: uri });
+
+		console.log("[signal] waiting for phone to confirm link...");
+		const finishResult = (await sendRpc("finishLink", { deviceLinkUri: uri, deviceName: DEVICE_NAME })) as
+			| { number?: string }
+			| undefined;
+		const account = finishResult?.number;
+		if (account) {
+			linkedAccount = account;
+			console.log(`[signal] linked as ${account}`);
+		} else {
+			console.log("[signal] linked (account number not returned)");
+		}
+		sendToChannels({ type: "paired", channel: "signal", account: linkedAccount });
+	} catch (err) {
+		console.error(`[signal] pairing failed: ${(err as Error).message}`);
+		sendToChannels({ type: "error", channel: "signal", error: (err as Error).message });
+	} finally {
+		pairingInProgress = false;
+	}
+}
+
 async function handleSignalMessage(parsed: SignalEnvelope): Promise<void> {
 	const env = parsed.envelope;
 	if (!env?.dataMessage) return;
 
 	const from = env.sourceNumber ?? env.source ?? "";
 	if (!from) return;
+	if (!isSenderAllowed(from, ALLOWED_SENDERS)) {
+		console.log(`[signal] filtered message from ${from} (not in BLOOM_ALLOWED_SENDERS)`);
+		return;
+	}
 
 	const timestamp = env.timestamp ?? Math.floor(Date.now() / 1000);
 	const text = env.dataMessage.message ?? "";
@@ -327,6 +394,13 @@ function handleChannelMessage(raw: unknown): void {
 
 	const { type, to, text } = raw;
 
+	if (type === "pair") {
+		handlePairRequest().catch((err: unknown) => {
+			console.error("[signal] pair handler error:", (err as Error).message);
+		});
+		return;
+	}
+
 	if (type === "response" || type === "send") {
 		if (!to) {
 			console.warn(`[tcp] "${type}" message missing "to" field — dropping.`);
@@ -368,6 +442,12 @@ function shutdown(signal: string): void {
 	if (signalProcess) {
 		signalProcess.kill("SIGTERM");
 		signalProcess = null;
+	}
+
+	// Reject pending RPCs
+	for (const [id, pending] of pendingRpcs) {
+		pending.reject(new Error("shutting down"));
+		pendingRpcs.delete(id);
 	}
 
 	setTimeout(() => process.exit(0), 3_000);
