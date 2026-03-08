@@ -1,0 +1,36 @@
+FROM docker.io/library/eclipse-temurin:21-jre-alpine AS base
+
+# Install signal-cli
+ARG SIGNAL_CLI_VERSION=0.13.12
+RUN apk add --no-cache curl bash && \
+    curl -L -o /tmp/signal-cli.tar.gz \
+      "https://github.com/AsamK/signal-cli/releases/download/v${SIGNAL_CLI_VERSION}/signal-cli-${SIGNAL_CLI_VERSION}.tar.gz" && \
+    tar xf /tmp/signal-cli.tar.gz -C /opt && \
+    mv /opt/signal-cli-${SIGNAL_CLI_VERSION} /opt/signal-cli && \
+    ln -s /opt/signal-cli/bin/signal-cli /usr/local/bin/signal-cli && \
+    rm /tmp/signal-cli.tar.gz
+
+# Install Node.js
+RUN apk add --no-cache nodejs npm
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY dist/ dist/
+
+ENV NODE_ENV=production
+ENV SIGNAL_CLI_PATH=/usr/local/bin/signal-cli
+ENV SIGNAL_CONFIG_DIR=/data/signal
+ENV BLOOM_MEDIA_DIR=/media/bloom
+ENV BLOOM_HEALTH_PORT=18802
+
+RUN mkdir -p /data/signal /media/bloom
+
+EXPOSE 18802
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+  CMD wget -qO- http://localhost:18802/health || exit 1
+
+CMD ["node", "dist/transport.js"]
