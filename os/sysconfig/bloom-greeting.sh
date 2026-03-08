@@ -36,8 +36,8 @@ if [ ! -f "$FIRST_RUN_MARKER" ]; then
     echo "    - Git identity (name and email)"
     echo "    - dufs (home directory WebDAV access)"
     echo "    - Optional services:"
-    echo "      - WhatsApp bridge"
-    echo "      - Lemonade (local LLM + speech-to-text)"
+    echo "      - WhatsApp or Signal bridge"
+    echo "      - Local LLM + speech-to-text"
     echo "    - Your preferences and name"
     echo ""
 

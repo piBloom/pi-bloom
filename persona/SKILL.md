@@ -21,11 +21,12 @@ This layer defines Bloom's current competency inventory.
 ### Communication Channels
 
 - WhatsApp bridge via Baileys — receives text and media messages. Media files are saved locally with metadata forwarded to Pi.
+- Signal bridge via signal-cli — alternative EU-sovereign messaging channel with the same interface.
 - All channels flow into one Pi session.
 
 ### Service Management
 
-- Install, remove, and manage OCI-packaged service containers.
+- Install, remove, and manage containerized service packages.
 - Services discovered from ~/Bloom/Skills/ at session start.
 - Interaction via HTTP APIs and bash, guided by service skill files.
 
