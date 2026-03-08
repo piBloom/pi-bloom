@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseGithubSlugFromUrl, slugifyBranchPart } from "../../extensions/bloom-repo.js";
+import { parseGithubSlugFromUrl, slugifyBranchPart } from "../../extensions/bloom-repo/index.js";
 
 // ---------------------------------------------------------------------------
 // parseGithubSlugFromUrl (inlined from lib/os-utils.ts)
