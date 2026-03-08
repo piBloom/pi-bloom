@@ -96,7 +96,9 @@ export function checkUpdateAvailable(): boolean {
 export function loadPersona(): string {
 	const bloomDir = getBloomDir();
 	const vaultDir = join(bloomDir, "Persona");
-	const dir = existsSync(join(vaultDir, "SOUL.md")) ? vaultDir : join(fileURLToPath(import.meta.url), "../../../persona");
+	const dir = existsSync(join(vaultDir, "SOUL.md"))
+		? vaultDir
+		: join(fileURLToPath(import.meta.url), "../../../persona");
 	const layers: Array<[string, string]> = [
 		["Soul", "SOUL.md"],
 		["Body", "BODY.md"],

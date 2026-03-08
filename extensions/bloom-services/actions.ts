@@ -121,9 +121,7 @@ export async function handleScaffold(
 	if (existsSync(socketPath)) created.push(socketPath);
 
 	return {
-		content: [
-			{ type: "text" as const, text: `Service scaffold created:\n${created.map((f) => `- ${f}`).join("\n")}` },
-		],
+		content: [{ type: "text" as const, text: `Service scaffold created:\n${created.map((f) => `- ${f}`).join("\n")}` }],
 		details: {
 			repoDir: scaffoldRepoDir,
 			service: params.name,
@@ -743,10 +741,7 @@ export async function handleManifestApply(
 
 // --- Session start hook handler ---
 
-export async function handleSessionStart(
-	manifestPath: string,
-	ctx: ExtensionContext,
-) {
+export async function handleSessionStart(manifestPath: string, ctx: ExtensionContext) {
 	log.info("service lifecycle extension loaded");
 
 	if (ctx.hasUI) {

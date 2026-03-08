@@ -20,7 +20,7 @@ export interface ConnectOptions {
 	onMessage: (from: string, text: string) => void;
 }
 
-let messageHandler: ((from: string, text: string) => void) | null = null;
+let _messageHandler: ((from: string, text: string) => void) | null = null;
 
 /**
  * Initialize the service transport.
@@ -34,7 +34,7 @@ let messageHandler: ((from: string, text: string) => void) | null = null;
  * @param opts - Connection options including the inbound message callback
  */
 export async function connect(opts: ConnectOptions): Promise<void> {
-	messageHandler = opts.onMessage;
+	_messageHandler = opts.onMessage;
 
 	// TODO: Initialize your service client here.
 	// Example:
@@ -69,7 +69,7 @@ export function sendMessage(to: string, text: string): void {
  * Called during graceful shutdown.
  */
 export function disconnect(): void {
-	messageHandler = null;
+	_messageHandler = null;
 
 	// TODO: Close client connections, kill child processes, etc.
 

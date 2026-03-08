@@ -110,8 +110,7 @@ export async function handleConfigure(
 		const originAfterFork = await getRemoteUrl(repoDir, "origin", signal);
 		if (!originAfterFork) {
 			const fallback = await run("git", ["-C", repoDir, "remote", "add", "origin", upstreamUrl], signal);
-			if (fallback.exitCode !== 0)
-				return errorResult(`Failed to set fallback origin remote:\n${fallback.stderr}`);
+			if (fallback.exitCode !== 0) return errorResult(`Failed to set fallback origin remote:\n${fallback.stderr}`);
 			changes.push(`fallback origin -> ${upstreamUrl}`);
 			notes.push("origin currently points to upstream. Set fork_url later for writable PR flow.");
 		}
@@ -218,13 +217,9 @@ export async function handleSubmitPr(
 	signal: AbortSignal | undefined,
 	ctx: ExtensionContext,
 ) {
-	const denied = await requireConfirmation(
-		ctx,
-		`Create pull request "${params.title}" from local Bloom repo changes`,
-		{
-			requireUi: false,
-		},
-	);
+	const denied = await requireConfirmation(ctx, `Create pull request "${params.title}" from local Bloom repo changes`, {
+		requireUi: false,
+	});
 	if (denied) return errorResult(denied);
 
 	const check = await run("git", ["-C", repoDir, "rev-parse", "--git-dir"], signal);
@@ -308,20 +303,7 @@ export async function handleSubmitPr(
 	if (pr.exitCode !== 0) {
 		const existing = await run(
 			"gh",
-			[
-				"pr",
-				"list",
-				"--repo",
-				upstreamSlug,
-				"--state",
-				"open",
-				"--head",
-				headRef,
-				"--json",
-				"url",
-				"-q",
-				".[0].url",
-			],
+			["pr", "list", "--repo", upstreamSlug, "--state", "open", "--head", headRef, "--json", "url", "-q", ".[0].url"],
 			signal,
 		);
 		if (existing.exitCode === 0 && existing.stdout.trim()) {

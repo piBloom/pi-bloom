@@ -166,7 +166,11 @@ export async function handleUpdateStatus() {
 
 // --- Schedule reboot handler ---
 
-export async function handleScheduleReboot(delayMinutes: number, signal: AbortSignal | undefined, ctx: ExtensionContext) {
+export async function handleScheduleReboot(
+	delayMinutes: number,
+	signal: AbortSignal | undefined,
+	ctx: ExtensionContext,
+) {
 	const delay = Math.max(1, Math.round(delayMinutes));
 	const denied = await requireConfirmation(ctx, `Schedule reboot in ${delay} minute(s)`);
 	if (denied) return errorResult(denied);

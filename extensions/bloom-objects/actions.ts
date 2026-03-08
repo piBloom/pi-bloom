@@ -22,18 +22,11 @@ export function walkMdFiles(dir: string): string[] {
 }
 
 /** Create a new markdown object. */
-export function createObject(params: {
-	type: string;
-	slug: string;
-	fields?: Record<string, string>;
-	path?: string;
-}) {
+export function createObject(params: { type: string; slug: string; fields?: Record<string, string>; path?: string }) {
 	const bloomDir = getBloomDir();
 	let filepath: string;
 	try {
-		filepath = params.path
-			? safePath(os.homedir(), params.path)
-			: safePath(bloomDir, "Objects", `${params.slug}.md`);
+		filepath = params.path ? safePath(os.homedir(), params.path) : safePath(bloomDir, "Objects", `${params.slug}.md`);
 	} catch {
 		return errorResult("Path traversal blocked: invalid path");
 	}

@@ -46,10 +46,7 @@ export async function handleScreenshot(
 }
 
 /** Click at coordinates. */
-export async function handleClick(
-	params: { x?: number; y?: number; button?: number },
-	signal?: AbortSignal,
-) {
+export async function handleClick(params: { x?: number; y?: number; button?: number }, signal?: AbortSignal) {
 	if (params.x === undefined || params.y === undefined) {
 		return errorResult("click requires x and y coordinates.");
 	}
@@ -103,11 +100,7 @@ export async function handleMove(params: { x?: number; y?: number }, signal?: Ab
 	if (params.x === undefined || params.y === undefined) {
 		return errorResult("move requires x and y coordinates.");
 	}
-	const result = await runDisplay(
-		"xdotool",
-		["mousemove", "--sync", String(params.x), String(params.y)],
-		signal,
-	);
+	const result = await runDisplay("xdotool", ["mousemove", "--sync", String(params.x), String(params.y)], signal);
 	if (result.exitCode !== 0) {
 		return errorResult(`Mouse move failed:\n${result.stderr}`);
 	}

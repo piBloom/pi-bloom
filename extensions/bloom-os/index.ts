@@ -16,8 +16,8 @@ import {
 	handleContainerLogs,
 	handleContainerStatus,
 	handleScheduleReboot,
-	handleSystemHealth,
 	handleSystemdControl,
+	handleSystemHealth,
 	handleUpdateStatus,
 } from "./actions.js";
 

@@ -216,10 +216,7 @@ export function handleUpdateBlueprints(bloomDir: string, packageDir: string): nu
 	return updates.length;
 }
 
-export function handleSkillCreate(
-	bloomDir: string,
-	params: { name: string; description: string; content: string },
-) {
+export function handleSkillCreate(bloomDir: string, params: { name: string; description: string; content: string }) {
 	let skillDir: string;
 	try {
 		skillDir = safePath(bloomDir, "Skills", params.name);
