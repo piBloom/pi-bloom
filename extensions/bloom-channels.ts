@@ -1,7 +1,7 @@
 /**
  * 📡 bloom-channels — Channel bridge Unix socket server at $XDG_RUNTIME_DIR/bloom/channels.sock.
  *
- * @commands /wa (send message to WhatsApp channel)
+ * @commands /wa (send message to WhatsApp), /signal (send message to Signal)
  * @hooks session_start, agent_end, session_shutdown
  * @see {@link ../AGENTS.md#bloom-channels} Extension reference
  */
@@ -437,6 +437,20 @@ export default function (pi: ExtensionAPI) {
 			const msg = `${JSON.stringify({ type: "send", channel: "whatsapp", text: args })}\n`;
 			waChannel.socket.write(msg);
 			ctx.ui.notify("Sent to WhatsApp", "info");
+		},
+	});
+
+	pi.registerCommand("signal", {
+		description: "Send a message to Signal",
+		handler: async (args: string, ctx) => {
+			const signalChannel = channels.get("signal");
+			if (!signalChannel) {
+				ctx.ui.notify("Signal not connected", "warning");
+				return;
+			}
+			const msg = `${JSON.stringify({ type: "send", channel: "signal", text: args })}\n`;
+			signalChannel.socket.write(msg);
+			ctx.ui.notify("Sent to Signal", "info");
 		},
 	});
 }
