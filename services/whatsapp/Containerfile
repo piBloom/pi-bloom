@@ -12,6 +12,8 @@ ENV BLOOM_AUTH_DIR=/data/auth
 ENV BLOOM_MEDIA_DIR=/media/bloom
 ENV BLOOM_HEALTH_PORT=18801
 
+RUN mkdir -p /data/auth /media/bloom && chown -R node:node /data /media/bloom
+
 EXPOSE 18801
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

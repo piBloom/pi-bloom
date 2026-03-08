@@ -12,6 +12,7 @@ import makeWASocket, {
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import pino from "pino";
+import qrcode from "qrcode-terminal";
 import { isChannelMessage, mimeToExt } from "./utils.js";
 
 const AUTH_DIR = process.env.BLOOM_AUTH_DIR ?? "/data/auth";
@@ -92,7 +93,6 @@ async function startWhatsApp(): Promise<void> {
 
 	const sock = makeWASocket({
 		auth: state,
-		printQRInTerminal: true,
 		logger,
 	});
 
@@ -101,7 +101,12 @@ async function startWhatsApp(): Promise<void> {
 	sock.ev.on("creds.update", saveCreds);
 
 	sock.ev.on("connection.update", (update) => {
-		const { connection, lastDisconnect } = update;
+		const { connection, lastDisconnect, qr } = update;
+
+		if (qr) {
+			console.log("[wa] QR code — scan with WhatsApp mobile app (Settings > Linked Devices):");
+			qrcode.generate(qr, { small: true });
+		}
 
 		if (connection === "close") {
 			waConnected = false;
@@ -144,7 +149,10 @@ async function startWhatsApp(): Promise<void> {
 				try {
 					const mediaMsg = msg.message[messageType];
 					if (mediaMsg && typeof mediaMsg === "object" && "url" in mediaMsg) {
-						const stream = await downloadContentFromMessage(mediaMsg as DownloadableMessage, mediaCategory(messageType));
+						const stream = await downloadContentFromMessage(
+							mediaMsg as DownloadableMessage,
+							mediaCategory(messageType),
+						);
 						const chunks: Buffer[] = [];
 						for await (const chunk of stream) {
 							chunks.push(chunk as Buffer);
@@ -160,9 +168,7 @@ async function startWhatsApp(): Promise<void> {
 				}
 			}
 
-			const text = msg.message.conversation
-				?? msg.message.extendedTextMessage?.text
-				?? "";
+			const text = msg.message.conversation ?? msg.message.extendedTextMessage?.text ?? "";
 
 			if (text) {
 				console.log(`[wa] message from ${from}: ${text.slice(0, 80)}`);
