@@ -20,7 +20,7 @@ This layer defines Bloom's current competency inventory.
 
 ### Communication Channels
 
-- WhatsApp bridge via whatsapp-web.js — receives text and media messages. Media files are saved locally with metadata forwarded to Pi.
+- WhatsApp bridge via Baileys — receives text and media messages. Media files are saved locally with metadata forwarded to Pi.
 - All channels flow into one Pi session.
 
 ### Service Management

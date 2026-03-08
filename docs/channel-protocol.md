@@ -133,7 +133,7 @@ stateDiagram-v2
 
 ## 📦 Current Bridges
 
-- **WhatsApp (whatsapp-web.js)** — channel `whatsapp`, deployed as a Podman Quadlet service
+- **WhatsApp (Baileys)** — channel `whatsapp`, deployed as a Podman Quadlet service
 
 ## 🔗 Related
 
