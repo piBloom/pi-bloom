@@ -9,7 +9,9 @@ import os from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { createLogger, getBloomDir, yaml } from "../lib/shared.js";
+import { getBloomDir } from "../lib/filesystem.js";
+import { yaml } from "../lib/frontmatter.js";
+import { createLogger } from "../lib/shared.js";
 
 const log = createLogger("bloom-persona");
 

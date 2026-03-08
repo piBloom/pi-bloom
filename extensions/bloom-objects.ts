@@ -9,15 +9,9 @@ import os from "node:os";
 import path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import {
-	errorResult,
-	getBloomDir,
-	nowIso,
-	parseFrontmatter,
-	safePath,
-	stringifyFrontmatter,
-	truncate,
-} from "../lib/shared.js";
+import { getBloomDir, safePath } from "../lib/filesystem.js";
+import { parseFrontmatter, stringifyFrontmatter } from "../lib/frontmatter.js";
+import { errorResult, nowIso, truncate } from "../lib/shared.js";
 
 /** Parse a `type/slug` reference string into its components. Throws if format is invalid. */
 export function parseRef(ref: string): { type: string; slug: string } {

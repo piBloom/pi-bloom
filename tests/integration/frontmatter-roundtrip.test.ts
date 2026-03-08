@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseFrontmatter, stringifyFrontmatter } from "../../lib/shared.js";
+import { parseFrontmatter, stringifyFrontmatter } from "../../lib/frontmatter.js";
 
 describe("frontmatter roundtrip integration", () => {
 	it("roundtrip preserves simple k/v", () => {

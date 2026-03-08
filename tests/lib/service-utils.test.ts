@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commandMissingError, validatePinnedImage, validateServiceName } from "../../lib/service-utils.js";
+import { commandMissingError, validatePinnedImage, validateServiceName } from "../../lib/services.js";
 
 // ---------------------------------------------------------------------------
 // validateServiceName

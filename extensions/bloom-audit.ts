@@ -9,8 +9,9 @@ import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlin
 import { join } from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { dayStamp, sanitize, summarizeInput } from "../lib/audit-utils.js";
-import { createLogger, getBloomDir, truncate } from "../lib/shared.js";
+import { dayStamp, sanitize, summarizeInput } from "../lib/audit.js";
+import { getBloomDir } from "../lib/filesystem.js";
+import { createLogger, truncate } from "../lib/shared.js";
 
 const log = createLogger("bloom-audit");
 

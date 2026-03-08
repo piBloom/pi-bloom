@@ -11,7 +11,7 @@ import {
 	loadManifest,
 	loadServiceCatalog,
 	saveManifest,
-} from "../../lib/manifest.js";
+} from "../../lib/services.js";
 
 describe("loadManifest", () => {
 	let tempDir: string;

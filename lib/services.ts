@@ -12,8 +12,8 @@ import {
 import os from "node:os";
 import { dirname, join } from "node:path";
 import { run } from "./exec.js";
-import { commandMissingError } from "./service-utils.js";
-import { createLogger, yaml } from "./shared.js";
+import { yaml } from "./frontmatter.js";
+import { createLogger } from "./shared.js";
 
 /**
  * Check whether a `/etc/subuid` or `/etc/subgid` file contains an entry
@@ -442,4 +442,35 @@ export async function detectRunningServices(
 		// parse error
 	}
 	return detected;
+}
+
+// ---------------------------------------------------------------------------
+// Service validation helpers (merged from service-utils.ts)
+// ---------------------------------------------------------------------------
+
+/** Validate that a service name is kebab-case `[a-z0-9-]`. Returns error message or null. */
+export function validateServiceName(name: string): string | null {
+	if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) {
+		return "Service name must be kebab-case using [a-z0-9-].";
+	}
+	return null;
+}
+
+/** Validate that a container image reference is pinned (digest or explicit non-latest tag). Returns error message or null. */
+export function validatePinnedImage(image: string): string | null {
+	if (image.includes("@sha256:")) return null;
+	const tagMatch = image.match(/:([^/@]+)$/);
+	if (!tagMatch) {
+		return "Image must include an explicit version tag or digest (avoid implicit latest).";
+	}
+	const tag = tagMatch[1].toLowerCase();
+	if (tag === "latest" || tag.startsWith("latest-")) {
+		return "Image tag must be pinned (avoid latest/latest-* tags).";
+	}
+	return null;
+}
+
+/** Check if an error message indicates a missing command (ENOENT, not found, etc.). */
+export function commandMissingError(text: string): boolean {
+	return /ENOENT|not found|No such file/i.test(text);
 }

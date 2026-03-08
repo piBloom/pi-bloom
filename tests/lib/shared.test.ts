@@ -1,15 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-	createLogger,
-	errorResult,
-	getBloomDir,
-	guardBloom,
-	nowIso,
-	parseFrontmatter,
-	requireConfirmation,
-	safePath,
-	stringifyFrontmatter,
-} from "../../lib/shared.js";
+import { getBloomDir, safePath } from "../../lib/filesystem.js";
+import { parseFrontmatter, stringifyFrontmatter } from "../../lib/frontmatter.js";
+import { createLogger, errorResult, guardBloom, nowIso, requireConfirmation } from "../../lib/shared.js";
 
 // ---------------------------------------------------------------------------
 // safePath

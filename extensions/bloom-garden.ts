@@ -13,7 +13,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { errorResult, getBloomDir, nowIso, safePath, stringifyFrontmatter, truncate } from "../lib/shared.js";
+import { getBloomDir, safePath } from "../lib/filesystem.js";
+import { stringifyFrontmatter } from "../lib/frontmatter.js";
+import { errorResult, nowIso, truncate } from "../lib/shared.js";
 
 function getPackageDir(): string {
 	return path.join(fileURLToPath(import.meta.url), "../..");

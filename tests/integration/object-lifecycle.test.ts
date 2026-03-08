@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { parseFrontmatter } from "../../lib/shared.js";
+import { parseFrontmatter } from "../../lib/frontmatter.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
 import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";

@@ -13,6 +13,8 @@ import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-age
 import { Type } from "@sinclair/typebox";
 import QRCode from "qrcode";
 import { run } from "../lib/exec.js";
+import { getBloomDir } from "../lib/filesystem.js";
+import { parseFrontmatter } from "../lib/frontmatter.js";
 import {
 	buildLocalImage,
 	detectRunningServices,
@@ -23,16 +25,10 @@ import {
 	type Manifest,
 	saveManifest,
 	servicePreflightErrors,
-} from "../lib/manifest.js";
-import { validatePinnedImage, validateServiceName } from "../lib/service-utils.js";
-import {
-	createLogger,
-	errorResult,
-	getBloomDir,
-	parseFrontmatter,
-	requireConfirmation,
-	truncate,
-} from "../lib/shared.js";
+	validatePinnedImage,
+	validateServiceName,
+} from "../lib/services.js";
+import { createLogger, errorResult, requireConfirmation, truncate } from "../lib/shared.js";
 import { clearPairingData, getPairingData } from "./bloom-channels.js";
 
 const log = createLogger("bloom-services");
