@@ -1,0 +1,13 @@
+FROM codercom/code-server:4.109.5
+
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+USER coder
+
+ENV PASSWORD=""
+ENV DISABLE_TELEMETRY=true
+
+EXPOSE 8443
+ENTRYPOINT ["dumb-init", "code-server", "--bind-addr", "0.0.0.0:8443", "--auth", "none", "--disable-telemetry"]

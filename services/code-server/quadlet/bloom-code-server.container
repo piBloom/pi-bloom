@@ -1,0 +1,28 @@
+[Unit]
+Description=Bloom code-server — web-based code editor
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/bloom-code-server:latest
+ContainerName=bloom-code-server
+Network=host
+Volume=%h:/home/coder/project
+Environment=DISABLE_TELEMETRY=true
+PodmanArgs=--memory=512m
+PodmanArgs=--security-opt label=disable
+NoNewPrivileges=true
+LogDriver=journald
+
+HealthCmd=curl -f http://localhost:8443/healthz || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthStartPeriod=10s
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

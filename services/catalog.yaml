@@ -42,3 +42,10 @@ services:
     optional: false
     preflight:
       commands: [podman, systemctl]
+  code-server:
+    version: "0.1.0"
+    category: development
+    image: localhost/bloom-code-server:latest
+    optional: true
+    preflight:
+      commands: [podman, systemctl]
