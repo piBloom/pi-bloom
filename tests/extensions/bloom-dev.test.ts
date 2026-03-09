@@ -91,7 +91,7 @@ describe("bloom-dev sentinel management", () => {
 
 	it("dev_enable writes the sentinel file", async () => {
 		const result = await handleDevEnable(temp.gardenDir);
-		expect(result.isError).toBeUndefined();
+		expect(result).not.toHaveProperty("isError");
 		expect(result.details.enabled).toBe(true);
 		expect(isDevEnabled(temp.gardenDir)).toBe(true);
 		expect(existsSync(join(temp.gardenDir, ".dev-enabled"))).toBe(true);
@@ -104,14 +104,14 @@ describe("bloom-dev sentinel management", () => {
 
 		// Then disable
 		const result = await handleDevDisable(temp.gardenDir);
-		expect(result.isError).toBeUndefined();
+		expect(result).not.toHaveProperty("isError");
 		expect(result.details.enabled).toBe(false);
 		expect(isDevEnabled(temp.gardenDir)).toBe(false);
 	});
 
 	it("dev_disable is idempotent when sentinel already absent", async () => {
 		const result = await handleDevDisable(temp.gardenDir);
-		expect(result.isError).toBeUndefined();
+		expect(result).not.toHaveProperty("isError");
 		expect(result.details.enabled).toBe(false);
 	});
 
@@ -194,5 +194,17 @@ describe("bloom-dev registration", () => {
 	it("tool names are unique", () => {
 		const names = toolNames();
 		expect(new Set(names).size).toBe(names.length);
+	});
+
+	it("gated tool returns error when dev mode is not enabled", async () => {
+		const devBuild = api._registeredTools.find((t) => t.name === "dev_build");
+		expect(devBuild).toBeDefined();
+		const result = (await (devBuild!.execute as (...args: unknown[]) => Promise<unknown>)(
+			"call-id",
+			{},
+			undefined,
+		)) as { isError?: boolean; content: Array<{ text: string }> };
+		expect(result.isError).toBe(true);
+		expect(result.content[0].text).toContain("Dev mode is not enabled");
 	});
 });

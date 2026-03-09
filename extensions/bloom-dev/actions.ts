@@ -6,12 +6,6 @@ import { join } from "node:path";
 import { run } from "../../lib/exec.js";
 import { errorResult } from "../../lib/shared.js";
 
-type ToolResult = {
-	content: Array<{ type: "text"; text: string }>;
-	details: Record<string, unknown>;
-	isError?: boolean;
-};
-
 const SENTINEL = ".dev-enabled";
 
 /** Resolve the sentinel file path within the bloom runtime directory. */
@@ -25,30 +19,30 @@ export function isDevEnabled(bloomRuntime: string): boolean {
 }
 
 /** Enable dev mode by writing the sentinel file. */
-export async function handleDevEnable(bloomRuntime: string): Promise<ToolResult> {
+export async function handleDevEnable(bloomRuntime: string) {
 	mkdirSync(bloomRuntime, { recursive: true });
 	writeFileSync(sentinelPath(bloomRuntime), new Date().toISOString(), "utf-8");
 	return {
-		content: [{ type: "text", text: "Dev mode enabled." }],
+		content: [{ type: "text" as const, text: "Dev mode enabled." }],
 		details: { enabled: true },
 	};
 }
 
 /** Disable dev mode by removing the sentinel file. */
-export async function handleDevDisable(bloomRuntime: string): Promise<ToolResult> {
+export async function handleDevDisable(bloomRuntime: string) {
 	try {
 		unlinkSync(sentinelPath(bloomRuntime));
 	} catch {
 		// Already absent — that's fine
 	}
 	return {
-		content: [{ type: "text", text: "Dev mode disabled." }],
+		content: [{ type: "text" as const, text: "Dev mode disabled." }],
 		details: { enabled: false },
 	};
 }
 
 /** Report current dev environment status. */
-export async function handleDevStatus(bloomRuntime: string, signal?: AbortSignal): Promise<ToolResult> {
+export async function handleDevStatus(bloomRuntime: string, signal?: AbortSignal) {
 	const enabled = isDevEnabled(bloomRuntime);
 	const repoDir = join(bloomRuntime, "pi-bloom");
 
@@ -72,7 +66,7 @@ export async function handleDevStatus(bloomRuntime: string, signal?: AbortSignal
 	if (localBuildAvailable) lines.push("Image tag: localhost/bloom:dev");
 
 	return {
-		content: [{ type: "text", text: lines.join("\n") }],
+		content: [{ type: "text" as const, text: lines.join("\n") }],
 		details: {
 			enabled,
 			repoConfigured,
@@ -93,12 +87,12 @@ export async function handleDevCodeServer(
 	_bloomRuntime: string,
 	_action: string,
 	_signal?: AbortSignal,
-): Promise<ToolResult> {
+) {
 	return errorResult("Not yet implemented: dev_code_server");
 }
 
 /** Build a local container image from the repo. */
-export async function handleDevBuild(_bloomRuntime: string, _signal?: AbortSignal): Promise<ToolResult> {
+export async function handleDevBuild(_bloomRuntime: string, _signal?: AbortSignal) {
 	return errorResult("Not yet implemented: dev_build");
 }
 
@@ -107,46 +101,46 @@ export async function handleDevSwitch(
 	_bloomRuntime: string,
 	_imageRef: string,
 	_signal?: AbortSignal,
-): Promise<ToolResult> {
+) {
 	return errorResult("Not yet implemented: dev_switch");
 }
 
 /** Rollback to the previous OS deployment. */
-export async function handleDevRollback(_bloomRuntime: string, _signal?: AbortSignal): Promise<ToolResult> {
+export async function handleDevRollback(_bloomRuntime: string, _signal?: AbortSignal) {
 	return errorResult("Not yet implemented: dev_rollback");
 }
 
 /** Run the edit-build-switch development loop. */
-export async function handleDevLoop(_bloomRuntime: string, _signal?: AbortSignal): Promise<ToolResult> {
+export async function handleDevLoop(_bloomRuntime: string, _signal?: AbortSignal) {
 	return errorResult("Not yet implemented: dev_loop");
 }
 
 /** Run tests and linting. */
-export async function handleDevTest(_bloomRuntime: string, _signal?: AbortSignal): Promise<ToolResult> {
+export async function handleDevTest(_bloomRuntime: string, _signal?: AbortSignal) {
 	return errorResult("Not yet implemented: dev_test");
 }
 
 /** Submit a pull request from local changes. */
-export async function handleDevSubmitPr(_bloomRuntime: string, _signal?: AbortSignal): Promise<ToolResult> {
+export async function handleDevSubmitPr(_bloomRuntime: string, _signal?: AbortSignal) {
 	return errorResult("Not yet implemented: dev_submit_pr");
 }
 
 /** Push a skill to the device. */
-export async function handleDevPushSkill(_bloomRuntime: string, _signal?: AbortSignal): Promise<ToolResult> {
+export async function handleDevPushSkill(_bloomRuntime: string, _signal?: AbortSignal) {
 	return errorResult("Not yet implemented: dev_push_skill");
 }
 
 /** Push a service to the device. */
-export async function handleDevPushService(_bloomRuntime: string, _signal?: AbortSignal): Promise<ToolResult> {
+export async function handleDevPushService(_bloomRuntime: string, _signal?: AbortSignal) {
 	return errorResult("Not yet implemented: dev_push_service");
 }
 
 /** Push an extension to the device. */
-export async function handleDevPushExtension(_bloomRuntime: string, _signal?: AbortSignal): Promise<ToolResult> {
+export async function handleDevPushExtension(_bloomRuntime: string, _signal?: AbortSignal) {
 	return errorResult("Not yet implemented: dev_push_extension");
 }
 
 /** Install a Pi package from a local path. */
-export async function handleDevInstallPackage(_bloomRuntime: string, _signal?: AbortSignal): Promise<ToolResult> {
+export async function handleDevInstallPackage(_bloomRuntime: string, _signal?: AbortSignal) {
 	return errorResult("Not yet implemented: dev_install_package");
 }
