@@ -78,8 +78,9 @@ export default function (pi: ExtensionAPI) {
 		label: "Code Server",
 		description: "Start or stop the code-server development environment.",
 		parameters: Type.Object({
-			action: StringEnum(["start", "stop", "status"] as const, {
-				description: "start: launch code-server. stop: shut it down. status: check if running.",
+			action: StringEnum(["start", "stop", "restart", "status"] as const, {
+				description:
+					"start: launch code-server. stop: shut it down. restart: reload and restart. status: check if running.",
 			}),
 		}),
 		async execute(_toolCallId, params, signal) {
@@ -93,11 +94,14 @@ export default function (pi: ExtensionAPI) {
 		name: "dev_build",
 		label: "Dev Build",
 		description: "Build a local container image from the Bloom repo.",
-		parameters: Type.Object({}),
-		async execute(_toolCallId, _params, signal) {
+		parameters: Type.Object({
+			tag: Type.Optional(Type.String({ description: "Image tag (default: localhost/bloom:dev)" })),
+		}),
+		async execute(_toolCallId, params, signal) {
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevBuild(bloomRuntime, signal);
+			const repoDir = join(bloomRuntime, "pi-bloom");
+			return handleDevBuild(repoDir, signal, params.tag);
 		},
 	});
 
@@ -108,10 +112,10 @@ export default function (pi: ExtensionAPI) {
 		parameters: Type.Object({
 			image_ref: Type.String({ description: "Image reference to switch to (e.g. localhost/bloom:dev)" }),
 		}),
-		async execute(_toolCallId, params, signal) {
+		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevSwitch(bloomRuntime, params.image_ref, signal);
+			return handleDevSwitch(bloomRuntime, params.image_ref, signal, ctx);
 		},
 	});
 
@@ -120,10 +124,10 @@ export default function (pi: ExtensionAPI) {
 		label: "Dev Rollback",
 		description: "Rollback to the previous OS deployment.",
 		parameters: Type.Object({}),
-		async execute(_toolCallId, _params, signal) {
+		async execute(_toolCallId, _params, signal, _onUpdate, ctx) {
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevRollback(bloomRuntime, signal);
+			return handleDevRollback(bloomRuntime, signal, ctx);
 		},
 	});
 
@@ -147,7 +151,8 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, _params, signal) {
 			const gate = devGate();
 			if (gate) return gate;
-			return handleDevTest(bloomRuntime, signal);
+			const repoDir = join(bloomRuntime, "pi-bloom");
+			return handleDevTest(repoDir, signal);
 		},
 	});
 

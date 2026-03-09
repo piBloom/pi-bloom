@@ -2,9 +2,12 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+	handleDevBuild,
+	handleDevCodeServer,
 	handleDevDisable,
 	handleDevEnable,
 	handleDevStatus,
+	handleDevTest,
 	isDevEnabled,
 } from "../../extensions/bloom-dev/actions.js";
 import type { DevBuildResult, DevStatus, DevTestResult } from "../../extensions/bloom-dev/types.js";
@@ -206,5 +209,41 @@ describe("bloom-dev registration", () => {
 		)) as { isError?: boolean; content: Array<{ text: string }> };
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("Dev mode is not enabled");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Task 5: dev_code_server handler
+// ---------------------------------------------------------------------------
+describe("handleDevCodeServer", () => {
+	it("status returns a result (not 'not yet implemented')", async () => {
+		const result = await handleDevCodeServer(temp.gardenDir, "status");
+		const text = result.content[0].text;
+		expect(text).not.toContain("Not yet implemented");
+		expect(text).toMatch(/code-server is (running|stopped)/);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Task 6: dev_build handler
+// ---------------------------------------------------------------------------
+describe("handleDevBuild", () => {
+	it("returns error when repo dir is missing", async () => {
+		const missing = join(temp.gardenDir, "nonexistent");
+		const result = await handleDevBuild(missing);
+		expect("isError" in result && result.isError).toBe(true);
+		expect(result.content[0].text).toContain("Containerfile not found");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Task 8: dev_test handler
+// ---------------------------------------------------------------------------
+describe("handleDevTest", () => {
+	it("returns error when repo dir is missing", async () => {
+		const missing = join(temp.gardenDir, "nonexistent");
+		const result = await handleDevTest(missing);
+		expect(result.isError).toBe(true);
+		expect(result.content[0].text).toContain("package.json not found");
 	});
 });
