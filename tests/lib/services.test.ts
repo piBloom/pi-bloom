@@ -181,23 +181,17 @@ describe("loadServiceCatalog", () => {
 				"    version: '0.3.0'",
 				"    category: communication",
 				"    image: localhost/bloom-whatsapp:latest",
-				"    depends: [stt]",
-				"  stt:",
+				"    depends: [lemonade]",
+				"  lemonade:",
 				"    version: '0.1.0'",
 				"    category: ai",
-				"    image: ghcr.io/ggml-org/whisper.cpp:main",
-				"    models:",
-				"      - volume: bloom-stt-models",
-				"        path: /models/ggml-base.en.bin",
-				"        url: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin",
+				"    image: ghcr.io/lemonade-sdk/lemonade-server:v9.4.1",
 			].join("\n"),
 		);
 		const catalog = loadServiceCatalog(tempDir);
-		expect(catalog.whatsapp.depends).toEqual(["stt"]);
-		expect(catalog.stt.models).toHaveLength(1);
-		expect(catalog.stt.models![0].volume).toBe("bloom-stt-models");
-		expect(catalog.stt.models![0].path).toBe("/models/ggml-base.en.bin");
-		expect(catalog.stt.models![0].url).toContain("huggingface.co");
+		expect(catalog.whatsapp.depends).toEqual(["lemonade"]);
+		expect(catalog.lemonade).toBeDefined();
+		expect(catalog.lemonade.version).toBe("0.1.0");
 	});
 
 	it("skips catalog without services key and falls through", () => {
