@@ -75,11 +75,11 @@ RUN dnf install -y cmake gcc-c++ && \
     dnf clean all && \
     rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log
 
-# Download Qwen3.5-9B GGUF model (9B params — latest gen, strong instruction following)
+# Download Crow-4B GGUF model (4B params — Opus 4.6 distill on Qwen3.5, fast + smart)
 RUN mkdir -p /usr/local/share/bloom/models && \
-    curl -L "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/resolve/main/Qwen3.5-9B-Q4_K_M.gguf" \
-    -o /usr/local/share/bloom/models/qwen3.5-9b.gguf && \
-    chown llm:llm /usr/local/share/bloom/models/qwen3.5-9b.gguf
+    curl -L "https://huggingface.co/crownelius/Crow-4B-Opus-4.6-Distill-Heretic_Qwen3.5/resolve/main/Crow-4B-Opus-4.6-Distill-Heretic_Qwen3.5.Q4_K_M.gguf" \
+    -o /usr/local/share/bloom/models/crow-4b.gguf && \
+    chown llm:llm /usr/local/share/bloom/models/crow-4b.gguf
 
 # Local LLM service (starts before login, stopped when user switches to cloud)
 COPY os/sysconfig/bloom-llm-local.service /usr/lib/systemd/system/bloom-llm-local.service

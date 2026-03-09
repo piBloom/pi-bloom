@@ -17,15 +17,15 @@ import {
 } from "./actions.js";
 
 export default function (pi: ExtensionAPI) {
-	// Register local LLM provider (bundled Qwen3.5-4B via llama.cpp)
+	// Register local LLM provider (bundled Crow-4B Opus distill via llama.cpp)
 	pi.registerProvider("bloom-local", {
 		baseUrl: "http://localhost:8080/v1",
 		apiKey: "local",
 		api: "openai-completions",
 		models: [
 			{
-				id: "qwen3.5-9b",
-				name: "Qwen3.5 9B (local)",
+				id: "crow-4b",
+				name: "Crow 4B (local, Opus distill)",
 				reasoning: true,
 				input: ["text"],
 				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
