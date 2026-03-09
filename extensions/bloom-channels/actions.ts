@@ -424,26 +424,15 @@ export function createChannelBridge(pi: ExtensionAPI) {
 			pendingContexts.clear();
 		},
 
-		handleWaCommand(args: string, ctx: ExtensionContext) {
-			const waChannel = channels.get("whatsapp");
-			if (!waChannel) {
-				ctx.ui.notify("WhatsApp not connected", "warning");
+		handleMatrixCommand(args: string, ctx: ExtensionContext) {
+			const matrixChannel = channels.get("element");
+			if (!matrixChannel) {
+				ctx.ui.notify("Matrix not connected", "warning");
 				return;
 			}
-			const msg = `${JSON.stringify({ type: "send", channel: "whatsapp", text: args })}\n`;
-			waChannel.socket.write(msg);
-			ctx.ui.notify("Sent to WhatsApp", "info");
-		},
-
-		handleSignalCommand(args: string, ctx: ExtensionContext) {
-			const signalChannel = channels.get("signal");
-			if (!signalChannel) {
-				ctx.ui.notify("Signal not connected", "warning");
-				return;
-			}
-			const msg = `${JSON.stringify({ type: "send", channel: "signal", text: args })}\n`;
-			signalChannel.socket.write(msg);
-			ctx.ui.notify("Sent to Signal", "info");
+			const msg = `${JSON.stringify({ type: "send", channel: "element", text: args })}\n`;
+			matrixChannel.socket.write(msg);
+			ctx.ui.notify("Sent to Matrix", "info");
 		},
 	};
 }
