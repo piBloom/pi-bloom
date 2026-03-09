@@ -1,11 +1,3 @@
-export const MEDIA_TYPES: Record<string, string> = {
-	audioMessage: "audio",
-	imageMessage: "image",
-	videoMessage: "video",
-	documentMessage: "document",
-	stickerMessage: "sticker",
-};
-
 export function mimeToExt(mime: string): string {
 	const map: Record<string, string> = {
 		"audio/ogg": "ogg",
@@ -48,11 +40,7 @@ export function parseAllowedSenders(raw: string): Set<string> {
 	return new Set(entries);
 }
 
-export function isWhatsAppSenderAllowed(jid: string, allowedSenders: Set<string>): boolean {
+export function isSenderAllowed(sender: string, allowedSenders: Set<string>): boolean {
 	if (allowedSenders.size === 0) return true;
-	if (allowedSenders.has(jid)) return true;
-	const number = jid.split("@")[0];
-	if (allowedSenders.has(number)) return true;
-	if (allowedSenders.has(`+${number}`)) return true;
-	return false;
+	return allowedSenders.has(sender);
 }

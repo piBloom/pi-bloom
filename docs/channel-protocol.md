@@ -28,13 +28,13 @@ If token is missing or invalid, registration is rejected.
 **Register**
 
 ```json
-{"type":"register","channel":"whatsapp","token":"<hex-token>"}
+{"type":"register","channel":"element","token":"<hex-token>"}
 ```
 
 **Incoming message**
 
 ```json
-{"type":"message","id":"msg-123","channel":"whatsapp","from":"John","text":"Hello!","timestamp":1709568000}
+{"type":"message","id":"msg-123","channel":"element","from":"John","text":"Hello!","timestamp":1709568000}
 ```
 
 **Incoming message with media**
@@ -43,7 +43,7 @@ If token is missing or invalid, registration is rejected.
 {
   "type": "message",
   "id": "msg-124",
-  "channel": "whatsapp",
+  "channel": "element",
   "from": "John",
   "timestamp": 1709568000,
   "media": {
@@ -60,7 +60,7 @@ If token is missing or invalid, registration is rejected.
 **Pong**
 
 ```json
-{"type":"pong","channel":"whatsapp"}
+{"type":"pong","channel":"element"}
 ```
 
 ### 📡 Bloom → Bridge
@@ -80,13 +80,13 @@ If token is missing or invalid, registration is rejected.
 **Response** (reply to a specific inbound message)
 
 ```json
-{"type":"response","id":"msg-123","channel":"whatsapp","to":"John","text":"Hey John!"}
+{"type":"response","id":"msg-123","channel":"element","to":"John","text":"Hey John!"}
 ```
 
-**Send** (outbound command from Pi, e.g. `/wa`)
+**Send** (outbound command from Pi, e.g. `/element`)
 
 ```json
-{"type":"send","channel":"whatsapp","text":"Hello from Bloom"}
+{"type":"send","channel":"element","text":"Hello from Bloom"}
 ```
 
 **Error**
@@ -104,12 +104,12 @@ sequenceDiagram
     participant Bloom as 🌱 Bloom
 
     Bridge->>Socket: connect()
-    Bridge->>Bloom: {"type":"register","channel":"whatsapp","token":"..."}
+    Bridge->>Bloom: {"type":"register","channel":"element","token":"..."}
     Bloom-->>Bridge: {"type":"status","connected":true}
     Bridge->>Bloom: {"type":"message","id":"msg-123","from":"John","text":"Hello!"}
     Bloom-->>Bridge: {"type":"response","id":"msg-123","to":"John","text":"Hey!"}
     Bloom->>Bridge: {"type":"ping"}
-    Bridge-->>Bloom: {"type":"pong","channel":"whatsapp"}
+    Bridge-->>Bloom: {"type":"pong","channel":"element"}
 ```
 
 ```mermaid
@@ -133,8 +133,7 @@ stateDiagram-v2
 
 ## 📦 Current Bridges
 
-- **WhatsApp (Baileys)** — channel `whatsapp`, deployed as a Podman Quadlet service
-- **Signal (signal-cli)** — channel `signal`, deployed as a Podman Quadlet service
+- **Element (Matrix CS API)** — channel `element`, deployed as a Podman Quadlet service
 
 ## 🔗 Related
 

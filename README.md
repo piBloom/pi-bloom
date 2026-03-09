@@ -12,7 +12,7 @@ Bloom is a **Pi package** — a bundle of extensions, skills, and services that 
 
 - **Remembers** — flat-file object store with YAML frontmatter in `~/Bloom/Objects/`
 - **Manages its own OS** — bootc updates, rollbacks, container lifecycle, systemd services
-- **Communicates** — channel bridges (WhatsApp via Baileys) over Unix socket IPC
+- **Communicates** — channel bridges (Matrix via Element bot) over Unix socket IPC
 - **Evolves** — structured self-improvement workflow, persona that grows from Seed to Bloom
 - **Stays private** — no cloud, no telemetry. Your thoughts never leave your box.
 
@@ -79,8 +79,8 @@ Modular capabilities running as containers:
 |---------|------|------|
 | `bloom-lemonade` | Unified local AI (LLM, STT, TTS, image gen) | Podman Quadlet |
 | `bloom-dufs` | WebDAV file server | Podman Quadlet |
-| `bloom-whatsapp` | WhatsApp bridge (Baileys) | Podman Quadlet |
-| `bloom-signal` | Signal bridge (signal-cli) | Podman Quadlet |
+| `bloom-matrix` | Continuwuity Matrix homeserver | Podman Quadlet |
+| `bloom-element` | Matrix bot bridge (matrix-bot-sdk) | Podman Quadlet |
 | `netbird` | Mesh VPN | System RPM service |
 
 ### 🪞 Persona
@@ -167,7 +167,7 @@ Once the OS is running, the `first-boot` skill walks through setup:
 2. GitHub authentication
 3. Device git identity
 4. dufs setup (WebDAV file server)
-5. Optional services (WhatsApp, Signal, Lemonade, NetBird)
+5. Optional services (Matrix, Element, Lemonade, NetBird)
 
 See [docs/pibloom-setup.md](docs/pibloom-setup.md) for the full guide.
 

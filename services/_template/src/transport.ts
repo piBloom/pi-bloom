@@ -10,8 +10,7 @@
  *   - onMessage callback: Called by the transport when an inbound message arrives
  *
  * Examples from existing services:
- *   - whatsapp/transport.ts: Baileys WebSocket client for WhatsApp Web
- *   - signal/transport.ts: signal-cli JSON-RPC daemon via child process
+ *   - element/src/transport.ts: Matrix bot client via matrix-bot-sdk
  */
 
 /** Options passed to connect() from the entry point. */

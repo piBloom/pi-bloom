@@ -52,7 +52,7 @@ From `tsconfig.json`:
 
 - `extensions/` — Pi extension modules (core product behavior)
 - `skills/` — Domain skills (`SKILL.md`) used by Pi
-- `services/` — Bundled service packages (lemonade, whatsapp, signal, dufs, examples)
+- `services/` — Bundled service packages (lemonade, matrix, element, dufs, examples)
 - `os/` — bootc image build assets, sysconfig, output manifests
 - `persona/` — OpenPersona identity layers (`SOUL/BODY/FACULTY/SKILL`)
 - `docs/` — architecture, protocol, deployment, supply-chain docs

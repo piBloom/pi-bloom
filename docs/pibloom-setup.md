@@ -87,31 +87,19 @@ Logs:
 sudo journalctl -u netbird -f
 ```
 
-### 📦 WhatsApp
+### 📦 Matrix + Element
 
-WhatsApp runs as a containerized service (Podman Quadlet with whatsapp-web.js).
-
-Install via manifest or directly:
-
-- `manifest_set_service(name="whatsapp", image="localhost/bloom-whatsapp:latest", version="0.3.0", enabled=true)`
-- Or: `service_install(name="whatsapp")`
-
-Pair by scanning the QR code:
-
-- `service_pair(name="whatsapp")`
-
-### 📦 Signal
-
-Signal runs as a containerized service (Podman Quadlet with signal-cli).
+Matrix messaging uses a self-hosted Continuwuity homeserver (bloom-matrix) and Element bot bridge (bloom-element).
 
 Install via manifest or directly:
 
-- `manifest_set_service(name="signal", image="localhost/bloom-signal:latest", version="0.1.0", enabled=true)`
-- Or: `service_install(name="signal")`
+- `manifest_set_service(name="matrix", image="forgejo.ellis.link/continuwuation/continuwuity:latest", version="0.1.0", enabled=true)`
+- `manifest_set_service(name="element", image="localhost/bloom-element:latest", version="0.1.0", enabled=true)`
+- Or: `service_install(name="matrix")` then `service_install(name="element")`
 
-Pair by scanning the QR code:
+Get connection details:
 
-- `service_pair(name="signal")`
+- `service_pair(name="element")`
 
 ## 6) 🚀 Mark setup complete
 

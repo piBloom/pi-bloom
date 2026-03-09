@@ -85,25 +85,25 @@ describe("extractResponseText", () => {
 // ---------------------------------------------------------------------------
 describe("pairing state", () => {
 	it("returns null when no pairing data exists", () => {
-		expect(getPairingData("whatsapp")).toBeNull();
+		expect(getPairingData("element")).toBeNull();
 	});
 
 	it("stores and retrieves pairing data", () => {
-		setPairingData("whatsapp", "2@ABC123");
-		expect(getPairingData("whatsapp")).toBe("2@ABC123");
-		clearPairingData("whatsapp");
+		setPairingData("element", "@user:bloom");
+		expect(getPairingData("element")).toBe("@user:bloom");
+		clearPairingData("element");
 	});
 
 	it("overwrites previous pairing data", () => {
-		setPairingData("signal", "sgnl://first");
-		setPairingData("signal", "sgnl://second");
-		expect(getPairingData("signal")).toBe("sgnl://second");
-		clearPairingData("signal");
+		setPairingData("element", "token-first");
+		setPairingData("element", "token-second");
+		expect(getPairingData("element")).toBe("token-second");
+		clearPairingData("element");
 	});
 
 	it("clearPairingData removes data", () => {
-		setPairingData("whatsapp", "data");
-		clearPairingData("whatsapp");
-		expect(getPairingData("whatsapp")).toBeNull();
+		setPairingData("element", "data");
+		clearPairingData("element");
+		expect(getPairingData("element")).toBeNull();
 	});
 });

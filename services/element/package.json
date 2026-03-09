@@ -1,7 +1,7 @@
 {
-	"name": "bloom-whatsapp-transport",
-	"version": "0.3.0",
-	"description": "WhatsApp transport for Bloom via Baileys",
+	"name": "bloom-element-transport",
+	"version": "0.1.0",
+	"description": "Matrix bridge for Pi messaging via matrix-bot-sdk",
 	"type": "module",
 	"main": "dist/transport.js",
 	"scripts": {
@@ -12,9 +12,7 @@
 		"start": "node dist/transport.js"
 	},
 	"dependencies": {
-		"@whiskeysockets/baileys": "7.0.0-rc.9",
-		"pino": "^9.6.0",
-		"qrcode-terminal": "^0.12.0"
+		"matrix-bot-sdk": "^0.7.1"
 	},
 	"devDependencies": {
 		"@types/node": "^22.0.0",

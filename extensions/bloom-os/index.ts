@@ -46,7 +46,7 @@ export default function (pi: ExtensionAPI) {
 				description: "status: list running bloom-* containers. logs: view service logs. deploy: start a Quadlet unit.",
 			}),
 			service: Type.Optional(
-				Type.String({ description: "Service name, required for logs/deploy (e.g. bloom-whatsapp)" }),
+				Type.String({ description: "Service name, required for logs/deploy (e.g. bloom-element)" }),
 			),
 			lines: Type.Optional(Type.Number({ description: "Log lines to return (default 50)", default: 50 })),
 		}),
@@ -76,7 +76,7 @@ export default function (pi: ExtensionAPI) {
 		label: "Systemd Service Control",
 		description: "Manage a Bloom user-systemd service (start, stop, restart, status). Only bloom-* services allowed.",
 		parameters: Type.Object({
-			service: Type.String({ description: "Service name (e.g. bloom-whatsapp)" }),
+			service: Type.String({ description: "Service name (e.g. bloom-element)" }),
 			action: StringEnum(["start", "stop", "restart", "status"] as const),
 		}),
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {

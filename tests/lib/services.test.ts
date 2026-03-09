@@ -177,10 +177,10 @@ describe("loadServiceCatalog", () => {
 			join(catalogDir, "catalog.yaml"),
 			[
 				"services:",
-				"  whatsapp:",
-				"    version: '0.3.0'",
+				"  element:",
+				"    version: '0.1.0'",
 				"    category: communication",
-				"    image: localhost/bloom-whatsapp:latest",
+				"    image: localhost/bloom-element:latest",
 				"    depends: [lemonade]",
 				"  lemonade:",
 				"    version: '0.1.0'",
@@ -189,7 +189,7 @@ describe("loadServiceCatalog", () => {
 			].join("\n"),
 		);
 		const catalog = loadServiceCatalog(tempDir);
-		expect(catalog.whatsapp.depends).toEqual(["lemonade"]);
+		expect(catalog.element.depends).toEqual(["lemonade"]);
 		expect(catalog.lemonade).toBeDefined();
 		expect(catalog.lemonade.version).toBe("0.1.0");
 	});
@@ -321,7 +321,7 @@ describe("buildLocalImage", () => {
 	});
 
 	it("returns error when service source dir is missing", async () => {
-		const result = await buildLocalImage("signal", "localhost/bloom-signal:latest", "/tmp/__nonexistent__");
+		const result = await buildLocalImage("element", "localhost/bloom-element:latest", "/tmp/__nonexistent__");
 		expect(result.skipped).toBe(false);
 		expect(result.ok).toBe(false);
 		expect(result.note).toContain("not found");

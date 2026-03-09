@@ -9,19 +9,20 @@ Use these procedures when diagnosing and recovering from common system issues. A
 
 Use `audit_review` to inspect recent tool actions when you need to reconstruct what changed before an incident.
 
-## WhatsApp Bridge Disconnect
+## Matrix Bridge Disconnect
 
 **Symptoms**: Messages not delivered, channel shows disconnected.
 
 1. Check channel status: `system_health`
-2. Check container: `container(action="status")` — look for bloom-whatsapp
-3. If container not running: `systemd_control service=bloom-whatsapp action=status`
-4. Check logs: `container(action="logs", service="bloom-whatsapp", lines=100)`
-5. Common causes:
-   - WhatsApp session expired → re-pair with `service_pair(name="whatsapp")`
+2. Check Matrix server: `container(action="status")` — look for bloom-matrix
+3. Check bridge: `container(action="status")` — look for bloom-element
+4. If server not running: `systemd_control service=bloom-matrix action=status`
+5. Check logs: `container(action="logs", service="bloom-element", lines=100)`
+6. Common causes:
+   - Matrix server down → `systemd_control service=bloom-matrix action=restart`
+   - Bridge login expired → check `~/.config/bloom/element.env`
    - Channel socket unreachable → verify `$XDG_RUNTIME_DIR/bloom/channels.sock` exists
-   - Token mismatch → verify `~/.config/bloom/channel-tokens/whatsapp.env`
-6. Recovery: `systemd_control service=bloom-whatsapp action=restart`
+7. Recovery: `systemd_control service=bloom-element action=restart`
 
 ## OS Update Failure
 

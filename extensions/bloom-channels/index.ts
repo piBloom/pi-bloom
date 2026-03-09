@@ -1,7 +1,7 @@
 /**
  * bloom-channels — Channel bridge Unix socket server at $XDG_RUNTIME_DIR/bloom/channels.sock.
  *
- * @commands /wa (send message to WhatsApp), /signal (send message to Signal)
+ * @commands /matrix (send message via Matrix)
  * @hooks session_start, agent_end, session_shutdown
  * @see {@link ../../AGENTS.md#bloom-channels} Extension reference
  */
@@ -25,17 +25,10 @@ export default function (pi: ExtensionAPI) {
 		bridge.handleSessionShutdown(event, ctx);
 	});
 
-	pi.registerCommand("wa", {
-		description: "Send a message to WhatsApp",
+	pi.registerCommand("matrix", {
+		description: "Send a message via Matrix",
 		handler: async (args, ctx) => {
-			bridge.handleWaCommand(args, ctx);
-		},
-	});
-
-	pi.registerCommand("signal", {
-		description: "Send a message to Signal",
-		handler: async (args, ctx) => {
-			bridge.handleSignalCommand(args, ctx);
+			bridge.handleMatrixCommand(args, ctx);
 		},
 	});
 }

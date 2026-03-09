@@ -34,7 +34,7 @@ export const STEP_GUIDANCE: Record<StepName, string> = {
 	webdav:
 		"Ask if the user wants a file server. Explain: dufs (WebDAV) lets you access your files from any device via a web browser or file manager. If yes, use service_install(name='dufs') to install it.",
 	channels:
-		"Ask: 'Would you like to connect a messaging channel? Options: WhatsApp, Signal, both, or skip for now.' For each chosen channel, use service_install(name='whatsapp'|'signal') then service_pair(name='whatsapp'|'signal') to get the QR code for pairing.",
+		"Ask: 'Would you like to connect a messaging channel? Matrix is the default — it gives you a private homeserver.' If yes, use service_install(name='matrix') then service_install(name='element') then service_pair(name='element') to get connection details.",
 	local_ai:
 		'Ask: \'Want to enable optional local AI capabilities? These run on-device for free:\' List: (1) Voice transcription (Whisper-Small) — transcribe voice messages, (2) Image generation (SD-Turbo) — generate images about your state, (3) Voice responses (Kokoro-v1) — I can speak back to you. For each one the user wants, pull the model via the lemonade API: POST http://localhost:8000/api/v1/pull with body {"model": "<model-name>", "stream": true}. The LLM (Qwen3-4B) was already pulled during first-boot.',
 	llm_upgrade:
@@ -46,7 +46,7 @@ export const STEP_GUIDANCE: Record<StepName, string> = {
 	persona:
 		"Guide the user through personalizing their AI companion. Ask one question at a time: SOUL — 'What should I call you?', 'How formal or casual should I be?', 'Any values important to you?'. BODY — 'Short messages on mobile, longer on terminal?'. FACULTY — 'Step-by-step thinker or quick and direct?'. Update ~/Bloom/Persona/ files with their preferences. Fully skippable.",
 	test_message:
-		"If a messaging channel (WhatsApp/Signal) was set up, send a test message: 'Hi. Can you hear me?' using the channel. If no channel was set up, skip this step.",
+		"If a messaging channel (Matrix) was set up, send a test message: 'Hi. Can you hear me?' using the channel. If no channel was set up, skip this step.",
 	complete:
 		"Congratulate the user! Setup is complete. Mention they can chat here on the terminal or on their connected messaging channel. Remind them they can revisit any setup step by asking.",
 };

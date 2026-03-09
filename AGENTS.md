@@ -130,7 +130,7 @@ Bloom directory management, blueprint seeding, skill creation, persona evolution
 
 Channel bridge Unix socket server at `$XDG_RUNTIME_DIR/bloom/channels.sock`. JSON-newline protocol with rate limiting and heartbeat.
 
-**Commands:** `/wa` (send message to WhatsApp channel), `/signal` (send message to Signal channel)
+**Commands:** `/matrix` (send message to Matrix channel)
 **Hooks:**
 - `session_start` — Create Unix socket server, load channel tokens
 - `agent_end` — Extract response, send back to channel socket by message ID
@@ -170,7 +170,7 @@ Quick reference of every tool name available to Pi:
 | `service_scaffold` | bloom-services | Generate service package skeleton |
 | `service_install` | bloom-services | Install service from bundled local package |
 | `service_test` | bloom-services | Smoke-test installed service units |
-| `service_pair` | bloom-services | Get QR code for pairing WhatsApp or Signal |
+| `service_pair` | bloom-services | Get connection details for Matrix homeserver pairing |
 | `manifest_show` | bloom-services | Display service manifest |
 | `manifest_sync` | bloom-services | Reconcile manifest with running state |
 | `manifest_set_service` | bloom-services | Declare service in manifest |
@@ -195,7 +195,7 @@ Quick reference of every tool name available to Pi:
 | `object-store` | CRUD operations for the memory store |
 | `service-management` | Install, manage, and discover bundled service packages |
 | `self-evolution` | Structured system change workflow |
-| `recovery` | Troubleshooting playbooks (WhatsApp, OS updates, dufs, disk, containers) |
+| `recovery` | Troubleshooting playbooks (Matrix, OS updates, dufs, disk, containers) |
 
 ## 📦 Services
 
@@ -206,8 +206,8 @@ Canonical metadata for automation lives in `services/catalog.yaml`.
 |---------|----------|------|------|
 | `bloom-lemonade` | ai | 8000 | Podman Quadlet |
 | `bloom-dufs` | sync | 5000 | Podman Quadlet |
-| `bloom-whatsapp` | communication | — | Podman Quadlet |
-| `bloom-signal` | communication | 18802 | Podman Quadlet |
+| `bloom-matrix` | communication | 6167 | Podman Quadlet |
+| `bloom-element` | communication | — | Podman Quadlet |
 | `netbird` | networking | — | System RPM service |
 
 ## 🪞 Persona

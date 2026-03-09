@@ -4,7 +4,7 @@
  * Shared helpers for the TEMPLATE service. These are kept separate
  * from transport.ts so they can be unit-tested without mocking I/O.
  *
- * Common utilities (also used by whatsapp and signal services):
+ * Common utilities (also used by the element service):
  *   - isChannelMessage: Type guard for channel bridge messages
  *   - parseAllowedSenders: Parse BLOOM_ALLOWED_SENDERS env var
  *   - isSenderAllowed: Check if a sender is in the allowlist
@@ -54,7 +54,7 @@ export function parseAllowedSenders(raw: string): Set<string> {
  * If the allowlist is empty, all senders are allowed.
  *
  * TODO: Override this if your service needs custom matching logic.
- * For example, WhatsApp matches by JID, number, or +number format.
+ * For example, Matrix matches by MXID (@user:server) format.
  *
  * @param sender - The sender identifier to check
  * @param allowedSenders - Set of allowed sender identifiers

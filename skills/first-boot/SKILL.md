@@ -45,12 +45,11 @@ NetBird is pre-installed in the OS image. The user needs to provide a setup key 
 Triggered because NetBird opens remote access. Use `sudo passwd pi`. The password prompt is interactive — tell the user to type their password when prompted.
 
 ### channels
-For each chosen service, the flow is:
-1. `service_install(name="whatsapp"|"signal")`
-2. Wait for service to be ready
-3. `service_pair(name="whatsapp"|"signal")` — shows QR code
-4. Ask user to scan with their phone app
-5. `service_test(name="whatsapp"|"signal")` — verify it works
+Matrix is pre-installed. The flow is:
+1. `service_pair(name="element")` — shows server URL + registration token
+2. Ask user to register with their Matrix client (Element, FluffyChat, etc.)
+3. User creates a DM with `@pi:bloom`
+4. `service_test(name="element")` — verify it works
 
 ### llm_upgrade
 Three paths:

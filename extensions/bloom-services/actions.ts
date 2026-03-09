@@ -22,7 +22,6 @@ import {
 	validateServiceName,
 } from "../../lib/services.js";
 import { createLogger, errorResult, requireConfirmation, truncate } from "../../lib/shared.js";
-import { clearPairingData, getPairingData } from "../bloom-channels/actions.js";
 
 const log = createLogger("bloom-services");
 
@@ -205,7 +204,7 @@ export async function handleInstall(
 		saveManifest(manifest, manifestPath);
 	}
 
-	// Auto-install dependencies (e.g., stt for whatsapp/signal)
+	// Auto-install dependencies (e.g., stt for element)
 	const deps = catalogEntry?.depends ?? [];
 	for (const dep of deps) {
 		const depUnit = join(os.homedir(), ".config", "containers", "systemd", `bloom-${dep}.container`);
@@ -366,72 +365,63 @@ export async function handleTest(
 
 export async function handlePair(
 	params: {
-		name: "whatsapp" | "signal";
+		name: "element";
 		timeout_sec?: number;
 	},
 	signal: AbortSignal | undefined,
 ) {
 	const serviceName = params.name;
-	const timeoutSec = Math.max(10, Math.round(params.timeout_sec ?? 60));
-	const unit = `bloom-${serviceName}.service`;
 
-	// Check service is installed
+	// Check matrix server is installed
 	const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
-	if (!existsSync(join(systemdDir, `bloom-${serviceName}.container`))) {
-		return errorResult(`${serviceName} is not installed. Run service_install(name="${serviceName}") first.`);
+	if (!existsSync(join(systemdDir, "bloom-matrix.container"))) {
+		return errorResult('Matrix server is not installed. Run service_install(name="matrix") first.');
 	}
 
-	// Restart service to trigger fresh QR/linking
-	await run("systemctl", ["--user", "restart", unit], signal);
-
-	// Clear old pairing data
-	clearPairingData(serviceName);
-
-	// Poll for pairing data from channel bridge
-	const deadline = Date.now() + timeoutSec * 1000;
-	let pairingData: string | null = null;
-
-	while (Date.now() < deadline) {
-		pairingData = getPairingData(serviceName);
-		if (pairingData) break;
-
-		// Fallback: check journalctl for pairing data
-		const logs = await run(
-			"journalctl",
-			["--user", "-u", unit, "-n", "50", "--no-pager", "--since", "30s ago"],
-			signal,
-		);
-		if (serviceName === "signal") {
-			const match = logs.stdout.match(/(sgnl:\/\/linkdevice\?[^\s]+)/);
-			if (match) {
-				pairingData = match[1];
-				break;
-			}
-		}
-
-		await sleep(2000);
-	}
-
-	if (!pairingData) {
-		return errorResult(
-			`No pairing data received within ${timeoutSec}s. Check service logs: journalctl --user -u ${unit} -n 100`,
-		);
-	}
-
-	// Generate ASCII QR code
+	// Read registration token
+	const envFile = join(os.homedir(), ".config", "bloom", "matrix.env");
+	let registrationToken = "";
 	try {
-		const qrArt = await QRCode.toString(pairingData, { type: "terminal", small: true });
-		const instructions =
-			serviceName === "whatsapp"
-				? "Scan this QR code with your WhatsApp mobile app:\nSettings > Linked Devices > Link a Device"
-				: "Scan this QR code with your Signal mobile app:\nSettings > Linked Devices > Link New Device";
+		const content = readFileSync(envFile, "utf-8");
+		const match = content.match(/CONTINUWUITY_REGISTRATION_TOKEN=(.+)/);
+		if (match) registrationToken = match[1].trim();
+	} catch {
+		return errorResult(`Cannot read registration token from ${envFile}`);
+	}
 
+	if (!registrationToken) {
+		return errorResult("No registration token found. Check ~/.config/bloom/matrix.env");
+	}
+
+	// Get the machine's IP for the homeserver URL
+	const hostname = os.hostname();
+	const serverUrl = `http://${hostname}:6167`;
+
+	const instructions = [
+		"Connect with any Matrix client (Element, FluffyChat, etc.):",
+		"",
+		`  Homeserver URL: ${serverUrl}`,
+		`  Registration token: ${registrationToken}`,
+		"",
+		"1. Open your Matrix client",
+		"2. Choose 'Create Account' (not login)",
+		`3. Set homeserver to: ${serverUrl}`,
+		"4. Enter a username and password",
+		"5. Enter the registration token when prompted",
+		"6. After registering, start a DM with @pi:bloom",
+	].join("\n");
+
+	try {
+		const qrArt = await QRCode.toString(serverUrl, { type: "terminal", small: true });
 		return {
-			content: [{ type: "text" as const, text: `${instructions}\n\n${qrArt}` }],
-			details: { service: serviceName, paired: false },
+			content: [{ type: "text" as const, text: `${instructions}\n\nScan to open homeserver:\n${qrArt}` }],
+			details: { service: serviceName, serverUrl, hasToken: true },
 		};
-	} catch (err) {
-		return errorResult(`Failed to generate QR code: ${(err as Error).message}`);
+	} catch {
+		return {
+			content: [{ type: "text" as const, text: instructions }],
+			details: { service: serviceName, serverUrl, hasToken: true },
+		};
 	}
 }
 
