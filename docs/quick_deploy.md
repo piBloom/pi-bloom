@@ -16,21 +16,21 @@ flowchart TD
     Bootc --> Setup
 ```
 
-## 💻 Option A — QEMU (fastest for development)
+## Option A — QEMU (fastest for development)
 
-### 🚀 1) Install host dependencies (Fedora)
+### 1) Install host dependencies (Fedora)
 
 ```bash
 sudo dnf install -y just qemu-system-x86 edk2-ovmf podman
 ```
 
-### 🚀 2) Build Bloom OS image
+### 2) Build Bloom OS image
 
 ```bash
 just build
 ```
 
-### 🚀 3) Generate VM disk (qcow2)
+### 3) Generate VM disk (qcow2)
 
 ```bash
 just qcow2
@@ -40,7 +40,7 @@ Output:
 
 - `os/output/qcow2/disk.qcow2`
 
-### 🚀 4) Boot VM
+### 4) Boot VM
 
 ```bash
 just vm
@@ -51,7 +51,7 @@ Forwarded host ports:
 - `localhost:2222 -> guest:22` (SSH)
 - `localhost:5000 -> guest:5000` (dufs WebDAV)
 
-### 🚀 5) Log in
+### 5) Log in
 
 Default user comes from `os/bib-config.toml`:
 
@@ -60,13 +60,13 @@ Default user comes from `os/bib-config.toml`:
 
 If you want password auth, configure it explicitly in your bootc-image-builder config and rebuild.
 
-### 🚀 6) Run first-boot setup
+### 6) Run first-boot setup
 
 Follow the setup guide:
 
 - `docs/pibloom-setup.md`
 
-### 🚀 7) Stop VM
+### 7) Stop VM
 
 ```bash
 just vm-kill
@@ -74,7 +74,7 @@ just vm-kill
 
 ---
 
-## 💻 Option B — Installer ISO (VM manager / bare metal)
+## Option B — Installer ISO (VM manager / bare metal)
 
 Build installer media:
 
@@ -92,7 +92,7 @@ just iso-production
 
 ---
 
-## 💻 Option C — Direct bootc install (advanced)
+## Option C — Direct bootc install (advanced)
 
 After building locally, install directly to a disk:
 
@@ -119,7 +119,7 @@ tmux new-session -A -s main
 Pi runs in the terminal. The Sway Wayland display is available for AI computer use
 (screenshots, browser automation, GUI apps). Open http://<bloom-ip>:6080 for browser-based remote desktop.
 
-## 🔗 Related
+## Related
 
 - [Emoji Legend](LEGEND.md) — Notation reference
 - [First Boot Setup](pibloom-setup.md) — Initial configuration guide
