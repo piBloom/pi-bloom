@@ -19,6 +19,7 @@ HealthCmd=curl -f http://localhost:8443/healthz || exit 1
 HealthInterval=30s
 HealthRetries=3
 HealthStartPeriod=10s
+HealthTimeout=5s
 
 [Service]
 Restart=on-failure
