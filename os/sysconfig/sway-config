@@ -1,0 +1,26 @@
+# Bloom Sway config — minimal tiling WM for AI computer use + remote desktop.
+# Headless or HDMI, no desktop chrome.
+
+# Output: 1280x1024 default (matches prior Xvfb resolution)
+output * {
+    mode 1280x1024@60Hz
+    bg #1a1a2e solid_color
+}
+
+# No status bar — Pi doesn't need desktop chrome
+bar {
+    mode invisible
+}
+
+# Default layout: tabbed (Pi sees one app at a time, swaymsg switches)
+workspace_layout tabbed
+
+# Auto-float dialogs, tile everything else
+for_window [window_role="dialog"] floating enable
+for_window [window_type="dialog"] floating enable
+
+# No idle / screen lock
+seat seat0 idle_timeout 0
+
+# Default terminal
+set $term foot
