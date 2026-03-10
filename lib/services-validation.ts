@@ -51,15 +51,9 @@ export function commandMissingError(text: string): boolean {
 	return /ENOENT|not found|No such file/i.test(text);
 }
 
-/** Return the arguments used to verify a command exists (e.g. `["--version"]`). */
-export function commandCheckArgs(cmd: string): string[] {
-	switch (cmd) {
-		case "podman":
-		case "systemctl":
-			return ["--version"];
-		default:
-			return ["--version"];
-	}
+/** Return the arguments used to verify a command exists. */
+export function commandCheckArgs(_cmd: string): string[] {
+	return ["--version"];
 }
 
 /** Check whether a CLI command is available on this system. */
