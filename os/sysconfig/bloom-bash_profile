@@ -1,20 +1,20 @@
 # Source .bashrc for env vars (BLOOM_DIR, WAYLAND_DISPLAY, PATH, etc.)
 [ -f ~/.bashrc ] && . ~/.bashrc
 
+# Graphical mode: if on tty1 with a GPU, launch Sway desktop.
+# This runs BEFORE the Pi session lock so serial console doesn't block it.
+# Pi runs inside a foot terminal within Sway (see sway-config).
+if [ -t 0 ] && [ "$(tty)" = "/dev/tty1" ] && [ -d /dev/dri ] && ls /dev/dri/card* >/dev/null 2>&1; then
+  export WLR_RENDERER_ALLOW_SOFTWARE=1
+  export XDG_SESSION_TYPE=wayland
+  exec sway --config /etc/bloom/sway-config
+fi
+
 # Start Pi on interactive login (only one instance — atomic mkdir lock)
 if [ -t 0 ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.bloom-pi-session 2>/dev/null; then
   trap 'rmdir /tmp/.bloom-pi-session 2>/dev/null' EXIT
   export PI_SESSION=1
   /usr/local/bin/bloom-greeting.sh
-
-  # Graphical mode: if on tty1 with a GPU, launch Sway desktop (Pi runs inside foot terminal)
-  # This gives Sway a proper logind session for DRM/VT access.
-  # On serial console or SSH, fall through to Pi CLI below.
-  if [ "$(tty)" = "/dev/tty1" ] && [ -d /dev/dri ] && ls /dev/dri/card* >/dev/null 2>&1; then
-    export WLR_RENDERER_ALLOW_SOFTWARE=1
-    export XDG_SESSION_TYPE=wayland
-    exec sway --config /etc/bloom/sway-config
-  fi
 
   # CLI mode (serial console, SSH, or no GPU): start Pi directly
   # First boot: wait for local LLM and trigger setup wizard
@@ -23,7 +23,6 @@ if [ -t 0 ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.bloom-pi-session 2>/dev/null;
     llm_ready=0
     printf '\n  Loading local AI model (Qwen3 4B)  '
     for i in $(seq 1 120); do
-      # Show spinner
       printf '\b%s' "${spin:i%10:1}"
       if curl -sf http://127.0.0.1:8000/api/v1/health >/dev/null 2>&1; then
         llm_ready=1
@@ -35,18 +34,15 @@ if [ -t 0 ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.bloom-pi-session 2>/dev/null;
       # Pull model if not already downloaded
       if ! curl -sf http://127.0.0.1:8000/api/v1/models 2>/dev/null | grep -q 'Qwen3-4B-GGUF'; then
         printf '\r  Downloading Qwen3 4B model (first boot, ~2.5 GB)  '
-        # Start pull in background (streaming consumes response, blocks until done)
         curl -sf -N -X POST http://127.0.0.1:8000/api/v1/pull \
           -H 'Content-Type: application/json' \
           -d '{"model":"Qwen3-4B-GGUF","stream":true}' >/dev/null 2>&1 &
         pull_pid=$!
-        # Show spinner while polling for model availability (up to 10 min)
         for j in $(seq 1 600); do
           printf '\b%s' "${spin:j%10:1}"
           if curl -sf http://127.0.0.1:8000/api/v1/models 2>/dev/null | grep -q 'Qwen3-4B-GGUF'; then
             break
           fi
-          # If pull process died, retry once
           if ! kill -0 "$pull_pid" 2>/dev/null; then
             curl -sf -N -X POST http://127.0.0.1:8000/api/v1/pull \
               -H 'Content-Type: application/json' \

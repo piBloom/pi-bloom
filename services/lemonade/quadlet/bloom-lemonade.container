@@ -19,7 +19,7 @@ Volume=bloom-lemonade-data:/root/.lemonade
 # Serve on all interfaces, large context for LLM
 Environment=LEMONADE_HOST=0.0.0.0
 Environment=LEMONADE_PORT=8000
-Environment=LEMONADE_CTX_SIZE=8192
+Environment=LEMONADE_CTX_SIZE=32768
 Environment=LEMONADE_LOG_LEVEL=info
 
 # Allow multiple model types loaded simultaneously
