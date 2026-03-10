@@ -23,7 +23,7 @@ Environment=LEMONADE_CTX_SIZE=8192
 Environment=LEMONADE_LOG_LEVEL=info
 
 # Allow multiple model types loaded simultaneously
-Exec=serve --max-loaded-models -1
+Exec=./lemonade-server serve --no-tray --host 0.0.0.0 --max-loaded-models -1
 
 PodmanArgs=--memory=6g
 PodmanArgs=--security-opt label=disable

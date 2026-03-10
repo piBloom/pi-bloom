@@ -122,6 +122,12 @@ COPY os/sysconfig/bloom-sysctl.conf /usr/lib/sysctl.d/60-bloom-console.conf
 # Default Quadlet network definition used by service packages
 COPY os/sysconfig/bloom.network /usr/share/containers/systemd/bloom.network
 
+# Pre-deploy lemonade (local AI) quadlet so it auto-starts on first login
+# Other services are installed via setup wizard, but lemonade is required for Pi itself
+RUN mkdir -p /etc/skel/.config/containers/systemd
+COPY services/lemonade/quadlet/bloom-lemonade.container /etc/skel/.config/containers/systemd/bloom-lemonade.container
+COPY os/sysconfig/bloom.network /etc/skel/.config/containers/systemd/bloom.network
+
 # Install persona files
 RUN mkdir -p /usr/local/share/bloom/persona
 

@@ -12,6 +12,10 @@
 [customizations]
 hostname = "bloom"
 
+[[customizations.filesystem]]
+mountpoint = "/"
+minsize = "20 GiB"
+
 [[customizations.user]]
 name = "pi"
 groups = ["wheel"]

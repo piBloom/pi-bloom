@@ -41,8 +41,23 @@ iso: build _require-bib-config
 	# bootc-image-builder may leave host files owned by nobody:nobody
 	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
-# Boot qcow2 in QEMU (serial console + SSH on port 2222)
+# Boot qcow2 in QEMU with graphical display (VNC on :5900, SSH on :2222)
 vm:
+	qemu-system-x86_64 \
+		-machine q35 \
+		-cpu host \
+		-enable-kvm \
+		-m 16G \
+		-smp 2 \
+		-drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
+		-drive if=pflash,format=raw,snapshot=on,file={{ ovmf_vars }} \
+		-drive file={{ output }}/qcow2/disk.qcow2,format=qcow2,if=virtio \
+		-netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081,hostfwd=tcp::8888-:80 \
+		-device virtio-net-pci,netdev=net0 \
+		-display gtk
+
+# Boot qcow2 in QEMU serial-only mode (headless, SSH on :2222)
+vm-serial:
 	qemu-system-x86_64 \
 		-machine q35 \
 		-cpu host \

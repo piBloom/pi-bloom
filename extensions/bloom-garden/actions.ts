@@ -15,7 +15,8 @@ const BLOOM_DIRS = ["Persona", "Skills", "Evolutions", "audit"];
 // --- Package helpers ---
 
 export function getPackageDir(): string {
-	return path.join(fileURLToPath(import.meta.url), "../..");
+	// From dist/extensions/bloom-garden/actions.js → project root (3 levels up)
+	return path.join(fileURLToPath(import.meta.url), "../../..");
 }
 
 export function getPackageVersion(packageDir: string): string {
