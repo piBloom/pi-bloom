@@ -8,13 +8,13 @@
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
+import { handleSystemHealth } from "./actions-health.js";
 import {
 	checkPendingUpdates,
 	handleBootc,
 	handleContainer,
 	handleScheduleReboot,
 	handleSystemdControl,
-	handleSystemHealth,
 	handleUpdateStatus,
 } from "./actions.js";
 
