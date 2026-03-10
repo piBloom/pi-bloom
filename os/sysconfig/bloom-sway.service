@@ -1,5 +1,9 @@
 [Unit]
-Description=Bloom Display (Sway Wayland compositor)
+Description=Bloom Display (Sway Wayland compositor — headless VNC mode)
+# Only start if no DRM GPU is available (headless server mode).
+# When a GPU is present, Sway starts from .bash_profile on tty1 instead,
+# which gives it a proper logind session for DRM/VT access.
+ConditionPathIsDirectory=!/dev/dri
 After=network.target
 
 [Service]

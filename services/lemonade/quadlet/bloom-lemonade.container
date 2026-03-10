@@ -25,7 +25,7 @@ Environment=LEMONADE_LOG_LEVEL=info
 # Allow multiple model types loaded simultaneously
 Exec=./lemonade-server serve --no-tray --host 0.0.0.0 --max-loaded-models -1
 
-PodmanArgs=--memory=6g
+PodmanArgs=--memory=8g
 PodmanArgs=--security-opt label=disable
 HealthCmd=curl -sf http://localhost:8000/api/v1/health || exit 1
 HealthInterval=30s

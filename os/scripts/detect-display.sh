@@ -8,10 +8,11 @@ set -euo pipefail
 ENV_FILE="/run/bloom/display-env"
 mkdir -p "$(dirname "$ENV_FILE")"
 
-if [[ -d /dev/dri ]] && ls /dev/dri/renderD* >/dev/null 2>&1; then
-    # Real GPU available — use DRM backend
+if [[ -d /dev/dri ]] && ls /dev/dri/card* >/dev/null 2>&1; then
+    # GPU available — use DRM backend (allow software rendering as fallback)
     echo "# GPU detected — using DRM backend" > "$ENV_FILE"
     echo "WLR_BACKENDS=drm" >> "$ENV_FILE"
+    echo "WLR_RENDERER_ALLOW_SOFTWARE=1" >> "$ENV_FILE"
 else
     # No GPU — headless virtual framebuffer
     echo "# No GPU — using headless backend" > "$ENV_FILE"

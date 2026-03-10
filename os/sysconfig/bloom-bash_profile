@@ -6,7 +6,18 @@ if [ -t 0 ] && [ -z "$PI_SESSION" ] && mkdir /tmp/.bloom-pi-session 2>/dev/null;
   trap 'rmdir /tmp/.bloom-pi-session 2>/dev/null' EXIT
   export PI_SESSION=1
   /usr/local/bin/bloom-greeting.sh
-  # First boot: use local LLM and auto-speak to trigger setup wizard
+
+  # Graphical mode: if on tty1 with a GPU, launch Sway desktop (Pi runs inside foot terminal)
+  # This gives Sway a proper logind session for DRM/VT access.
+  # On serial console or SSH, fall through to Pi CLI below.
+  if [ "$(tty)" = "/dev/tty1" ] && [ -d /dev/dri ] && ls /dev/dri/card* >/dev/null 2>&1; then
+    export WLR_RENDERER_ALLOW_SOFTWARE=1
+    export XDG_SESSION_TYPE=wayland
+    exec sway --config /etc/bloom/sway-config
+  fi
+
+  # CLI mode (serial console, SSH, or no GPU): start Pi directly
+  # First boot: wait for local LLM and trigger setup wizard
   if [ ! -f "$HOME/.bloom/.setup-complete" ]; then
     spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
     llm_ready=0

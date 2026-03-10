@@ -24,3 +24,6 @@ seat seat0 idle_timeout 0
 
 # Default terminal
 set $term foot
+
+# Auto-launch Pi in a terminal on startup
+exec foot -e pi
