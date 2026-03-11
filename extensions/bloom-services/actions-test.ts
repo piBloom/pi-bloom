@@ -1,7 +1,8 @@
 /**
  * Test, pair, and session-start handlers for bloom-services.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import { join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
@@ -10,6 +11,7 @@ import { run } from "../../lib/exec.js";
 import { loadManifest } from "../../lib/services-manifest.js";
 import { validateServiceName } from "../../lib/services-validation.js";
 import { createLogger, errorResult, truncate } from "../../lib/shared.js";
+import { registerMatrixAccount } from "./matrix-register.js";
 import { detectRunningServices } from "./service-io.js";
 
 const log = createLogger("bloom-services");
@@ -113,11 +115,13 @@ export async function handleTest(
 export async function handlePair(
 	params: {
 		name: "element";
-		timeout_sec?: number;
+		username: string;
 	},
 	_signal: AbortSignal | undefined,
 ) {
 	const serviceName = params.name;
+	const username = params.username.toLowerCase().replace(/[^a-z0-9._=-]/g, "");
+	if (!username) return errorResult("Invalid username — must contain at least one letter or number.");
 
 	// Check matrix server is installed
 	const systemdDir = join(os.homedir(), ".config", "containers", "systemd");
@@ -135,39 +139,80 @@ export async function handlePair(
 	} catch {
 		return errorResult(`Cannot read registration token from ${envFile}`);
 	}
-
 	if (!registrationToken) {
 		return errorResult("No registration token found. Check ~/.config/bloom/matrix.env");
 	}
 
-	// Get the machine's IP for the homeserver URL
+	// Homeserver URL — use localhost for API calls (containers use bloom-matrix internally)
+	const localUrl = "http://localhost:6167";
+
+	// Generate passwords
+	const userPassword = randomBytes(16).toString("base64url");
+	const botPassword = randomBytes(16).toString("base64url");
+
+	// --- Register user account ---
+	const userResult = await registerMatrixAccount(localUrl, username, userPassword, registrationToken);
+	if (!userResult.ok) {
+		return errorResult(`Failed to create account @${username}:bloom — ${userResult.error}`);
+	}
+
+	// --- Register pi bot account ---
+	const botResult = await registerMatrixAccount(localUrl, "pi", botPassword, registrationToken);
+	if (!botResult.ok) {
+		// If pi already exists, that's fine — but we need the password in element.env
+		if (!botResult.error.includes("taken")) {
+			return errorResult(`Failed to create bot account @pi:bloom — ${botResult.error}`);
+		}
+		log.info("Bot account @pi:bloom already exists, skipping creation.");
+	}
+
+	// --- Save bot credentials for the Element bridge container ---
+	if (botResult.ok) {
+		const configDir = join(os.homedir(), ".config", "bloom");
+		mkdirSync(configDir, { recursive: true });
+		writeFileSync(join(configDir, "element.env"), `BLOOM_MATRIX_PASSWORD=${botPassword}\n`);
+	}
+
+	// --- Build instructions for the user ---
 	const hostname = os.hostname();
-	const serverUrl = `http://${hostname}:6167`;
+	const externalUrl = `http://${hostname}:6167`;
 
 	const instructions = [
-		"Connect with any Matrix client (Element, FluffyChat, etc.):",
+		`Your Matrix account is ready:`,
 		"",
-		`  Homeserver URL: ${serverUrl}`,
-		`  Registration token: ${registrationToken}`,
+		`  Homeserver:  ${externalUrl}`,
+		`  Username:    ${username}`,
+		`  Password:    ${userPassword}`,
 		"",
-		"1. Open your Matrix client",
-		"2. Choose 'Create Account' (not login)",
-		`3. Set homeserver to: ${serverUrl}`,
-		"4. Enter a username and password",
-		"5. Enter the registration token when prompted",
-		"6. After registering, start a DM with @pi:bloom",
+		"Open Element X (or any Matrix client):",
+		`1. Tap "Sign in" (not "Create account")`,
+		`2. Set homeserver to: ${externalUrl}`,
+		"3. Enter the username and password above",
+		"4. To message Pi, start a DM with @pi:bloom",
 	].join("\n");
 
 	try {
-		const qrArt = await QRCode.toString(serverUrl, { type: "terminal", small: true });
+		const qrArt = await QRCode.toString(externalUrl, { type: "terminal", small: true });
 		return {
 			content: [{ type: "text" as const, text: `${instructions}\n\nScan to open homeserver:\n${qrArt}` }],
-			details: { service: serviceName, serverUrl, hasToken: true },
+			details: {
+				service: serviceName,
+				serverUrl: externalUrl,
+				userId: userResult.userId,
+				username,
+				password: userPassword,
+			},
 		};
 	} catch {
 		return {
 			content: [{ type: "text" as const, text: instructions }],
-			details: { service: serviceName, serverUrl, hasToken: true },
+			details: {
+				service: serviceName,
+				serverUrl: externalUrl,
+				userId: userResult.userId,
+				username,
+				password: userPassword,
+			},
 		};
 	}
 }

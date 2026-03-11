@@ -15,11 +15,11 @@ Bloom runs its own Matrix homeserver locally. Users register with any Matrix cli
 
 ## Setup
 
-The Matrix server starts automatically. To register a user account:
+The Matrix server starts automatically. User accounts are created automatically by `service_pair`:
 
-1. A registration token is generated during setup: `~/.config/bloom/matrix.env`
-2. Open your Matrix client, set homeserver to `http://<bloom-ip>:6167`
-3. Register with the token
+1. Pi asks for the user's name during setup
+2. `service_pair(name="element", username="...")` creates both the user and bot accounts
+3. User logs in with Element X or any Matrix client using the returned credentials
 
 ## Configuration
 

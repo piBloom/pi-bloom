@@ -17,7 +17,7 @@ Users message Pi from any Matrix client. The bridge forwards messages to Pi via 
 
 1. Matrix server must be running: `systemctl --user status bloom-matrix`
 2. Install: `service_install(name="element")`
-3. Pair: `service_pair(name="element")` — displays registration token + server URL
+3. Pair: `service_pair(name="element", username="alex")` — auto-creates user + bot accounts, returns login credentials
 
 ## Send a message
 

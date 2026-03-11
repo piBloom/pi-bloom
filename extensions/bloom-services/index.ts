@@ -83,12 +83,12 @@ export default function (pi: ExtensionAPI) {
 		name: "service_pair",
 		label: "Pair Messaging Service",
 		description:
-			"Get connection details for Matrix homeserver. Returns homeserver URL, registration token, and QR code. Works with any Matrix client (Element, FluffyChat, etc.).",
+			"Create Matrix accounts and return login credentials. Auto-registers both the user account and the Pi bot account on the local Continuwuity homeserver. The user can then log in with any Matrix client (Element X, FluffyChat, etc.).",
 		parameters: Type.Object({
 			name: StringEnum(["element"] as const, {
 				description: "Service to pair",
 			}),
-			timeout_sec: Type.Optional(Type.Number({ description: "Max seconds to wait for QR data", default: 60 })),
+			username: Type.String({ description: "Username for the human account (e.g. alex)" }),
 		}),
 		async execute(_toolCallId, params, signal) {
 			return handlePair(params, signal);
