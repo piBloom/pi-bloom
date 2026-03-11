@@ -7,8 +7,40 @@ import type { ServiceCatalogEntry } from "./services-manifest.js";
 import { commandExists, hasSubidRange } from "./services-validation.js";
 
 // ---------------------------------------------------------------------------
+// Bridge catalog
+// ---------------------------------------------------------------------------
+
+/** A single bridge entry from services/catalog.yaml. */
+export interface BridgeCatalogEntry {
+	image: string;
+	auth_method: string;
+	health_port: number;
+	description: string;
+}
+
+// ---------------------------------------------------------------------------
 // Service catalog
 // ---------------------------------------------------------------------------
+
+/** Load the bridge catalog from the first catalog.yaml that exists among repo dir, system share, and cwd. */
+export function loadBridgeCatalog(repoDir: string): Record<string, BridgeCatalogEntry> {
+	const candidates = [
+		join(repoDir, "services", "catalog.yaml"),
+		"/usr/local/share/bloom/services/catalog.yaml",
+		join(process.cwd(), "services", "catalog.yaml"),
+	];
+	for (const candidate of candidates) {
+		if (!existsSync(candidate)) continue;
+		try {
+			const raw = readFileSync(candidate, "utf-8");
+			const doc = (yaml.load(raw) as { bridges?: Record<string, BridgeCatalogEntry> } | null) ?? {};
+			if (doc.bridges && typeof doc.bridges === "object") return doc.bridges;
+		} catch {
+			// ignore and continue
+		}
+	}
+	return {};
+}
 
 /** Load the service catalog from the first location that exists among repo dir, system share, and cwd. */
 export function loadServiceCatalog(repoDir: string): Record<string, ServiceCatalogEntry> {
