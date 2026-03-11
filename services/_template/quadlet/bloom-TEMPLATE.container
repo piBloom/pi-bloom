@@ -8,12 +8,8 @@ Image=localhost/bloom-TEMPLATE:latest
 ContainerName=bloom-TEMPLATE
 User=0
 
-# Network isolation
-Network=bloom.network
-
-# Health check endpoint on localhost
-# TODO: Assign a unique port (check catalog.yaml for used ports)
-PublishPort=127.0.0.1:18800:18800
+# Host networking for direct mesh access
+Network=host
 
 # Service state persists across restarts
 # TODO: Adjust volume name and mount path for your service
@@ -26,6 +22,7 @@ EnvironmentFile=%h/.config/bloom/TEMPLATE.env
 
 PodmanArgs=--memory=256m
 PodmanArgs=--security-opt label=disable
+# TODO: Assign a unique port (check catalog.yaml for used ports)
 HealthCmd=wget -qO- http://localhost:18800/health || exit 1
 HealthInterval=30s
 HealthRetries=3

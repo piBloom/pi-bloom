@@ -1,5 +1,5 @@
 {
 	"defaultHomeserver": 0,
-	"homeserverList": ["/"],
+	"homeserverList": ["http://bloom.mesh:6167"],
 	"allowCustomHomeservers": true
 }

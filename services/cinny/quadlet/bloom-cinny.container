@@ -7,10 +7,8 @@ Wants=network-online.target
 Image=ghcr.io/cinnyapp/cinny:v4.3.0
 ContainerName=bloom-cinny
 
-Network=bloom.network
-
-# Serve on localhost only — nginx proxies /cinny to this
-PublishPort=127.0.0.1:18810:80
+# Direct mesh access on port 18810 (firewall trusts wt0 only)
+PublishPort=18810:80
 
 # Custom config pointing to local homeserver
 Volume=%h/.config/bloom/cinny-config.json:/usr/share/nginx/html/config.json:ro,Z
