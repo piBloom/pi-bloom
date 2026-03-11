@@ -40,21 +40,6 @@ describe("bloom-audit registration", () => {
 });
 
 // ---------------------------------------------------------------------------
-// bloom-channels
-// ---------------------------------------------------------------------------
-describe("bloom-channels registration", () => {
-	it("registers expected commands and events", async () => {
-		const mod = await import("../../extensions/bloom-channels/index.js");
-		const api = createMockExtensionAPI();
-		mod.default(api as never);
-
-		expect(toolNames(api)).toEqual([]);
-		expect(commandNames(api)).toEqual(["matrix"]);
-		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start", "agent_end", "session_shutdown"]));
-	});
-});
-
-// ---------------------------------------------------------------------------
 // bloom-garden
 // ---------------------------------------------------------------------------
 describe("bloom-garden registration", () => {
