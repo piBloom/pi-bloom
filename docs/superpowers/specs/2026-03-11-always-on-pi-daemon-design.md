@@ -9,7 +9,7 @@ Pi only runs during interactive terminal sessions. When the user logs out, Matri
 
 ## Solution
 
-A single headless Node.js daemon (`bloom-daemon`) uses Pi's SDK to manage multiple `AgentSession` instances — one per Matrix room. Matrix rooms become the primary organizational unit, replacing bloom-topics. The interactive terminal remains independent.
+A single headless Node.js daemon (`pi-daemon`) uses Pi's SDK to manage multiple `AgentSession` instances — one per Matrix room. Matrix rooms become the primary organizational unit, replacing bloom-topics. The interactive terminal remains independent.
 
 ## Architecture
 
@@ -52,20 +52,20 @@ On SIGTERM: dispose all loaded sessions, disconnect Matrix client, flush `rooms.
 
 ### Interactive Terminal
 
-The interactive terminal is completely independent:
+The daemon is always running — it never stops for interactive sessions. The terminal is completely independent:
 
 - Normal `pi` with Bloom extensions (persona, guardrails, audit, garden, os, services, dev, repo)
 - Its own session (JSONL file), not tied to any Matrix room
 - Shared filesystem: `~/Bloom/`, `~/.pi/` — both daemon and terminal see the same files
 - No `bloom-channels` or `bloom-topics` extensions (retired)
 
-The daemon and terminal coexist without coordination. They share the filesystem but not sessions.
+The daemon and terminal run in parallel without coordination. They share the filesystem and persona but not sessions. Matrix rooms are the persistent organizational layer; the terminal session is ephemeral.
 
 ## Room-to-Session Mapping
 
 ### Registry
 
-`~/.pi/bloom-daemon/rooms.json`:
+`~/.pi/pi-daemon/rooms.json`:
 
 ```json
 {
@@ -192,7 +192,7 @@ Matrix message routing moves from an extension into the daemon process. The `reg
 
 ### bloom-pi-agent.service (replaced)
 
-Replaced by `bloom-daemon.service`. No more PTY hacks.
+Replaced by `pi-daemon.service`. No more PTY hacks.
 
 **Files to delete:**
 - `os/sysconfig/bloom-pi-agent.service`
@@ -220,10 +220,10 @@ The daemon runs independently via systemd.
 
 ### bloom-setup/actions.ts
 
-`touchSetupComplete()` enables AND starts `bloom-daemon.service` (not just enable — the user shouldn't need to reboot after first-boot setup). Also creates the Bloom Matrix space and `#general:bloom` room.
+`touchSetupComplete()` enables AND starts `pi-daemon.service` (not just enable — the user shouldn't need to reboot after first-boot setup). Also creates the Bloom Matrix space and `#general:bloom` room.
 
 ```typescript
-await run("systemctl", ["--user", "enable", "--now", "bloom-daemon.service"]);
+await run("systemctl", ["--user", "enable", "--now", "pi-daemon.service"]);
 ```
 
 ### bloom-persona
@@ -232,20 +232,20 @@ Remove both `pendingChannels` and `activeTopic` fields from `BloomContext`. Both
 
 ### Containerfile
 
-Install `bloom-daemon.service` instead of `bloom-pi-agent.service`.
+Install `pi-daemon.service` instead of `bloom-pi-agent.service`.
 
 ### AGENTS.md
 
 Update to reflect:
 - Remove bloom-channels and bloom-topics from extension documentation
 - Remove `/topic` commands from command reference
-- Add bloom-daemon to OS-level infrastructure table
+- Add pi-daemon to OS-level infrastructure table
 - Update sequence diagrams to show daemon message flow
 - Add `rooms.json` to key paths
 
 ### CLAUDE.md
 
-Add `~/.pi/bloom-daemon/rooms.json` to the Key Paths table.
+Add `~/.pi/pi-daemon/rooms.json` to the Key Paths table.
 
 ## New Files
 
@@ -256,10 +256,10 @@ daemon/
 ├── session-pool.ts       — AgentSession lifecycle (create/resume/dispose)
 └── room-registry.ts      — rooms.json read/write, room-to-session mapping
 os/sysconfig/
-└── bloom-daemon.service  — Systemd user service unit
+└── pi-daemon.service  — Systemd user service unit
 ```
 
-### bloom-daemon.service
+### pi-daemon.service
 
 ```ini
 [Unit]
@@ -295,7 +295,7 @@ For existing Bloom installations:
 1. `bloom-topics` custom entries in existing sessions become inert (harmless, just ignored)
 2. `bloom-channels` extension simply stops loading (no data migration needed)
 3. `registerMatrixAccount` moved to `lib/matrix.ts` — callers updated
-4. `bloom-pi-agent.service` disabled and replaced by `bloom-daemon.service`
+4. `bloom-pi-agent.service` disabled and replaced by `pi-daemon.service`
 5. Existing `~/.pi/matrix-credentials.json` used by daemon (same schema)
 6. First daemon start creates `rooms.json` and Bloom space
 7. `matrix-bot-sdk` remains as existing project dependency (no new deps needed)

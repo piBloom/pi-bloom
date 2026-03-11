@@ -27,5 +27,5 @@ export const STEP_GUIDANCE: Record<StepName, string> = {
 	test_message:
 		"If a messaging channel (Matrix) was set up, send a test message: 'Hi. Can you hear me?' using the channel. If no channel was set up, skip this step.",
 	complete:
-		"Congratulate the user! Setup is complete. Mention they can chat here on the terminal or on their connected messaging channel. Let them know Pi now runs in the background — even when they log out, Pi stays connected to Matrix and will respond to messages. When they log in interactively, the background daemon pauses and they get a full interactive session. Remind them they can revisit any setup step by asking.",
+		"Congratulate the user! Setup is complete. Mention they can chat here on the terminal or on their connected messaging channel. Let them know Pi is always running in the background — even when they log out, Pi stays connected to Matrix rooms and responds to messages. When they log in interactively, they get a separate terminal session while the daemon keeps running in parallel. Both share the same persona and filesystem. Remind them they can revisit any setup step by asking.",
 };
