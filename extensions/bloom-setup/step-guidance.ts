@@ -16,8 +16,8 @@ export const STEP_GUIDANCE: Record<StepName, string> = {
 		"Summarize how to connect: (1) Locally at localhost if sitting at the device, (2) Via NetBird mesh IP from any peer device. Show the mesh IP from: netbird status. Mention SSH: ssh pi@<mesh-ip>.",
 	webdav:
 		"Ask if the user wants a file server. Explain: dufs (WebDAV) lets you access your files from any device via a web browser or file manager. If yes, use service_install(name='dufs') to install it.",
-	channels:
-		"Ask: 'Would you like to connect a messaging channel? Matrix is the default — it gives you a private homeserver.' If yes, use service_install(name='matrix') then service_install(name='element') then service_pair(name='element') to get connection details.",
+	matrix:
+		"Matrix is your private communication hub — it's already running on this device. Verify Continuwuity is healthy: systemctl status bloom-matrix. Then create accounts:\n\n1. Generate a registration token if not already present (check /var/lib/continuwuity/registration_token)\n2. Register @pi:bloom bot account using the Matrix registration API\n3. Register @user:bloom account for the human user\n4. Store credentials in ~/.pi/matrix-credentials.json\n5. Create #general:bloom room\n6. Tell the user: 'Your Matrix homeserver is running. Open Cinny at http://<hostname>/cinny to chat. Your login is @user:bloom with the password shown below.'\n7. Ask: 'Want me to connect your WhatsApp, Telegram, or Signal?'",
 	git_identity:
 		"Ask for the user's name and email for git commits. Run: git config --global user.name '<name>' and git config --global user.email '<email>'. Confirm the settings.",
 	contributing:

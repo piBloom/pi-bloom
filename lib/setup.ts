@@ -5,7 +5,7 @@ export const STEP_ORDER = [
 	"netbird",
 	"connectivity",
 	"webdav",
-	"channels",
+	"matrix",
 	"git_identity",
 	"contributing",
 	"persona",
