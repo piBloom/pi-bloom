@@ -1,0 +1,10 @@
+[global]
+server_name = "bloom"
+database_path = "/var/lib/continuwuity"
+port = [6167]
+address = "0.0.0.0"
+allow_federation = false
+allow_registration = true
+registration_token_file = "/var/lib/continuwuity/registration_token"
+max_request_size = 20000000
+allow_check_for_updates = false

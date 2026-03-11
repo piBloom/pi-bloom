@@ -1,6 +1,7 @@
 # Bloom OS — Fedora bootc 42 with Pi coding agent
 # Build: podman build -f os/Containerfile -t bloom-os:latest .
 # Install: sudo bootc install to-disk /dev/sdX --source-imgref containers-storage:bloom-os:latest
+FROM forgejo.ellis.link/continuwuation/continuwuity:0.5.0-rc.6 AS continuwuity-src
 FROM quay.io/fedora/fedora-bootc:42
 
 # System + development packages
@@ -123,6 +124,14 @@ COPY os/sysconfig/bloom-status.html /usr/share/nginx/html/index.html
 RUN rm -f /etc/nginx/conf.d/default.conf
 RUN setsebool -P httpd_can_network_connect 1
 RUN systemctl enable nginx.service
+
+# Continuwuity Matrix homeserver — native OS service (binary extracted from container image)
+COPY --from=continuwuity-src /sbin/conduwuit /usr/local/bin/continuwuity
+RUN chmod +x /usr/local/bin/continuwuity
+RUN mkdir -p /etc/bloom/appservices
+COPY os/sysconfig/bloom-matrix.toml /etc/bloom/matrix.toml
+COPY os/sysconfig/bloom-matrix.service /usr/lib/systemd/system/bloom-matrix.service
+RUN systemctl enable bloom-matrix.service
 
 # Boot to multi-user target — getty handles login
 RUN systemctl set-default multi-user.target

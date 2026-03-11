@@ -1,0 +1,18 @@
+[Unit]
+Description=Bloom Matrix Homeserver (Continuwuity)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/continuwuity
+Environment=CONTINUWUITY_CONFIG=/etc/bloom/matrix.toml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+DynamicUser=yes
+StateDirectory=continuwuity
+RuntimeDirectory=continuwuity
+
+[Install]
+WantedBy=multi-user.target
