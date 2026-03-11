@@ -20,6 +20,17 @@ Bloom's architectural rules. Enforced by humans, AI, and the bloom-architect age
 | **Extension** | In-process TypeScript registering tools/hooks | Pi-facing capabilities needing code | Low — runs in Pi's process |
 | **Service** | Containerized workload (Podman Quadlet) | Independent processes, third-party software, heavy workloads | High — own container, own lifecycle |
 
+### OS-Level Infrastructure
+
+Some services are foundational to the system's identity and run as native systemd services baked into the OS image, not as containers. This is the exception to "containers first" — it applies only to services that every other feature depends on.
+
+**Current OS-level infrastructure:**
+- **Continuity** (Matrix homeserver) — `bloom-matrix.service`, communication backbone
+- **NetBird** — mesh networking, device reachability
+- **Nginx** — reverse proxy, serves Cinny web client
+
+These are analogous to systemd, podman, and SSH — they're part of the OS, not optional services.
+
 ## Extension Structure
 
 Every extension is a directory. No exceptions, even for thin extensions.
