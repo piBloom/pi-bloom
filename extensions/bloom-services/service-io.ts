@@ -15,19 +15,6 @@ import { run } from "../../lib/exec.js";
 import { getQuadletDir } from "../../lib/filesystem.js";
 import { findLocalServicePackage } from "../../lib/services-catalog.js";
 
-/** Template Cinny config: set homeserver to localhost (same host as Continuwuity). */
-function templateCinnyConfig(raw: string): string {
-	try {
-		const config = JSON.parse(raw);
-		if (Array.isArray(config.homeserverList)) {
-			config.homeserverList = ["http://localhost:6167"];
-		}
-		return `${JSON.stringify(config, null, "\t")}\n`;
-	} catch {
-		return raw;
-	}
-}
-
 /** Install a service from a bundled local package. Copies Quadlet files, SKILL.md, and config files. */
 export async function installServicePackage(
 	name: string,
@@ -86,11 +73,7 @@ export async function installServicePackage(
 		if (!statSync(src).isFile()) continue;
 		const dest = join(configDir, fileName);
 		if (!existsSync(dest)) {
-			let content = readFileSync(src, "utf-8");
-			if (fileName === "cinny-config.json") {
-				content = templateCinnyConfig(content);
-			}
-			writeFileSync(dest, content);
+			writeFileSync(dest, readFileSync(src));
 		}
 	}
 
