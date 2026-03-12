@@ -4,7 +4,11 @@
 # Auto-launch Zellij on interactive SSH login (skip if escape hatch or already inside Zellij)
 # Guards: interactive TTY, SSH session, not already in Zellij, no escape hatch env var
 if [ -t 0 ] && [ -n "$SSH_CONNECTION" ] && [ -z "$ZELLIJ" ] && [ -z "$BLOOM_NO_ZELLIJ" ]; then
-  exec zellij attach bloom --create --layout bloom
+  if zellij list-sessions 2>/dev/null | grep -q '^bloom$'; then
+    exec zellij attach bloom
+  else
+    exec zellij -s bloom -l bloom
+  fi
 fi
 
 # Start Pi on interactive login (only one instance — atomic mkdir lock)
