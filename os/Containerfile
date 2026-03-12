@@ -1,151 +1,61 @@
 # Bloom OS — Fedora bootc 42 with Pi coding agent
 # Build: podman build -f os/Containerfile -t bloom-os:latest .
 # Install: sudo bootc install to-disk /dev/sdX --source-imgref containers-storage:bloom-os:latest
-FROM forgejo.ellis.link/continuwuation/continuwuity:0.5.0-rc.6 AS continuwuity-src
-FROM quay.io/fedora/fedora-bootc:42
-
-# System + development packages
-RUN dnf install -y \
-    sudo \
-    git \
-    git-lfs \
-    ripgrep \
-    fd-find \
-    jq \
-    bat \
-    htop \
-    just \
-    ShellCheck \
-    openssl \
-    openssh-clients \
-    curl \
-    wget \
-    unzip \
-    libatomic \
-    podman \
-    buildah \
-    skopeo \
-    oras \
-    qemu-system-x86 \
-    edk2-ovmf \
-    chromium \
-    tmux \
-    openssh-server \
-    firewalld \
-    nodejs \
-    npm \
-    && dnf clean all \
-    && rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log /var/cache/ldconfig/aux-cache
-
-# Install VS Code (Microsoft repo)
-RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
-    printf "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc\n" > /etc/yum.repos.d/vscode.repo && \
-    dnf install -y code && \
-    dnf clean all && \
-    rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log /var/cache/ldconfig/aux-cache
-
-# Install NetBird (system-level mesh networking — needs real CAP_NET_ADMIN)
-RUN printf '[netbird]\nname=netbird\nbaseurl=https://pkgs.netbird.io/yum/\nenabled=1\ngpgcheck=0\nrepo_gpgcheck=1\ngpgkey=https://pkgs.netbird.io/yum/repodata/repomd.xml.key\n' > /etc/yum.repos.d/netbird.repo && \
-    dnf install -y netbird && \
-    dnf clean all && \
-    rm -rf /var/cache/libdnf5 /var/lib/dnf /var/log/dnf5.log /var/log/dnf.log /var/cache/ldconfig/aux-cache
-# Remove empty state files left by post-install scriptlet (causes JSON parse crash on boot)
-RUN rm -f /var/lib/netbird/active_profile.json /var/lib/netbird/default.json
-RUN systemctl enable netbird
-# Trust the NetBird tunnel interface — traffic on wt0 is already authenticated by NetBird
-RUN firewall-offline-cmd --zone=trusted --add-interface=wt0
-
-# Wheel group sudo (Anaconda creates user at install time)
-COPY os/sysconfig/bloom-sudoers /etc/sudoers.d/10-bloom
-RUN chmod 0440 /etc/sudoers.d/10-bloom
-
+ARG CONTINUWUITY_IMAGE=forgejo.ellis.link/continuwuation/continuwuity:0.5.0-rc.6
 ARG PI_CODING_AGENT_VERSION=0.57.1
 ARG BIOME_VERSION=2.4.6
 ARG TYPESCRIPT_VERSION=5.9.3
 ARG CLAUDE_CODE_VERSION=2.1.73
 
-# Install global CLI tooling (pinned versions; keep npm cache out of /var for bootc lint)
-RUN HOME=/tmp npm install -g --cache /tmp/npm-cache \
-    @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} \
-    @mariozechner/pi-coding-agent@${PI_CODING_AGENT_VERSION} \
-    @biomejs/biome@${BIOME_VERSION} \
-    typescript@${TYPESCRIPT_VERSION} \
-    && rm -rf /tmp/npm-cache /var/roothome/.npm /root/.npm
+FROM ${CONTINUWUITY_IMAGE} AS continuwuity-src
 
-# Install Bloom Pi package deps first (cached unless package.json changes)
+FROM scratch AS ctx
+COPY os/build_files /build
+COPY os/system_files /files
+COPY os/packages /packages
+
+FROM quay.io/fedora/fedora-bootc:42
+
+# Phase 1: Remove unwanted packages
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build/00-base-pre.sh
+
+# Phase 2: Install system packages (network)
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build/00-base-fetch.sh
+
+# Phase 3: Copy system files, apply presets, branding (offline)
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    --network=none \
+    /ctx/build/00-base-post.sh
+
+# Phase 4: Install Node.js CLI tools + Bloom npm deps (network)
+ARG PI_CODING_AGENT_VERSION
+ARG BIOME_VERSION
+ARG TYPESCRIPT_VERSION
+ARG CLAUDE_CODE_VERSION
 COPY package.json package-lock.json /usr/local/share/bloom/
-RUN cd /usr/local/share/bloom && \
-    HOME=/tmp npm install --cache /tmp/npm-cache && \
-    rm -rf /tmp/npm-cache /var/roothome/.npm /root/.npm
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    PI_CODING_AGENT_VERSION=${PI_CODING_AGENT_VERSION} \
+    BIOME_VERSION=${BIOME_VERSION} \
+    TYPESCRIPT_VERSION=${TYPESCRIPT_VERSION} \
+    CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION} \
+    /ctx/build/01-bloom-fetch.sh
 
-# Copy source and build TypeScript (re-runs on any source change, but deps are cached)
+# Phase 5: Build Bloom TypeScript, configure Pi (offline)
 COPY . /usr/local/share/bloom/
-RUN cd /usr/local/share/bloom && \
-    npm run build && \
-    npm prune --omit=dev
-# Symlink globally-installed Pi SDK into Bloom's node_modules so ESM bare imports resolve
-RUN ln -sf /usr/local/lib/node_modules/@mariozechner /usr/local/share/bloom/node_modules/@mariozechner
-
-# Configure Pi settings defaults in /usr (immutable layer)
-RUN mkdir -p /usr/local/share/bloom/.pi/agent && \
-    echo '{"packages": ["/usr/local/share/bloom"]}' > /usr/local/share/bloom/.pi/agent/settings.json
-
-# Shell config skel — Anaconda copies /etc/skel/ to new user's home
-COPY os/sysconfig/bloom-bashrc /etc/skel/.bashrc
-COPY os/sysconfig/bloom-bash_profile /etc/skel/.bash_profile
-
-# tmpfiles.d for /var directory structure (created at boot)
-COPY os/sysconfig/bloom-tmpfiles.conf /usr/lib/tmpfiles.d/bloom.conf
-
-# Keep console output quiet so kernel/podman chatter does not overwrite Pi's TUI.
-COPY os/sysconfig/bloom-sysctl.conf /usr/lib/sysctl.d/60-bloom-console.conf
-
-# Install persona files
-RUN mkdir -p /usr/local/share/bloom/persona
-
-# Systemd service for Pi auto-start on login
-COPY os/sysconfig/bloom-greeting.sh /usr/local/bin/bloom-greeting.sh
-RUN chmod +x /usr/local/bin/bloom-greeting.sh
-
-# Pi daemon — always-on Matrix room agent (SDK-based, one session per room)
-# Enabled after first-boot setup completes via bloom-setup
-COPY os/sysconfig/pi-daemon.service /usr/lib/systemd/user/pi-daemon.service
-
-# Enable SSH for remote access (password auth only — no key-based auth)
-RUN mkdir -p /etc/ssh/sshd_config.d && \
-    printf 'PasswordAuthentication yes\nPubkeyAuthentication no\n' \
-        > /etc/ssh/sshd_config.d/50-bloom.conf
-RUN systemctl enable sshd.service
-
-# Auto-login on VT1 and serial console — Pi handles setup and authentication
-RUN mkdir -p /usr/lib/systemd/system/getty@tty1.service.d \
-            /usr/lib/systemd/system/serial-getty@ttyS0.service.d
-COPY os/sysconfig/getty-autologin.conf /usr/lib/systemd/system/getty@tty1.service.d/autologin.conf
-COPY os/sysconfig/getty-autologin.conf /usr/lib/systemd/system/serial-getty@ttyS0.service.d/autologin.conf
-
-# Continuwuity Matrix homeserver — native OS service (binary extracted from container image)
 COPY --from=continuwuity-src /sbin/conduwuit /usr/local/bin/continuwuity
-RUN chmod +x /usr/local/bin/continuwuity
-RUN mkdir -p /etc/bloom/appservices
-COPY os/sysconfig/bloom-matrix.toml /etc/bloom/matrix.toml
-COPY os/sysconfig/bloom-matrix.service /usr/lib/systemd/system/bloom-matrix.service
-RUN systemctl enable bloom-matrix.service
-
-# Mask unused NFS services — Bloom doesn't use NFS; reduces boot error noise
-RUN systemctl mask rpcbind.service rpcbind.socket rpc-statd.service
-
-# Boot to multi-user target — getty handles login
-RUN systemctl set-default multi-user.target
-
-# Update check timer
-COPY os/sysconfig/bloom-update-check.timer /usr/lib/systemd/system/bloom-update-check.timer
-COPY os/sysconfig/bloom-update-check.service /usr/lib/systemd/system/bloom-update-check.service
-COPY os/sysconfig/bloom-update-check.sh /usr/local/bin/bloom-update-check.sh
-RUN chmod +x /usr/local/bin/bloom-update-check.sh
-RUN systemctl enable bloom-update-check.timer
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    --network=none \
+    /ctx/build/01-bloom-post.sh
 
 # Optional: pre-configure WiFi for headless first-boot
-# Usage: podman build --build-arg WIFI_SSID="MyNetwork" --build-arg WIFI_PSK="secret" ...
 ARG WIFI_SSID=""
 ARG WIFI_PSK=""
 RUN if [ -n "$WIFI_SSID" ]; then \
@@ -155,21 +65,17 @@ RUN if [ -n "$WIFI_SSID" ]; then \
     chmod 600 /etc/NetworkManager/system-connections/wifi.nmconnection; \
 fi
 
-# bootc installation config
-COPY os/bootc/config.toml /usr/lib/bootc/install/config.toml
+# Symlink /opt to /var/opt for day-2 package installs
+RUN rm -rf /opt && ln -s /var/opt /opt
 
-# Labels
-LABEL containers.bootc 1
-LABEL com.github.containers.toolbox="false"
-LABEL bloom.version="0.0.1"
-LABEL description="Bloom — Pi-native AI companion OS"
+# Final cleanup + validation
+RUN rm -rf /var/* && mkdir -p /var/tmp /var/opt && bootc container lint
 
-# Login branding — clean Bloom identity
-RUN printf 'Bloom OS\n\n' > /etc/issue && \
-    printf '' > /etc/motd
+# Login branding
+RUN printf '' > /etc/motd
 
-# Set hostname (shows in login prompt and shell PS1)
-RUN echo "bloom" > /etc/hostname
-
-# Validate bootc image (must be after all labels)
-RUN bootc container lint
+LABEL containers.bootc="1"
+LABEL org.opencontainers.image.title="Bloom OS"
+LABEL org.opencontainers.image.description="Pi-native AI companion OS on Fedora bootc"
+LABEL org.opencontainers.image.source="https://github.com/pibloom/pi-bloom"
+LABEL org.opencontainers.image.version="0.1.0"
