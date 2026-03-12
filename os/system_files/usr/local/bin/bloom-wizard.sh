@@ -58,11 +58,11 @@ matrix_register() {
 	local username="$1" password="$2" reg_token="$3"
 	local url="${MATRIX_HOMESERVER}/_matrix/client/v3/register"
 
-	# Step 1: POST with empty auth — expect 401 with session ID (or 200 if no UIA)
+	# Step 1: POST without auth — expect 401 with session ID and UIA flows
 	local step1
 	step1=$(curl -s -X POST "$url" \
 		-H "Content-Type: application/json" \
-		-d "{\"username\":\"${username}\",\"password\":\"${password}\",\"auth\":{},\"inhibit_login\":false}")
+		-d "{\"username\":\"${username}\",\"password\":\"${password}\",\"inhibit_login\":false}")
 
 	# If step1 succeeded directly (no UIA needed), return it
 	if echo "$step1" | grep -q '"access_token"'; then

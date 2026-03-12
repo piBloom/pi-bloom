@@ -130,4 +130,39 @@ curl -sf http://localhost:6167/_matrix/federation/v1/version → empty
 
 ---
 
+## Issue 8: Matrix registration fails — empty auth object rejected by Continuwuity
+
+**Phase:** `just vm` (first boot, setup wizard — Matrix step)
+**Severity:** HIGH
+**Log:**
+```
+ERROR: Failed to get session ID from Matrix server
+ERROR: Failed to register @pi:bloom bot account.
+```
+
+**Analysis:** The `matrix_register()` function sends `"auth":{}` (empty auth object) in the first POST to `/_matrix/client/v3/register`, expecting a 401 with a session ID. However, Continuwuity (conduwuit 0.5.0-rc.6) rejects this with `M_BAD_JSON: deserialization failed: missing field 'session'` — it tries to deserialize the auth object and fails because it has no `session` field. The fix is to omit the `auth` field entirely from the first request, which correctly returns the UIA flows and a session ID.
+**Fix (applied):** Removed `"auth":{}` from the step 1 curl payload in `matrix_register()`. The request now sends only `username`, `password`, and `inhibit_login`.
+**Files changed:**
+- `os/system_files/usr/local/bin/bloom-wizard.sh`
+
+---
+
+## Issue 9: Pi starts even when setup wizard fails
+
+**Phase:** `just vm` (first boot)
+**Severity:** Medium
+**Log:**
+```
+ERROR: Failed to register @pi:bloom bot account.
+{"ts":"2026-03-12T20:04:42.077Z","level":"info","component":"bloom-services","msg":"service lifecycle extension loaded"}
+ pi v0.57.1
+```
+
+**Analysis:** When the wizard exits with an error (e.g., Matrix registration failure), `.bash_profile` continues execution and starts Pi anyway, even though `.setup-complete` was never created. The Pi startup block doesn't check for `.setup-complete`. On next login the wizard would re-run (since the file is missing), but the user gets a confusing Pi session in the meantime.
+**Fix (applied):** Added `[ -f "$HOME/.bloom/.setup-complete" ]` guard to the Pi startup block in `.bash_profile`.
+**Files changed:**
+- `os/system_files/etc/skel/.bash_profile`
+
+---
+
 *More issues will be appended as the boot test progresses.*

@@ -8,13 +8,12 @@
 
 ## Known Issues (as of 2026-03-12)
 - See `vm-diagnostics.md` for detailed findings.
-- **pi-daemon missing peerDep**: `@mariozechner/pi-coding-agent` not in node_modules at `/usr/local/share/bloom/`; exists globally but NODE_PATH unset in service.
-- **ConditionPathExists in wrong section**: `pi-daemon.service` has it in `[Service]` instead of `[Unit]`; systemd ignores it silently.
+- **netbird crash-loop (FIXED)**: `/var/log/netbird/` missing after `rm -rf /var/*` → exit 209. Fix: tmpfiles.d entry + systemd drop-in for ordering. Committed 427e00b.
+- **hostname "fedora" (FIXED)**: bootc strips `/etc/hostname` from image. Fix: `hostnamectl set-hostname bloom` in wizard welcome step. Committed 427e00b.
+- **pi-daemon missing peerDep (FIXED)**: Symlink added in Containerfile: `ln -sf /usr/local/lib/node_modules/@mariozechner /usr/local/share/bloom/node_modules/@mariozechner`
 - **dufs healthcheck broken**: Uses `wget` in HealthCmd but dufs image has no `wget`. Container runs fine but reports unhealthy permanently.
 - **bloom.network unused**: Defined in Quadlet but no container references it. Never created by podman.
-- **First-boot incomplete**: 5/11 steps pending (git_identity, contributing, persona, test_message, complete).
 - **Gateway cinny-config**: Points to `http://fedora` instead of correct Matrix address.
-- **nginx removed**: No longer in image (was present previously). Port 80 unused.
 
 ## Boot Timing
 - VM boots and SSH available within ~30 seconds.
