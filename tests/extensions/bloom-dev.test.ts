@@ -21,6 +21,7 @@ import {
 	handleDevPushSkill,
 	handleDevSubmitPr,
 	handleDevTest,
+	isImmutableGlobalNpmError,
 } from "../../extensions/bloom-dev/actions-pr.js";
 import type { DevBuildResult, DevStatus, DevTestResult } from "../../extensions/bloom-dev/types.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
@@ -316,6 +317,23 @@ describe("handleDevInstallPackage", () => {
 		const result = await handleDevInstallPackage({ source: "   " });
 		expect("isError" in result && result.isError).toBe(true);
 		expect(result.content[0].text).toContain("non-empty");
+	});
+});
+
+describe("isImmutableGlobalNpmError", () => {
+	it("detects read-only global npm install failures under /usr/local", () => {
+		const out = "npm ERR! code EROFS\nnpm ERR! path /usr/local/lib/node_modules/pi-teams\nRead-only file system";
+		expect(isImmutableGlobalNpmError(out)).toBe(true);
+	});
+
+	it("detects ENOENT mkdir failures under /usr/local/lib/node_modules", () => {
+		const out = "ENOENT: no such file or directory, mkdir '/usr/local/lib/node_modules/pi-teams'";
+		expect(isImmutableGlobalNpmError(out)).toBe(true);
+	});
+
+	it("does not flag unrelated install errors", () => {
+		const out = "npm ERR! 404 Not Found - GET https://registry.npmjs.org/some-missing-pkg";
+		expect(isImmutableGlobalNpmError(out)).toBe(false);
 	});
 });
 

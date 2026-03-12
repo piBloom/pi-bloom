@@ -223,7 +223,7 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "dev_install_package",
 		label: "Install Package",
-		description: "Install a Pi package from a local path on the device.",
+		description: "Install a Pi package from a local path or URL (falls back to local scope on immutable systems).",
 		parameters: Type.Object({
 			source: Type.String({ description: "Local path to the Pi package directory or URL" }),
 		}),

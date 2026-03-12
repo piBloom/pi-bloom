@@ -174,19 +174,66 @@ export async function handleDevPushExtension(
 	return handleDevSubmitPr({ title }, repoDir, signal, ctx);
 }
 
+/** Detect immutable-OS npm global install failures and related mkdir errors under /usr/local. */
+export function isImmutableGlobalNpmError(output: string): boolean {
+	const text = output.toLowerCase();
+	return (
+		text.includes("/usr/local/lib/node_modules") &&
+		(text.includes("read-only file system") ||
+			text.includes(" erofs") ||
+			text.includes(" enoent") ||
+			text.includes("mkdir"))
+	);
+}
+
 /** Install a Pi package from a local path or URL. */
 export async function handleDevInstallPackage(params: { source: string }, signal?: AbortSignal) {
-	if (!params.source.trim()) {
+	const source = params.source.trim();
+	if (!source) {
 		return errorResult("source must be a non-empty path or URL.");
 	}
 
-	const result = await run("pi", ["install", params.source], signal);
-	if (result.exitCode !== 0) {
-		return errorResult(`pi install failed: ${truncate(result.stderr || result.stdout)}`);
+	// First try global install (default pi behavior).
+	const globalResult = await run("pi", ["install", source], signal);
+	if (globalResult.exitCode === 0) {
+		return {
+			content: [{ type: "text" as const, text: `Package installed from ${source}.\n${truncate(globalResult.stdout)}` }],
+			details: { source, scope: "global", success: true },
+		};
+	}
+
+	const combined = `${globalResult.stderr || ""}\n${globalResult.stdout || ""}`;
+	if (!isImmutableGlobalNpmError(combined)) {
+		return errorResult(`pi install failed: ${truncate(globalResult.stderr || globalResult.stdout)}`);
+	}
+
+	// On immutable systems, fall back to project-local install under ~/Bloom.
+	const bloomDir = getBloomDir();
+	const localResult = await run("pi", ["install", "-l", source], signal, bloomDir);
+	if (localResult.exitCode !== 0) {
+		return errorResult(
+			[
+				"Global install failed on immutable filesystem and local fallback also failed.",
+				"Try manually: pi install -l <source>",
+				"--- global error ---",
+				truncate(globalResult.stderr || globalResult.stdout),
+				"--- local error ---",
+				truncate(localResult.stderr || localResult.stdout),
+			].join("\n"),
+		);
 	}
 
 	return {
-		content: [{ type: "text" as const, text: `Package installed from ${params.source}.\n${truncate(result.stdout)}` }],
-		details: { source: params.source, success: true },
+		content: [
+			{
+				type: "text" as const,
+				text: [
+					`Global install blocked by immutable OS (/usr/local is read-only).`,
+					`Installed package from ${source} using local scope (-l) in ${bloomDir}.`,
+					truncate(localResult.stdout),
+				].join("\n"),
+			},
+		],
+		details: { source, scope: "local", cwd: bloomDir, success: true },
 	};
 }
