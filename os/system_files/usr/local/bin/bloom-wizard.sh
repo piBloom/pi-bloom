@@ -163,6 +163,12 @@ step_welcome() {
 	echo "Let's configure your device. This takes a few minutes."
 	echo "Press Ctrl+C at any time to abort — you'll resume where you left off next login."
 	echo ""
+
+	# Set hostname if not already set (bootc strips /etc/hostname from the image)
+	if [[ "$(hostnamectl hostname 2>/dev/null)" != "bloom" ]]; then
+		sudo hostnamectl set-hostname bloom 2>/dev/null || true
+	fi
+
 	mark_done welcome
 }
 
@@ -209,6 +215,21 @@ step_netbird() {
 	echo "NetBird creates a private mesh network so you can access this device from anywhere."
 	echo "You'll need a setup key from your NetBird dashboard (app.netbird.io → Setup Keys)."
 	echo ""
+
+	# Ensure netbird daemon is running before attempting connection
+	if ! systemctl is-active --quiet netbird.service; then
+		echo "Starting NetBird daemon..."
+		sudo systemctl start netbird.service 2>/dev/null || true
+	fi
+	local wait_count=0
+	while [[ ! -S /var/run/netbird.sock ]]; do
+		wait_count=$((wait_count + 1))
+		if [[ $wait_count -ge 20 ]]; then
+			echo "ERROR: NetBird daemon did not start. Run 'sudo systemctl status netbird' to debug."
+			return 1
+		fi
+		sleep 0.5
+	done
 
 	while true; do
 		read -rp "Setup key: " setup_key
