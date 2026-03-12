@@ -7,7 +7,6 @@ import { join } from "node:path";
 import { run } from "../../lib/exec.js";
 import { getQuadletDir } from "../../lib/filesystem.js";
 import { parseFrontmatter } from "../../lib/frontmatter.js";
-import { ensureServiceRouting } from "../../lib/service-routing.js";
 import { loadServiceCatalog, servicePreflightErrors } from "../../lib/services-catalog.js";
 import { loadManifest, saveManifest } from "../../lib/services-manifest.js";
 import { validateServiceName } from "../../lib/services-validation.js";
@@ -68,11 +67,6 @@ async function installDependency(
 
 	await run("systemctl", ["--user", "daemon-reload"], signal);
 	await run("systemctl", ["--user", "start", `bloom-${dep}.service`], signal);
-
-	if (depCatalog?.port) {
-		const depRouting = await ensureServiceRouting(dep, signal);
-		if (!depRouting.ok && !depRouting.skipped) log.warn("dep DNS record failed", { dep, error: depRouting.error });
-	}
 
 	const depManifest = loadManifest(manifestPath);
 	depManifest.services[dep] = { image: depImage || "unknown", version: depVersion, enabled: true };
@@ -137,12 +131,6 @@ export async function handleInstall(
 		if (startRes.exitCode !== 0) {
 			return errorResult(`Failed to start ${target}:\n${startRes.stderr}`);
 		}
-	}
-
-	// Set up DNS routing if port is defined
-	if (catalogEntry?.port) {
-		const routing = await ensureServiceRouting(params.name, signal);
-		if (!routing.ok && !routing.skipped) log.warn("DNS record failed", { service: params.name, error: routing.error });
 	}
 
 	const skillDir = join(bloomDir, "Skills", params.name);
