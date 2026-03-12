@@ -25,7 +25,7 @@ Use `bridge_create(protocol)` to set up a bridge. Pi will:
 
 ## Authentication
 
-After creating a bridge, open Cinny at `http://<hostname>/` and look for the bridge bot room. Follow the bot's instructions:
+After creating a bridge, open the gateway at `http://<hostname>:18810/` and look for the bridge bot room. Follow the bot's instructions:
 - **QR code bridges** (WhatsApp, Signal): Scan the QR code with your phone
 - **Phone code bridges** (Telegram): Enter your phone number, then the verification code
 
@@ -36,4 +36,4 @@ After creating a bridge, open Cinny at `http://<hostname>/` and look for the bri
 
 ## How It Works
 
-Bridges connect external platforms to Matrix rooms. When someone messages you on WhatsApp, the bridge creates a Matrix room for that conversation. You see and reply to messages in Cinny (or any Matrix client). Pi can also read and respond in these rooms.
+Bridges connect external platforms to Matrix rooms. When someone messages you on WhatsApp, the bridge creates a Matrix room for that conversation. You see and reply to messages in the Cinny web client (via the gateway) or any Matrix client. Pi can also read and respond in these rooms.

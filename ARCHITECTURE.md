@@ -61,8 +61,7 @@ lib/
   frontmatter.ts   # parseFrontmatter, stringifyFrontmatter
   filesystem.ts    # safePath, getBloomDir, getQuadletDir, getUpdateStatusPath
   exec.ts          # command execution (run)
-  netbird.ts       # NetBird API client (DNS zones, records, mesh IP)
-  service-routing.ts # ensureServiceRouting (DNS record creation via NetBird)
+  gateway.ts       # gateway route registry and Caddyfile generation
   git.ts           # git utilities (parseGithubSlugFromUrl, slugifyBranchPart)
   repo.ts          # git remote helpers (getRemoteUrl, inferRepoUrl)
   audit.ts         # audit utilities (dayStamp, sanitize, summarizeInput)

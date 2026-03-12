@@ -23,19 +23,18 @@
 - `services-validation.ts` -- validateServiceName, validatePinnedImage, commandExists, hasSubidRange
 - `matrix.ts` -- extractResponseText, generatePassword, matrixCredentialsPath, registerMatrixAccount
 - `setup.ts` -- STEP_ORDER, advanceStep, getNextStep, etc.
-- `netbird.ts` -- VIOLATES PURITY: fetch calls, filesystem I/O, module-level logger
-- `service-routing.ts` -- VIOLATES PURITY: orchestration with I/O
+- `gateway.ts` -- addGatewayRoute, generateCaddyfile, refreshGateway
 
 ### Service template (2026-03-08)
 - `services/_template/` EXISTS
 - No shared service library -- independence is the point
 
 ### OS-level infrastructure (2026-03-11)
-- Matrix (Continuwuity), NetBird, Nginx -- native systemd, not in catalog.yaml
+- Matrix (Continuwuity), NetBird -- native systemd, not in catalog.yaml
 
 ## Architecture State (2026-03-12, full review)
 - 9 extensions, 4 missing types.ts
-- Container services: dufs, cinny, code-server; Bridges: whatsapp, telegram, signal
+- Container services: dufs, gateway, code-server; Bridges: whatsapp, telegram, signal
 - Daemon: pi-daemon (matrix-listener, session-pool, room-registry)
 
 ## Known Issues (2026-03-12, iteration 2 review)
@@ -47,7 +46,7 @@
 ### Remaining
 - BIGGEST: bloom-dev and bloom-repo duplicate PR submission logic
 - installServicePackage still has 2 unused params (_version, _entry)
-- netbird.ts and service-routing.ts violate lib/ purity (I/O, fetch, fs writes)
+- netbird.ts and service-routing.ts were deleted (moved to bash wizard)
 - ~/.bloom runtime dir computed independently in 5 files
 - handleSkillCreate hand-builds YAML (injection risk) -- stringifyFrontmatter already imported
 - QUADLET_DIR eagerly computed at module level in actions-bridges.ts

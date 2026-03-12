@@ -10,7 +10,7 @@
 ## Stale References (verified 2026-03-12, post-cleanup)
 
 ### Remaining:
-- nginx references in 7 living docs (ARCHITECTURE.md:30, AGENTS.md:229, README.md:81, service-architecture.md:43/61/62/106/199, cinny/SKILL.md:14/37/38/48, matrix/SKILL.md:26, bloom-live-tester.md:14)
+- nginx references cleaned from living docs; remaining only in plan/spec docs (historical, acceptable)
 - bloom.network refs remain only in docs/plans/ (immutable, acceptable)
 - docs/quick_deploy.md:119-120 — Sway/Wayland references still present
 
@@ -66,5 +66,5 @@
 - Dead code: 6 internal-only exports in lib/netbird.ts
 - Missing JSDoc: 54 exports across 13 files
 - Oversized files: 4 (service-io.ts, netbird.ts, bloom-dev/index.ts, bloom-os/actions.ts)
-- Convention edge cases: 2 (bloom-dev/index.ts size, cinny PublishPort)
+- Convention edge cases: 2 (bloom-dev/index.ts size, gateway PublishPort)
 - Clean files: ~58

@@ -33,14 +33,14 @@ Significant progress since 2026-03-10. First-boot wizard runs partially (6/11 st
 
 ### 5. bloom.network not used by any container
 - Quadlet defines `bloom.network` (bridge, 10.89.1.0/24)
-- But dufs uses `Network=host` and cinny uses `pasta` (default)
+- But dufs uses `Network=host` and gateway uses `pasta` (default)
 - `podman network inspect bloom` returns "network not found" (never created by podman)
 - The bloom.network Quadlet exists but no container references it
 
 ## Important Findings
 
-### 6. Cinny config points to wrong homeserver
-- `~/.config/bloom/cinny-config.json` has `"homeserverList": ["http://fedora"]`
+### 6. Gateway cinny-config points to wrong homeserver
+- Gateway's `cinny-config.json` has `"homeserverList": ["http://fedora"]`
 - Should be `http://localhost:6167` or `http://bloom:6167` for local Matrix
 - Users connecting via NetBird from another device would need `http://<netbird-ip>:6167`
 
@@ -82,7 +82,7 @@ Significant progress since 2026-03-10. First-boot wizard runs partially (6/11 st
 - **NetBird**: Connected, 2/4 peers, IP 100.109.145.101/16
 - **Bloom directory**: Fully seeded — 4 persona files, 8 skills, guardrails.yaml, blueprint-versions.json
 - **Pi state**: ~/.pi/ with agent settings, auth, matrix credentials, sessions
-- **Quadlet deployment**: ~/.config/containers/systemd/ has bloom-cinny.container, bloom-dufs.container, bloom.network
+- **Quadlet deployment**: ~/.config/containers/systemd/ has bloom-gateway.container, bloom-dufs.container
 - **Pi daemon** (after override): Connected to Matrix, creating sessions, routing messages
 - **Audit log**: Active at ~/Bloom/audit/2026-03-11.jsonl
 - **Internet**: Outbound connectivity working (HTTP 200 from fedoraproject.org)

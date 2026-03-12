@@ -252,9 +252,9 @@ Canonical metadata for automation lives in `services/catalog.yaml`.
 
 | Bridge | Image | Health Port |
 |--------|-------|-------------|
-| whatsapp | `dock.mau.dev/mautrix/whatsapp:latest` | 29318 |
-| telegram | `dock.mau.dev/mautrix/telegram:latest` | 29300 |
-| signal | `dock.mau.dev/mautrix/signal:latest` | 29328 |
+| whatsapp | `dock.mau.dev/mautrix/whatsapp:v26.02` | 29318 |
+| telegram | `dock.mau.dev/mautrix/telegram:v0.15.3` | 29300 |
+| signal | `dock.mau.dev/mautrix/signal:v26.02.2` | 29328 |
 
 ## 🪞 Persona
 
@@ -288,8 +288,7 @@ See `ARCHITECTURE.md` for structural rules and enforcement checklist.
 | `frontmatter.ts` | `parseFrontmatter`, `stringifyFrontmatter`, `yaml` |
 | `filesystem.ts` | `safePath`, `getBloomDir` |
 | `exec.ts` | `run` (command execution, supports stdin `input`) |
-| `netbird.ts` | `loadNetBirdToken`, `getLocalMeshIp`, `ensureBloomZone`, `ensureServiceRecord` |
-| `service-routing.ts` | `ensureServiceRouting` (orchestrates DNS record creation) |
+| `gateway.ts` | `addGatewayRoute`, `generateCaddyfile`, `refreshGateway`, `GatewayRoutes` |
 | `git.ts` | `parseGithubSlugFromUrl`, `slugifyBranchPart` |
 | `repo.ts` | `getRemoteUrl`, `inferRepoUrl` |
 | `audit.ts` | `dayStamp`, `sanitize`, `summarizeInput` |

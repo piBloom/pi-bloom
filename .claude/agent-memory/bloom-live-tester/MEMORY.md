@@ -13,7 +13,7 @@
 - **dufs healthcheck broken**: Uses `wget` in HealthCmd but dufs image has no `wget`. Container runs fine but reports unhealthy permanently.
 - **bloom.network unused**: Defined in Quadlet but no container references it. Never created by podman.
 - **First-boot incomplete**: 5/11 steps pending (git_identity, contributing, persona, test_message, complete).
-- **Cinny homeserver config**: Points to `http://fedora` instead of correct Matrix address.
+- **Gateway cinny-config**: Points to `http://fedora` instead of correct Matrix address.
 - **nginx removed**: No longer in image (was present previously). Port 80 unused.
 
 ## Boot Timing
@@ -24,7 +24,7 @@
 
 ## Service Architecture (confirmed in VM)
 - **System services**: bloom-matrix (continuwuity:6167), netbird, bloom-update-check.timer
-- **User services**: bloom-cinny (:18810), bloom-dufs (:5000), pi-daemon
+- **User services**: bloom-gateway (:18810), bloom-dufs (:5000), pi-daemon
 - Quadlet files at `~/.config/containers/systemd/` (deployed by setup wizard, not baked into image)
 - pi-daemon has override.conf drop-in at `~/.config/systemd/user/pi-daemon.service.d/`
 
