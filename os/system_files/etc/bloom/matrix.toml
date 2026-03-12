@@ -2,7 +2,7 @@
 server_name = "bloom"
 database_path = "/var/lib/continuwuity"
 port = [6167]
-address = "0.0.0.0"
+address = "127.0.0.1"
 allow_federation = false
 allow_registration = true
 registration_token_file = "/var/lib/continuwuity/registration_token"
