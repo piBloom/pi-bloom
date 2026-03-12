@@ -15,7 +15,7 @@ bat
 htop
 just
 ShellCheck
-tmux
+zellij
 
 # Runtime
 nodejs
