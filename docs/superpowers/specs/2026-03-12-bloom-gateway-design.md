@@ -142,18 +142,44 @@ Setup step changes from:
 
 Cinny stores sessions in browser localStorage/IndexedDB. After first login, subsequent visits are automatic. No auto-login mechanism needed for v1.
 
+## Dynamic Route Registration
+
+The Caddyfile is **volume-mounted** (not baked into the image) at `~/.config/bloom/Caddyfile`. Routes are stored in `~/.config/bloom/gateway-routes.json`:
+
+```json
+{
+    "routes": {
+        "/_matrix": { "port": 6167, "strip_prefix": false },
+        "/webdav": { "port": 5000, "strip_prefix": true }
+    }
+}
+```
+
+When a service is installed:
+1. Its `gateway_path` from `catalog.yaml` is added to `gateway-routes.json`
+2. The Caddyfile is regenerated from the registry
+3. The gateway container is restarted
+
+Library: `lib/gateway.ts` (TypeScript) and `bloom-gateway-lib.sh` (bash for wizard).
+
+Services declare their route in `catalog.yaml`:
+```yaml
+  dufs:
+    gateway_path: /webdav
+    gateway_strip_prefix: true
+```
+
 ## Future Extensibility
 
 New services are added by:
-1. Adding a `handle_path` block to the Caddyfile
-2. Rebuilding the gateway container
-3. Updating the catalog
+1. Declaring `gateway_path` and `gateway_strip_prefix` in `catalog.yaml`
+2. Installing the service — route registration and Caddyfile regeneration happen automatically
 
-Examples: `/vscode/*` for code-server, `/obsidian/*` for hosted Obsidian.
+Examples: `/code/*` for code-server, `/obsidian/*` for hosted Obsidian.
 
 ## Notes
 
-- **No TLS**: HTTP-only for v1. NetBird mesh is already encrypted. Caddy's `:80` binding disables automatic HTTPS.
+- **No TLS**: HTTP-only for v1. NetBird mesh is already encrypted. Caddy's `:18810` binding disables automatic HTTPS.
 - **WebSocket**: Matrix sync uses long-polling/WebSocket. Caddy proxies WebSocket transparently by default.
 - **CORS**: Not needed — Cinny and Matrix API are same-origin.
-- **Caddyfile is baked into the image**: Routing changes require a rebuild. Volume-mounting the Caddyfile for runtime changes is a future option.
+- **Caddyfile is volume-mounted**: Generated dynamically from `gateway-routes.json`. No rebuild needed when adding services.
