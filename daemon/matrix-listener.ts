@@ -65,6 +65,11 @@ export class MatrixListener {
 		await this.client.sendText(roomId, text);
 	}
 
+	async setTyping(roomId: string, typing: boolean, timeoutMs = 30_000): Promise<void> {
+		if (!this.client) throw new Error("Matrix client not started");
+		await this.client.setTyping(roomId, typing, timeoutMs);
+	}
+
 	async getRoomAlias(roomId: string): Promise<string> {
 		if (!this.client) return roomId;
 		try {

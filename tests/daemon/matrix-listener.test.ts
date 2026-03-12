@@ -7,6 +7,7 @@ const mockStart = vi.fn().mockResolvedValue(undefined);
 const mockStop = vi.fn();
 const mockGetUserId = vi.fn().mockResolvedValue("@pi:bloom");
 const mockSendText = vi.fn().mockResolvedValue("$event1");
+const mockSetTyping = vi.fn().mockResolvedValue(undefined);
 const mockOn = vi.fn();
 
 vi.mock("matrix-bot-sdk", () => ({
@@ -15,6 +16,7 @@ vi.mock("matrix-bot-sdk", () => ({
 		stop = mockStop;
 		getUserId = mockGetUserId;
 		sendText = mockSendText;
+		setTyping = mockSetTyping;
 		on = mockOn;
 	},
 	SimpleFsStorageProvider: class {},
@@ -76,6 +78,18 @@ describe("MatrixListener", () => {
 		await listener.start();
 		await listener.sendText("!abc:bloom", "Hello");
 		expect(mockSendText).toHaveBeenCalledWith("!abc:bloom", "Hello");
+	});
+
+	it("sets typing state in a room", async () => {
+		const listener = new MatrixListener({
+			credentialsPath: credsPath,
+			storagePath: join(dir, "state.json"),
+			onMessage: vi.fn(),
+		});
+
+		await listener.start();
+		await listener.setTyping("!abc:bloom", true, 15_000);
+		expect(mockSetTyping).toHaveBeenCalledWith("!abc:bloom", true, 15_000);
 	});
 
 	it("calls onMessage when room.message fires", async () => {
