@@ -125,7 +125,6 @@ export class SessionPool {
 			sessionPath: session.sessionFile ?? join(sessionDir, `${randomUUID()}.jsonl`),
 			created: entry?.created ?? now,
 			lastActive: now,
-			archived: false,
 		});
 
 		return session;

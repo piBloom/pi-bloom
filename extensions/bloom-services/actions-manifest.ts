@@ -109,7 +109,7 @@ export async function handleManifestSync(
 	if (drifts.length === 0) {
 		return {
 			content: [{ type: "text" as const, text: "No drift detected. Manifest matches running state." }],
-			details: {} as Manifest,
+			details: { services: {} },
 		};
 	}
 	return {
@@ -119,7 +119,7 @@ export async function handleManifestSync(
 				text: `${drifts.length} drift(s) detected:\n${drifts.join("\n")}\n\nRun manifest_sync with mode='update' to reconcile.`,
 			},
 		],
-		details: { drifts } as unknown as Manifest,
+		details: { services: {}, drifts },
 	};
 }
 

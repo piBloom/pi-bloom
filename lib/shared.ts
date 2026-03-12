@@ -16,14 +16,6 @@ export function errorResult(message: string) {
 	};
 }
 
-/** Build a standardized Pi tool success response with text content. */
-export function textResult(text: string, details: Record<string, unknown> = {}) {
-	return {
-		content: [{ type: "text" as const, text }],
-		details,
-	};
-}
-
 /** Prompt the user for confirmation via UI. Returns null if confirmed, error message if declined or no UI. */
 export async function requireConfirmation(
 	ctx: ExtensionContext,

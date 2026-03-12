@@ -21,6 +21,15 @@ export function walkMdFiles(dir: string): string[] {
 	return fs.globSync("**/*.md", { cwd: dir }).map((f) => path.join(dir, f));
 }
 
+function parseFieldValue(key: string, val: string): unknown {
+	return key === "tags" || key === "links"
+		? val
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean)
+		: val;
+}
+
 /** Create a new markdown object. */
 export function createObject(params: { type: string; slug: string; fields?: Record<string, string>; path?: string }) {
 	const bloomDir = getBloomDir();
@@ -34,27 +43,18 @@ export function createObject(params: { type: string; slug: string; fields?: Reco
 
 	const fields = params.fields ?? {};
 	const now = nowIso();
-	const priorityKeys = ["type", "slug", "title", "status", "priority"];
 	const data: Record<string, unknown> = {
 		type: params.type,
 		slug: params.slug,
 	};
 
-	for (const k of priorityKeys.slice(2)) {
+	// Add known fields first for consistent ordering, then remaining fields sorted
+	for (const k of ["title", "status", "priority"]) {
 		if (k in fields) data[k] = fields[k];
 	}
-	for (const k of Object.keys(fields)
-		.filter((k) => !priorityKeys.includes(k))
-		.sort()) {
-		const val = fields[k];
-		if (k === "tags" || k === "links") {
-			data[k] = val
-				.split(",")
-				.map((s) => s.trim())
-				.filter(Boolean);
-		} else {
-			data[k] = val;
-		}
+	for (const k of Object.keys(fields).sort()) {
+		if (k in data) continue;
+		data[k] = parseFieldValue(k, fields[k]);
 	}
 	data.origin = "pi";
 	data.created = now;

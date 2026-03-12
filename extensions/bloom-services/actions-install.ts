@@ -71,8 +71,7 @@ async function installDependency(
 
 	if (depCatalog?.port) {
 		const depRouting = await ensureServiceRouting(dep, signal);
-		if (!depRouting.dns.ok && !depRouting.dns.skipped)
-			log.warn("dep DNS record failed", { dep, error: depRouting.dns.error });
+		if (!depRouting.ok && !depRouting.skipped) log.warn("dep DNS record failed", { dep, error: depRouting.error });
 	}
 
 	const depManifest = loadManifest(manifestPath);
@@ -143,8 +142,7 @@ export async function handleInstall(
 	// Set up DNS routing if port is defined
 	if (catalogEntry?.port) {
 		const routing = await ensureServiceRouting(params.name, signal);
-		if (!routing.dns.ok && !routing.dns.skipped)
-			log.warn("DNS record failed", { service: params.name, error: routing.dns.error });
+		if (!routing.ok && !routing.skipped) log.warn("DNS record failed", { service: params.name, error: routing.error });
 	}
 
 	const skillDir = join(bloomDir, "Skills", params.name);

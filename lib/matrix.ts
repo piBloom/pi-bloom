@@ -78,11 +78,12 @@ export async function registerMatrixAccount(
 		return { ok: true, userId: data.user_id, accessToken: data.access_token };
 	}
 
+	const step1Body = (await step1.json()) as { session?: string; errcode?: string; error?: string };
+
 	if (step1.status !== 401) {
-		return parseRegistrationError(await step1.json(), step1.status);
+		return parseRegistrationError(step1Body, step1.status);
 	}
 
-	const step1Body = (await step1.json()) as { session?: string };
 	const session = step1Body.session;
 	if (!session) return { ok: false, error: "No session ID in 401 response" };
 

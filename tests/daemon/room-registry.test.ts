@@ -29,7 +29,6 @@ describe("RoomRegistry", () => {
 				sessionPath: "/home/pi/.pi/agent/sessions/bloom-rooms/session.jsonl",
 				created: "2026-03-11T15:00:00Z",
 				lastActive: "2026-03-11T16:00:00Z",
-				archived: false,
 			},
 		};
 		writeFileSync(registryPath, JSON.stringify(data));
@@ -44,7 +43,6 @@ describe("RoomRegistry", () => {
 			sessionPath: "/tmp/session.jsonl",
 			created: "2026-03-11T15:00:00Z",
 			lastActive: "2026-03-11T15:00:00Z",
-			archived: false,
 		};
 		reg.set("!xyz:bloom", entry);
 		expect(reg.get("!xyz:bloom")).toEqual(entry);
@@ -59,7 +57,6 @@ describe("RoomRegistry", () => {
 			sessionPath: "/tmp/s.jsonl",
 			created: "2026-03-11T15:00:00Z",
 			lastActive: "2026-03-11T15:00:00Z",
-			archived: false,
 		});
 		reg.touch("!abc:bloom");
 		const entry = reg.get("!abc:bloom");

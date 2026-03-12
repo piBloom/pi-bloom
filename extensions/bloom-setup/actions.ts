@@ -12,10 +12,9 @@ import {
 	getStepsSummary,
 	isSetupComplete,
 	type SetupState,
-	STEP_ORDER,
 	type StepName,
 } from "../../lib/setup.js";
-import { createLogger, errorResult } from "../../lib/shared.js";
+import { createLogger } from "../../lib/shared.js";
 import { STEP_GUIDANCE } from "./step-guidance.js";
 
 const log = createLogger("bloom-setup");
@@ -109,18 +108,9 @@ export function handleSetupStatus() {
 }
 
 /** Handle setup_advance tool call. */
-export async function handleSetupAdvance(params: { step: string; result: string; reason?: string }) {
-	const step = params.step as StepName;
-	if (!STEP_ORDER.includes(step)) {
-		return errorResult(`Unknown step: ${step}. Valid steps: ${STEP_ORDER.join(", ")}`);
-	}
-
-	const result = params.result as "completed" | "skipped";
-	if (result !== "completed" && result !== "skipped") {
-		return errorResult(`Result must be "completed" or "skipped", got: ${result}`);
-	}
-
+export async function handleSetupAdvance(params: { step: StepName; result: "completed" | "skipped"; reason?: string }) {
 	let state = loadState();
+	const { step, result } = params;
 	state = advanceStep(state, step, result, params.reason);
 	saveState(state);
 
@@ -133,7 +123,7 @@ export async function handleSetupAdvance(params: { step: string; result: string;
 					text: "Setup complete! All steps finished. The setup wizard will not run on next login.",
 				},
 			],
-			details: { complete: true },
+			details: {},
 		};
 	}
 
@@ -149,24 +139,20 @@ export async function handleSetupAdvance(params: { step: string; result: string;
 
 	return {
 		content: [{ type: "text" as const, text: lines.join("\n") }],
-		details: { nextStep: next, complete: false },
+		details: {},
 	};
 }
 
 /** Handle setup_reset tool call. */
-export function handleSetupReset(params: { step?: string }) {
+export function handleSetupReset(params: { step?: StepName }) {
 	if (params.step) {
-		const step = params.step as StepName;
-		if (!STEP_ORDER.includes(step)) {
-			return errorResult(`Unknown step: ${step}. Valid steps: ${STEP_ORDER.join(", ")}`);
-		}
 		const state = loadState();
-		state.steps[step] = { status: "pending" };
+		state.steps[params.step] = { status: "pending" };
 		state.completedAt = null;
 		saveState(state);
 		return {
-			content: [{ type: "text" as const, text: `Step "${step}" reset to pending.` }],
-			details: { step },
+			content: [{ type: "text" as const, text: `Step "${params.step}" reset to pending.` }],
+			details: {} as Record<string, unknown>,
 		};
 	}
 
@@ -175,7 +161,7 @@ export function handleSetupReset(params: { step?: string }) {
 	saveState(state);
 	return {
 		content: [{ type: "text" as const, text: "Full setup reset. All steps are pending." }],
-		details: { fullReset: true },
+		details: {} as Record<string, unknown>,
 	};
 }
 

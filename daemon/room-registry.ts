@@ -13,7 +13,6 @@ export interface RoomEntry {
 	sessionPath: string;
 	created: string;
 	lastActive: string;
-	archived: boolean;
 }
 
 export class RoomRegistry {

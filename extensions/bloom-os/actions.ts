@@ -19,30 +19,14 @@ export async function handleBootc(
 		const denied = await requireConfirmation(ctx, `OS ${action}`);
 		if (denied) return errorResult(denied);
 	}
-	let cmd: string;
-	let args: string[];
-	switch (action) {
-		case "status":
-			cmd = "bootc";
-			args = ["status"];
-			break;
-		case "check":
-			cmd = "bootc";
-			args = ["upgrade", "--check"];
-			break;
-		case "download":
-			cmd = "sudo";
-			args = ["bootc", "upgrade"];
-			break;
-		case "apply":
-			cmd = "sudo";
-			args = ["bootc", "upgrade", "--apply"];
-			break;
-		case "rollback":
-			cmd = "sudo";
-			args = ["bootc", "rollback"];
-			break;
-	}
+	const commands = {
+		status: ["bootc", "status"],
+		check: ["bootc", "upgrade", "--check"],
+		download: ["sudo", "bootc", "upgrade"],
+		apply: ["sudo", "bootc", "upgrade", "--apply"],
+		rollback: ["sudo", "bootc", "rollback"],
+	} as const;
+	const [cmd, ...args] = commands[action];
 	const result = await run(cmd, args, signal);
 	let text: string;
 	if (result.exitCode !== 0) {

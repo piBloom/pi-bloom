@@ -32,7 +32,7 @@ export function writeBlueprintVersions(bloomDir: string, versions: BlueprintVers
 
 // --- Hashing ---
 
-export function hashContent(content: string): string {
+function hashContent(content: string): string {
 	return createHash("sha256").update(content).digest("hex");
 }
 

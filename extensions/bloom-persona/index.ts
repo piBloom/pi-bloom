@@ -18,8 +18,7 @@ import {
 export default function (pi: ExtensionAPI) {
 	let personaBlock: string | undefined;
 	let guardrails: ReturnType<typeof loadGuardrails> | undefined;
-	let restoredContext: ReturnType<typeof loadContext> = null;
-	let contextRestored = false;
+	let restoredContext: ReturnType<typeof loadContext> | undefined;
 
 	pi.on("session_start", () => {
 		pi.setSessionName("Bloom");
@@ -32,10 +31,9 @@ export default function (pi: ExtensionAPI) {
 
 		let systemPrompt = `${personaBlock}\n\n${event.systemPrompt}`;
 
-		// Inject restored context after compaction
-		if (!contextRestored) {
+		// Inject restored context once after compaction
+		if (restoredContext === undefined) {
 			restoredContext = loadContext();
-			contextRestored = true;
 		}
 		if (restoredContext) {
 			systemPrompt += buildRestoredContextBlock(restoredContext);

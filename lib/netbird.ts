@@ -44,14 +44,9 @@ interface DnsResult {
 // Token loading
 // ---------------------------------------------------------------------------
 
-/** Path to the NetBird API token env file. */
-function netbirdEnvPath(): string {
-	return join(os.homedir(), ".config", "bloom", "netbird.env");
-}
-
 /** Load NetBird API token from `~/.config/bloom/netbird.env`. Returns null if missing. */
 export function loadNetBirdToken(): string | null {
-	const envPath = netbirdEnvPath();
+	const envPath = join(os.homedir(), ".config", "bloom", "netbird.env");
 	if (!existsSync(envPath)) return null;
 	try {
 		const content = readFileSync(envPath, "utf-8");
@@ -178,14 +173,9 @@ async function createRecord(
 // Zone ID caching
 // ---------------------------------------------------------------------------
 
-/** Path to the cached zone ID file. */
-function zoneCachePath(): string {
-	return join(os.homedir(), ".config", "bloom", "netbird-zone.json");
-}
-
 /** Load cached zone ID from disk. Returns null if missing or invalid. */
 export function loadCachedZoneId(): string | null {
-	const cachePath = zoneCachePath();
+	const cachePath = join(os.homedir(), ".config", "bloom", "netbird-zone.json");
 	if (!existsSync(cachePath)) return null;
 	try {
 		const data = JSON.parse(readFileSync(cachePath, "utf-8"));
@@ -197,7 +187,7 @@ export function loadCachedZoneId(): string | null {
 
 /** Save zone ID to cache file. */
 export function saveCachedZoneId(zoneId: string): void {
-	const cachePath = zoneCachePath();
+	const cachePath = join(os.homedir(), ".config", "bloom", "netbird-zone.json");
 	mkdirSync(dirname(cachePath), { recursive: true });
 	writeFileSync(cachePath, JSON.stringify({ zoneId, domain: BLOOM_ZONE_DOMAIN }));
 }

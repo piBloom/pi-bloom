@@ -46,15 +46,10 @@ export function validatePinnedImage(image: string): string | null {
 	return null;
 }
 
-/** Check if an error message indicates a missing command (ENOENT, not found, etc.). */
-function commandMissingError(text: string): boolean {
-	return /ENOENT|not found|No such file/i.test(text);
-}
-
 /** Check whether a CLI command is available on this system. */
 export async function commandExists(cmd: string, signal?: AbortSignal): Promise<boolean> {
 	if (!/^[a-zA-Z0-9._+-]+$/.test(cmd)) return false;
 	const check = await run(cmd, ["--version"], signal);
 	if (check.exitCode === 0) return true;
-	return !commandMissingError(check.stderr || check.stdout);
+	return !/ENOENT|not found|No such file/i.test(check.stderr || check.stdout);
 }

@@ -14,7 +14,7 @@ const RETENTION_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Get the audit directory path. */
-export function auditDir(): string {
+function auditDir(): string {
 	return join(getBloomDir(), "audit");
 }
 
