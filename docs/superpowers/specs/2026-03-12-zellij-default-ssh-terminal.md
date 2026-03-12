@@ -26,9 +26,10 @@ Zellij launches from `.bash_profile` using a guard-based approach. The modified 
 # Source .bashrc for env vars (BLOOM_DIR, PATH, etc.)
 [ -f ~/.bashrc ] && . ~/.bashrc
 
-# Auto-launch Zellij on interactive login (skip if escape hatch or already inside Zellij)
-if [ -t 0 ] && [ -z "$ZELLIJ" ] && [ -z "$BLOOM_NO_ZELLIJ" ]; then
-  exec zellij --layout bloom
+# Auto-launch Zellij on interactive SSH login (skip if escape hatch or already inside Zellij)
+# Guards: interactive TTY, SSH session, not already in Zellij, no escape hatch env var
+if [ -t 0 ] && [ -n "$SSH_CONNECTION" ] && [ -z "$ZELLIJ" ] && [ -z "$BLOOM_NO_ZELLIJ" ]; then
+  exec zellij attach bloom --create --layout bloom
 fi
 
 # Start Pi on interactive login (only one instance — atomic mkdir lock)
@@ -43,14 +44,18 @@ fi
 
 **Flow**:
 1. Source env vars from `.bashrc`
-2. If interactive + not inside Zellij + no escape hatch → `exec zellij --layout bloom`
-3. Zellij spawns Tab 1 with `bash -l` → `.bash_profile` re-runs → `$ZELLIJ` is set, step 2 skipped
-4. Falls through to Pi launch block (only one instance via atomic mkdir lock)
+2. If interactive + SSH session + not inside Zellij + no escape hatch → `exec zellij attach --create --layout bloom`
+3. Zellij attaches to an existing session (if one exists) or creates a new session with the bloom layout
+4. On new session: Zellij spawns Tab 1 with `bash -l` → `.bash_profile` re-runs → `$ZELLIJ` is set, step 2 skipped → falls through to Pi launch block
+5. On attach: Zellij restores previous session state (no `.bash_profile` re-run needed)
+
+**SSH-only guard**: The `$SSH_CONNECTION` check ensures Zellij only launches over SSH. Physical console login (getty autologin on tty1) and serial console access skip Zellij and go straight to the Pi TUI as before. Note: `ssh pi@localhost` from within the machine will trigger Zellij — this is correct behavior since it's still an SSH session.
+
+**SCP/SFTP safety**: SCP and SFTP sessions do not allocate a TTY, so `[ -t 0 ]` returns false and the Zellij block is skipped. The `$SSH_CONNECTION` var is set for SCP/SFTP, but the `[ -t 0 ]` guard provides the necessary protection.
 
 **Escape hatches**:
-- `BLOOM_NO_ZELLIJ=1 ssh pi@host` — skips Zellij, drops to plain bash
-- `ssh pi@host -- bash` — non-login shell, `.bash_profile` not sourced
-- `ssh pi@host -- <command>` — runs command directly, no Zellij
+- `BLOOM_NO_ZELLIJ=1 ssh pi@host` — skips Zellij, drops to plain bash + Pi
+- `ssh pi@host -- <command>` — runs command directly (non-login, non-interactive), no Zellij
 
 ### Zellij Layout
 
@@ -64,7 +69,7 @@ layout {
         }
     }
     tab name="Shell" {
-        pane
+        pane command="bash"
     }
     tab name="Logs" {
         pane command="journalctl" {
@@ -74,18 +79,21 @@ layout {
 }
 ```
 
-- **Tab 1 "Pi"** (focused): Login bash triggering greeting → `exec pi`
-- **Tab 2 "Shell"**: Plain shell for ad-hoc commands
-- **Tab 3 "Logs"**: Follows user-scoped systemd journal (Pi daemon, services)
+**Pane shell types**:
+- **Tab 1 "Pi"**: Runs `bash -l` (login shell) → sources `.bash_profile` → `$ZELLIJ` is set so Zellij guard is skipped → hits Pi launch block → greeting + `exec pi`
+- **Tab 2 "Shell"**: Explicit `command="bash"` (no `-l` flag) runs bash as a non-login shell → `.bash_profile` is NOT sourced → plain shell prompt, no Pi auto-launch
+- **Tab 3 "Logs"**: Runs `journalctl --user -f` directly — follows user-scoped systemd journal (Pi daemon, services)
+
+**Pi exit behavior**: When the user quits Pi in Tab 1, the `exec pi` process ends, which closes the pane/tab. This is intentional — exiting Pi signals the user is done with that session. Tabs 2 and 3 remain available. To restart Pi, the user can open a new pane and run `pi` manually, or disconnect and reconnect to get a fresh session.
 
 ### Reconnect Behavior
 
-Zellij's built-in session management handles reconnection:
-- **First connect**: Creates a new session automatically
-- **Reconnect (existing session found)**: Zellij shows its built-in session picker — user chooses to attach or create new
-- **Reconnect (no existing session)**: Creates new session automatically
+The `zellij attach bloom --create --layout bloom` invocation handles reconnection using a named session ("bloom") for predictable behavior:
+- **First connect (no existing session)**: Creates a new session named "bloom" with the bloom layout
+- **Reconnect (session "bloom" exists)**: Attaches to the existing session, restoring its prior state
+- **Session "bloom" is already attached**: Zellij shows an error; user can create a differently-named session manually
 
-No custom scripting needed. The `--layout bloom` flag only applies on new session creation; attaching to an existing session restores its prior state.
+The `--layout bloom` flag only applies when creating a new session; it is ignored when attaching to an existing session. Using a named session avoids orphaned sessions accumulating after unclean disconnects.
 
 ### Zellij Configuration
 
@@ -94,6 +102,8 @@ No custom Zellij configuration beyond the layout file. Stock Zellij defaults pro
 - Discoverable mode-based UI
 - Session persistence across disconnects
 - Sensible default keybindings
+
+Stock keybindings use `Ctrl+<key>` which may occasionally conflict with terminal applications (e.g., `Ctrl+O` in nano). This is a known Zellij trade-off accepted for the discoverability benefits. Users can customize keybindings in `~/.config/zellij/config.kdl` if needed.
 
 ## Files Changed
 
@@ -107,5 +117,7 @@ No custom Zellij configuration beyond the layout file. Stock Zellij defaults pro
 
 - Custom Zellij themes or branding
 - Zellij plugins
+- Custom keybinding configuration
 - Multiple layout options
 - tmux compatibility layer or fallback
+- Stale Pi session lock cleanup (pre-existing concern, not introduced by this change)
