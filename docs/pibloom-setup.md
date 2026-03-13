@@ -27,7 +27,7 @@ The `bloom-wizard.sh` script runs automatically on first interactive login. It h
 3. **NetBird** — provide a setup key from app.netbird.io
 4. **Matrix** — choose a username, accounts created automatically
 5. **Git identity** — name and email for commits
-6. **Services** — optional dufs (WebDAV) and gateway (Caddy + Cinny web client)
+6. **Services** — optional dufs (WebDAV)
 
 After completion, the wizard touches `~/.bloom/.setup-complete` and starts Pi.
 

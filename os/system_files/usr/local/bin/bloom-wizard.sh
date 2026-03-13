@@ -15,9 +15,6 @@ BLOOM_CONFIG="$HOME/.config/bloom"
 PI_DIR="$HOME/.pi"
 MATRIX_HOMESERVER="http://localhost:6167"
 
-# shellcheck source=/dev/null
-source /usr/local/bin/bloom-gateway-lib.sh
-
 # --- Checkpoint helpers ---
 
 step_done() { [[ -f "$WIZARD_STATE/$1" ]]; }
@@ -142,18 +139,6 @@ install_service() {
 	# Prefer socket activation if socket unit exists
 	[[ -f "$SYSTEMD_USER_DIR/bloom-${name}.socket" ]] && target="bloom-${name}.socket"
 	systemctl --user start "$target"
-}
-
-# Build a localhost/* container image from a service's Containerfile
-# Usage: build_local_image <name>  →  builds localhost/bloom-<name>:latest
-build_local_image() {
-	local name="$1"
-	local svc_dir="${BLOOM_SERVICES}/${name}"
-	if [[ ! -f "$svc_dir/Containerfile" ]]; then
-		echo "  Containerfile not found: ${svc_dir}/Containerfile" >&2
-		return 1
-	fi
-	podman build -t "localhost/bloom-${name}:latest" -f "$svc_dir/Containerfile" "$svc_dir"
 }
 
 # --- Step functions ---
@@ -455,31 +440,6 @@ step_services() {
 		else
 			echo "  dufs installation failed."
 		fi
-	fi
-
-	read -rp "Install Bloom Gateway? (web access to Matrix chat + file server) [y/N]: " gateway_answer
-	if [[ "${gateway_answer,,}" == "y" ]]; then
-		echo "  Building gateway image (this may take a minute)..."
-		if build_local_image gateway; then
-			# Register Matrix route (always present when gateway is installed)
-			gateway_add_route "/_matrix" 6167 false
-			gateway_regenerate
-			if install_service gateway; then
-				echo "  Gateway installed."
-				installed="${installed} gateway"
-			else
-				echo "  Gateway installation failed."
-			fi
-		else
-			echo "  Gateway image build failed."
-		fi
-	fi
-
-	# Register dufs route if both gateway and dufs were installed
-	if [[ "$installed" == *gateway* ]] && [[ "$installed" == *dufs* ]]; then
-		gateway_add_route "/webdav" 5000 true
-		gateway_regenerate
-		gateway_restart
 	fi
 
 	mark_done_with services "${installed:-none}"

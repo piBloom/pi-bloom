@@ -7,14 +7,14 @@ Wants=network-online.target
 Image=docker.io/sigoden/dufs:v0.38.0
 ContainerName=bloom-dufs
 
-# Host networking — localhost only, accessed via bloom-gateway reverse proxy
+# Host networking for direct mesh access
 Network=host
 
 # Serve the user's home directory (no SELinux relabel — use label=disable)
 Volume=%h:/data
 
-# Localhost only — proxied via bloom-gateway on :18810/webdav/
-Exec=/data -A -b 127.0.0.1 -p 5000
+# Listen on all host interfaces (mesh access controlled by network + auth)
+Exec=/data -A -b 0.0.0.0 -p 5000
 
 PodmanArgs=--memory=128m
 PodmanArgs=--security-opt label=disable

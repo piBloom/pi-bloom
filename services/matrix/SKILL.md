@@ -10,14 +10,14 @@ Native Continuwuity Matrix server baked into the Bloom OS image.
 
 ## Overview
 
-Bloom runs its own Matrix homeserver as a native systemd service (`bloom-matrix.service`). Users register with any Matrix client (Cinny at `http://<host>/`, or any other client) and message Pi directly. No data leaves the device. No federation — fully private.
+Bloom runs its own Matrix homeserver as a native systemd service (`bloom-matrix.service`). Users register with any Matrix client and message Pi directly. No data leaves the device. No federation — fully private.
 
 ## Setup
 
 The Matrix server starts automatically on boot. User accounts are created during the first-boot setup:
 
 1. Pi creates a bot account (`@pi:bloom`) automatically
-2. Pi guides the user to register via Cinny or their preferred Matrix client
+2. Pi guides the user to register with their preferred Matrix client
 3. User creates a DM with `@pi:bloom`
 
 ## Configuration
@@ -27,7 +27,6 @@ The Matrix server starts automatically on boot. User accounts are created during
 - Registration: token-required (see `/var/lib/continuwuity/registration_token`)
 - Federation: disabled
 - Data: `/var/lib/continuwuity/`
-- Web client: Cinny at `http://<host>/` (served by bloom-gateway)
 
 ## Bridges
 

@@ -61,7 +61,6 @@ lib/
   frontmatter.ts   # parseFrontmatter, stringifyFrontmatter
   filesystem.ts    # safePath, getBloomDir, getQuadletDir, getUpdateStatusPath
   exec.ts          # command execution (run)
-  gateway.ts       # gateway route registry and Caddyfile generation
   git.ts           # git utilities (parseGithubSlugFromUrl, slugifyBranchPart)
   repo.ts          # git remote helpers (getRemoteUrl, inferRepoUrl)
   audit.ts         # audit utilities (dayStamp, sanitize, summarizeInput)

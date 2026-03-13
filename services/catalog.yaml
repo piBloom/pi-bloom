@@ -7,16 +7,6 @@ services:
     image: docker.io/sigoden/dufs:v0.38.0
     optional: false
     port: 5000
-    gateway_path: /webdav
-    gateway_strip_prefix: true
-    preflight:
-      commands: [podman, systemctl]
-  gateway:
-    version: "0.1.0"
-    category: communication
-    image: localhost/bloom-gateway:latest
-    optional: false
-    port: 18810
     preflight:
       commands: [podman, systemctl]
   code-server:
@@ -25,8 +15,6 @@ services:
     image: localhost/bloom-code-server:latest
     optional: true
     port: 8443
-    gateway_path: /code
-    gateway_strip_prefix: true
     preflight:
       commands: [podman, systemctl]
 

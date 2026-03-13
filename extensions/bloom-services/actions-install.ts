@@ -7,7 +7,6 @@ import { join } from "node:path";
 import { run } from "../../lib/exec.js";
 import { getQuadletDir } from "../../lib/filesystem.js";
 import { parseFrontmatter } from "../../lib/frontmatter.js";
-import { addGatewayRoute, refreshGateway } from "../../lib/gateway.js";
 import { loadServiceCatalog, servicePreflightErrors } from "../../lib/services-catalog.js";
 import { loadManifest, saveManifest } from "../../lib/services-manifest.js";
 import { validateServiceName } from "../../lib/services-validation.js";
@@ -144,12 +143,6 @@ export async function handleInstall(
 			enabled: true,
 		};
 		saveManifest(manifest, manifestPath);
-	}
-
-	// Register gateway route if the service declares one
-	if (catalogEntry?.gateway_path && catalogEntry.port) {
-		addGatewayRoute(catalogEntry.gateway_path, catalogEntry.port, catalogEntry.gateway_strip_prefix ?? false);
-		await refreshGateway(signal);
 	}
 
 	// Auto-install dependencies (e.g., backend for frontend)

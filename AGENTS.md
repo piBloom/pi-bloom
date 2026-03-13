@@ -246,7 +246,6 @@ Canonical metadata for automation lives in `services/catalog.yaml`.
 
 | Service | Category | Port | Subdomain | Type |
 |---------|----------|------|-----------|------|
-| `bloom-gateway` | communication | 18810 | `gateway.bloom.mesh` | Podman Quadlet |
 | `bloom-dufs` | sync | 5000 | `dufs.bloom.mesh` | Podman Quadlet |
 
 ### Bridges (on-demand via `bridge_create`)
@@ -289,7 +288,6 @@ See `ARCHITECTURE.md` for structural rules and enforcement checklist.
 | `frontmatter.ts` | `parseFrontmatter`, `stringifyFrontmatter`, `yaml` |
 | `filesystem.ts` | `safePath`, `getBloomDir` |
 | `exec.ts` | `run` (command execution, supports stdin `input`) |
-| `gateway.ts` | `addGatewayRoute`, `generateCaddyfile`, `refreshGateway`, `GatewayRoutes` |
 | `git.ts` | `parseGithubSlugFromUrl`, `slugifyBranchPart` |
 | `repo.ts` | `getRemoteUrl`, `inferRepoUrl` |
 | `audit.ts` | `dayStamp`, `sanitize`, `summarizeInput` |

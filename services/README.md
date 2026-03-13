@@ -66,7 +66,6 @@ Use as a template for frontmatter, Quadlet layout, health checks, and local inst
 
 | Service | Category | Port | Description |
 |---------|----------|------|-------------|
-| `gateway` | communication | 18810 | Caddy gateway (serves Cinny, Matrix well-known, and routes) |
 | `dufs` | sync | 5000 | WebDAV file server via dufs |
 | `code-server` | development | 8443 | VS Code in the browser (optional) |
 

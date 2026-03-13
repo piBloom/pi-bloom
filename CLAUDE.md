@@ -15,7 +15,7 @@ Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension
 - **Extensions**: `extensions/bloom-{name}/` — directory per extension with `index.ts` (wiring), `actions.ts` (handlers), `types.ts`
 - **lib/**: Pure logic organized by capability (`filesystem.ts`, `shared.ts`, `matrix.ts`, `exec.ts`, etc.)
 - **Skills**: `skills/` — 6 Pi skill markdown files (first-boot, os-operations, object-store, service-management, self-evolution, recovery)
-- **Services**: `services/` — containerized services (gateway, dufs, code-server). Scaffolded from template. Matrix and NetBird are native OS services. Bridge metadata in `services/catalog.yaml`
+- **Services**: `services/` — containerized services (dufs, code-server). Scaffolded from template. Matrix and NetBird are native OS services. Bridge metadata in `services/catalog.yaml`
 - **Persona**: `persona/` — OpenPersona 4-layer identity (SOUL.md, BODY.md, FACULTY.md, SKILL.md) — seeded to `~/Bloom/` on first run
 - **Guardrails**: `guardrails.yaml` — bash patterns blocked by bloom-persona (rm -rf, mkfs, dd, fork bombs, eval, pipe-to-shell, force-push, etc.)
 - **User home**: `$HOME` — the user's space, accessible via dufs WebDAV
@@ -35,8 +35,6 @@ Bloom extends Pi through three mechanisms, lightest first: **Skill → Extension
 | `~/Bloom/Objects/` | Tracked objects (notes, tasks, etc.) | Yes |
 | `~/.pi/` | Pi agent state, sessions | No |
 | `~/.pi/bloom-context.json` | Compaction context persistence | No |
-| `~/.config/bloom/gateway-routes.json` | Gateway route registry | No |
-| `~/.config/bloom/Caddyfile` | Generated Caddyfile for gateway | No |
 | `~/.config/containers/systemd/` | Quadlet container units | No |
 | `~/.pi/matrix-credentials.json` | Pi's Matrix login credentials | No |
 | `/var/lib/continuwuity/` | Matrix homeserver data | No |

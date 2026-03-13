@@ -16,7 +16,6 @@ bat
 htop
 just
 ShellCheck
-zellij
 
 # Runtime
 nodejs

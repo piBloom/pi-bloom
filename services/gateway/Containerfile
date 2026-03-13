@@ -1,4 +1,0 @@
-FROM ghcr.io/cinnyapp/cinny:v4.3.0 AS cinny
-FROM docker.io/library/caddy:2-alpine
-COPY --from=cinny /usr/share/nginx/html /srv/cinny
-COPY cinny-config.json /srv/cinny/config.json

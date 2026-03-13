@@ -7,7 +7,7 @@ cp -avf /ctx/files/. /
 
 # Fix permissions that git doesn't preserve
 chmod 0440 /etc/sudoers.d/10-bloom
-chmod +x /usr/local/bin/bloom-greeting.sh /usr/local/bin/bloom-update-check.sh /usr/local/bin/bloom-wizard.sh /usr/local/bin/bloom-gateway-lib.sh
+chmod +x /usr/local/bin/bloom-greeting.sh /usr/local/bin/bloom-update-check.sh /usr/local/bin/bloom-wizard.sh
 
 # Apply only Bloom's preset entries (not all system presets)
 systemctl preset \

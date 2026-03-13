@@ -104,20 +104,13 @@ Replace `/dev/sdX` with the target disk.
 
 ---
 
-## Remote access (SSH + Zellij)
+## Remote access (SSH)
 
-Bloom OS is accessed via SSH. Zellij auto-launches on SSH login with a tab-based layout (Pi, Shell, Logs).
+Bloom OS is accessed via SSH.
 
 ```bash
 # SSH into your Bloom (replace with your NetBird IP or hostname)
 ssh pi@<netbird-ip>
-```
-
-Zellij launches automatically — no manual setup needed. To skip Zellij:
-
-```bash
-export BLOOM_NO_ZELLIJ=1
-ssh -o SendEnv=BLOOM_NO_ZELLIJ pi@<netbird-ip>
 ```
 
 ## Related

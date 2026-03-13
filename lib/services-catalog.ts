@@ -30,10 +30,6 @@ export interface ServiceCatalogEntry {
 	depends?: string[];
 	/** Host port for direct mesh access and DNS routing. */
 	port?: number;
-	/** Gateway reverse-proxy path prefix (e.g. /webdav). If set, route is registered on install. */
-	gateway_path?: string;
-	/** Strip the path prefix when proxying. Defaults to false. */
-	gateway_strip_prefix?: boolean;
 	models?: Array<{
 		volume: string;
 		path: string;

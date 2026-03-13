@@ -83,7 +83,6 @@ Container services:
 
 | Service | What | Type |
 |---------|------|------|
-| `bloom-gateway` | Caddy gateway (Cinny web client, Matrix well-known, service routes) | Podman Quadlet |
 | `bloom-dufs` | WebDAV file server | Podman Quadlet |
 
 ### 🪞 Persona
@@ -170,7 +169,7 @@ Once the OS is running, the `first-boot` skill walks through setup:
 2. GitHub authentication
 3. Device git identity
 4. dufs setup (WebDAV file server)
-5. Matrix messaging setup (native homeserver + Cinny web client)
+5. Matrix messaging setup (native homeserver)
 
 See [docs/pibloom-setup.md](docs/pibloom-setup.md) for the full guide.
 
@@ -180,7 +179,7 @@ The Bloom OS image (`os/Containerfile`) is based on **Fedora bootc 42** and incl
 
 - **Runtime**: Node.js, Pi, Claude Code
 - **Containers**: Podman, Buildah, Skopeo, oras
-- **Tools**: zellij, git, gh, ripgrep, fd, bat, VS Code
+- **Tools**: git, gh, ripgrep, fd, bat, VS Code
 - **User**: `pi` with rootless Podman and passwordless sudo for first-boot
 
 Atomic updates via `bootc upgrade` with automatic rollback support.
