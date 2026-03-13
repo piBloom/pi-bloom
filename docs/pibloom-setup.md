@@ -74,4 +74,5 @@ Typical next actions:
 ## Related
 
 - [docs/quick_deploy.md](quick_deploy.md)
+- [docs/live-testing-checklist.md](live-testing-checklist.md)
 - [AGENTS.md](../AGENTS.md)

@@ -1,13 +1,13 @@
 ---
 name: dufs
 version: 0.1.0
-description: Minimal WebDAV file server for home directory access over NetBird mesh
-image: docker.io/sigoden/dufs:latest
+description: Minimal WebDAV file server for dedicated Bloom share access over NetBird mesh
+image: docker.io/sigoden/dufs:v0.38.0
 ---
 
 # dufs Service
 
-Lightweight WebDAV file server exposing your home directory. Accessible from any device on your NetBird mesh network.
+Lightweight WebDAV file server exposing `~/Public/Bloom`. Accessible from any device on your NetBird mesh network.
 
 ## Access
 
@@ -41,5 +41,6 @@ journalctl --user -u bloom-dufs -f
 ## Notes
 
 - Only accessible via NetBird mesh — not exposed to the public internet
-- Serves your entire home directory (read/write)
+- Serves only `~/Public/Bloom` (read/write)
+- Use this directory as the intentional cross-device share, not as a general remote home mount
 - Swappable with rclone (`rclone serve webdav`) or Syncthing

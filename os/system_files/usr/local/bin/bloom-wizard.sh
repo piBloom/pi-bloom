@@ -14,6 +14,7 @@ SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 BLOOM_CONFIG="$HOME/.config/bloom"
 PI_DIR="$HOME/.pi"
 MATRIX_HOMESERVER="http://localhost:6167"
+MATRIX_STATE_DIR="$WIZARD_STATE/matrix-state"
 
 # --- Checkpoint helpers ---
 
@@ -33,6 +34,21 @@ mark_done_with() {
 # Read stored data from a checkpoint (line 2+)
 read_checkpoint_data() {
 	[[ -f "$WIZARD_STATE/$1" ]] && sed -n '2p' "$WIZARD_STATE/$1" || echo ""
+}
+
+# --- Matrix state helpers ---
+
+matrix_state_get() {
+	[[ -f "$MATRIX_STATE_DIR/$1" ]] && cat "$MATRIX_STATE_DIR/$1" || true
+}
+
+matrix_state_set() {
+	mkdir -p "$MATRIX_STATE_DIR"
+	printf '%s' "$2" > "$MATRIX_STATE_DIR/$1"
+}
+
+matrix_state_clear() {
+	rm -rf "$MATRIX_STATE_DIR"
 }
 
 # --- Matrix helpers ---
@@ -91,6 +107,101 @@ matrix_register() {
 	return 0
 }
 
+# Password-login an existing Matrix account.
+# Usage: matrix_login <username> <password>
+# Outputs: JSON with user_id and access_token on success, exits 1 on failure
+matrix_login() {
+	local username="$1" password="$2"
+	local url="${MATRIX_HOMESERVER}/_matrix/client/v3/login"
+	local result
+	result=$(curl -s -X POST "$url" \
+		-H "Content-Type: application/json" \
+		-d "{\"type\":\"m.login.password\",\"identifier\":{\"type\":\"m.id.user\",\"user\":\"${username}\"},\"password\":\"${password}\"}")
+
+	if ! echo "$result" | grep -q '"access_token"'; then
+		return 1
+	fi
+
+	echo "$result"
+	return 0
+}
+
+load_existing_matrix_credentials() {
+	[[ -f "$PI_DIR/matrix-credentials.json" ]] || return 0
+	local raw
+	raw=$(cat "$PI_DIR/matrix-credentials.json" 2>/dev/null || true)
+	[[ -n "$raw" ]] || return 0
+
+	local bot_token bot_user_id bot_password user_user_id user_password username reg_token
+	bot_token=$(json_field "$raw" "botAccessToken")
+	bot_user_id=$(json_field "$raw" "botUserId")
+	bot_password=$(json_field "$raw" "botPassword")
+	user_user_id=$(json_field "$raw" "userUserId")
+	user_password=$(json_field "$raw" "userPassword")
+	reg_token=$(json_field "$raw" "registrationToken")
+
+	if [[ -n "$bot_token" ]]; then matrix_state_set bot_token "$bot_token"; fi
+	if [[ -n "$bot_user_id" ]]; then matrix_state_set bot_user_id "$bot_user_id"; fi
+	if [[ -n "$bot_password" ]]; then matrix_state_set bot_password "$bot_password"; fi
+	if [[ -n "$user_user_id" ]]; then matrix_state_set user_user_id "$user_user_id"; fi
+	if [[ -n "$user_password" ]]; then matrix_state_set user_password "$user_password"; fi
+	if [[ -n "$reg_token" ]]; then matrix_state_set reg_token "$reg_token"; fi
+
+	if [[ "$user_user_id" =~ ^@([^:]+): ]]; then
+		username="${BASH_REMATCH[1]}"
+		matrix_state_set username "$username"
+	fi
+}
+
+default_model_for_provider() {
+	case "$1" in
+		anthropic) echo "claude-sonnet-4-6" ;;
+		openai) echo "codex-mini-latest" ;;
+		google) echo "gemini-2.5-pro" ;;
+		openrouter) echo "auto" ;;
+		*) return 1 ;;
+	esac
+}
+
+write_pi_settings_defaults() {
+	local provider="$1" model="$2"
+	local settings_path="$PI_DIR/agent/settings.json"
+	mkdir -p "$(dirname "$settings_path")"
+
+	if command -v jq >/dev/null 2>&1 && [[ -f "$settings_path" ]]; then
+		jq \
+			--arg package "/usr/local/share/bloom" \
+			--arg provider "$provider" \
+			--arg model "$model" \
+			'.packages = ((.packages // []) + [$package] | unique)
+			 | .defaultProvider = $provider
+			 | .defaultModel = $model
+			 | .defaultThinkingLevel = (.defaultThinkingLevel // "medium")' \
+			"$settings_path" > "${settings_path}.tmp"
+		mv "${settings_path}.tmp" "$settings_path"
+	else
+		cat > "$settings_path" <<-SETTINGS
+		{
+		  "packages": [
+		    "/usr/local/share/bloom"
+		  ],
+		  "defaultProvider": "${provider}",
+		  "defaultModel": "${model}",
+		  "defaultThinkingLevel": "medium"
+		}
+		SETTINGS
+	fi
+
+	chmod 600 "$settings_path"
+}
+
+pi_ai_ready() {
+	[[ -f "$PI_DIR/agent/auth.json" ]] || return 1
+	[[ -f "$PI_DIR/agent/settings.json" ]] || return 1
+	grep -q '"defaultProvider"[[:space:]]*:' "$PI_DIR/agent/settings.json" || return 1
+	grep -q '"defaultModel"[[:space:]]*:' "$PI_DIR/agent/settings.json" || return 1
+}
+
 # --- Service install helper ---
 
 # Install a service from the bundled package.
@@ -126,6 +237,10 @@ install_service() {
 
 	# Create empty env file if missing
 	[[ -f "$BLOOM_CONFIG/${name}.env" ]] || touch "$BLOOM_CONFIG/${name}.env"
+
+	if [[ "$name" == "dufs" ]]; then
+		mkdir -p "$HOME/Public/Bloom"
+	fi
 
 	# Copy SKILL.md
 	local skill_dir="$BLOOM_DIR/Skills/${name}"
@@ -275,48 +390,77 @@ step_matrix() {
 		echo "ERROR: Could not read registration token." >&2
 		return 1
 	fi
+	matrix_state_set reg_token "$reg_token"
+	load_existing_matrix_credentials
 
 	# Prompt for username
 	local username
-	while true; do
-		read -rp "Choose a username for your Matrix account (cannot be changed later): " username
-		if [[ -z "$username" ]]; then
-			echo "Username cannot be empty."
-			continue
-		fi
-		if [[ ! "$username" =~ ^[a-z][a-z0-9._-]*$ ]]; then
-			echo "Username must start with a lowercase letter and contain only a-z, 0-9, '.', '_', '-'."
-			continue
-		fi
-		break
-	done
-
-	# Generate passwords
-	local bot_password user_password
-	bot_password=$(generate_password)
-	user_password=$(generate_password)
+	username=$(matrix_state_get username)
+	if [[ -z "$username" ]]; then
+		while true; do
+			read -rp "Choose a username for your Matrix account (cannot be changed later): " username
+			if [[ -z "$username" ]]; then
+				echo "Username cannot be empty."
+				continue
+			fi
+			if [[ ! "$username" =~ ^[a-z][a-z0-9._-]*$ ]]; then
+				echo "Username must start with a lowercase letter and contain only a-z, 0-9, '.', '_', '-'."
+				continue
+			fi
+			matrix_state_set username "$username"
+			break
+		done
+	else
+		echo "Resuming Matrix setup for @${username}:bloom"
+	fi
 
 	# Register bot account
-	echo "Creating Pi bot account..."
-	local bot_result
-	bot_result=$(matrix_register "pi" "$bot_password" "$reg_token") || {
-		echo "ERROR: Failed to register @pi:bloom bot account." >&2
-		return 1
-	}
-	local bot_token bot_user_id
-	bot_token=$(json_field "$bot_result" "access_token")
-	bot_user_id=$(json_field "$bot_result" "user_id")
+	local bot_password bot_token bot_user_id bot_result
+	bot_password=$(matrix_state_get bot_password)
+	bot_token=$(matrix_state_get bot_token)
+	bot_user_id=$(matrix_state_get bot_user_id)
+	if [[ -z "$bot_password" ]]; then
+		bot_password=$(generate_password)
+		matrix_state_set bot_password "$bot_password"
+	fi
+	if [[ -z "$bot_token" || -z "$bot_user_id" ]]; then
+		echo "Creating or resuming Pi bot account..."
+		bot_result=$(matrix_login "pi" "$bot_password" 2>/dev/null || true)
+		if [[ -z "$bot_result" ]]; then
+			bot_result=$(matrix_register "pi" "$bot_password" "$reg_token") || {
+				echo "ERROR: Failed to register or recover @pi:bloom bot account." >&2
+				return 1
+			}
+		fi
+		bot_token=$(json_field "$bot_result" "access_token")
+		bot_user_id=$(json_field "$bot_result" "user_id")
+		matrix_state_set bot_token "$bot_token"
+		matrix_state_set bot_user_id "$bot_user_id"
+	fi
 
 	# Register user account
-	echo "Creating your account (@${username}:bloom)..."
-	local user_result
-	user_result=$(matrix_register "$username" "$user_password" "$reg_token") || {
-		echo "ERROR: Failed to register @${username}:bloom account." >&2
-		return 1
-	}
-	local user_token user_user_id
-	user_token=$(json_field "$user_result" "access_token")
-	user_user_id=$(json_field "$user_result" "user_id")
+	local user_password user_token user_user_id user_result
+	user_password=$(matrix_state_get user_password)
+	user_token=$(matrix_state_get user_token)
+	user_user_id=$(matrix_state_get user_user_id)
+	if [[ -z "$user_password" ]]; then
+		user_password=$(generate_password)
+		matrix_state_set user_password "$user_password"
+	fi
+	if [[ -z "$user_token" || -z "$user_user_id" ]]; then
+		echo "Creating or resuming your account (@${username}:bloom)..."
+		user_result=$(matrix_login "$username" "$user_password" 2>/dev/null || true)
+		if [[ -z "$user_result" ]]; then
+			user_result=$(matrix_register "$username" "$user_password" "$reg_token") || {
+				echo "ERROR: Failed to register or recover @${username}:bloom account." >&2
+				return 1
+			}
+		fi
+		user_token=$(json_field "$user_result" "access_token")
+		user_user_id=$(json_field "$user_result" "user_id")
+		matrix_state_set user_token "$user_token"
+		matrix_state_set user_user_id "$user_user_id"
+	fi
 
 	# Store credentials
 	mkdir -p "$PI_DIR"
@@ -353,6 +497,7 @@ step_matrix() {
 	echo "  Username: ${username}"
 	echo "  Password: ${user_password}"
 	echo ""
+	matrix_state_clear
 	mark_done_with matrix "$username"
 }
 
@@ -395,6 +540,7 @@ step_ai() {
 	fi
 
 	local provider key_name auth_key
+	local default_model
 	case "$choice" in
 		1) provider="anthropic"; key_name="Anthropic" ;;
 		2) provider="openai"; key_name="OpenAI" ;;
@@ -421,8 +567,12 @@ step_ai() {
 	AUTH
 	chmod 600 "$PI_DIR/agent/auth.json"
 
+	default_model=$(default_model_for_provider "$provider")
+	write_pi_settings_defaults "$provider" "$default_model"
+
 	echo "${key_name} API key saved."
-	echo "Use /model in Pi to select your preferred model."
+	echo "Default model set to ${default_model}."
+	echo "Use /model in Pi to change it later."
 	mark_done_with ai "$provider"
 }
 
@@ -450,7 +600,11 @@ step_services() {
 finalize() {
 	touch "$SETUP_COMPLETE"
 	loginctl enable-linger "$USER"
-	systemctl --user enable --now pi-daemon.service 2>/dev/null || true
+	if pi_ai_ready; then
+		systemctl --user enable --now pi-daemon.service 2>/dev/null || true
+	else
+		systemctl --user disable --now pi-daemon.service 2>/dev/null || true
+	fi
 
 	local mesh_ip
 	mesh_ip=$(read_checkpoint_data netbird)

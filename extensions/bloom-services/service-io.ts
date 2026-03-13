@@ -66,6 +66,10 @@ export async function installServicePackage(
 		writeFileSync(serviceEnvPath, "");
 	}
 
+	if (name === "dufs") {
+		mkdirSync(join(os.homedir(), "Public", "Bloom"), { recursive: true });
+	}
+
 	// Copy extra config files (e.g., cinny-config.json) from service package
 	for (const fileName of readdirSync(localPackage.serviceDir)) {
 		if (!fileName.endsWith(".json") && !fileName.endsWith(".toml")) continue;

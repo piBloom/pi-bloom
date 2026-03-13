@@ -7,7 +7,7 @@ ConditionPathExists=!/etc/hostname
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/hostnamectl set-hostname bloom
+ExecStart=/usr/bin/sh -c 'printf "%s\n" bloom > /etc/hostname && /usr/bin/hostname -F /etc/hostname'
 RemainAfterExit=yes
 
 [Install]

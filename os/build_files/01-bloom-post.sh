@@ -3,9 +3,13 @@ set -xeuo pipefail
 
 cd /usr/local/share/bloom
 
-# Build TypeScript and prune dev deps
+# Build TypeScript and prune dev deps. Keep this phase offline-safe for
+# bootc-image-builder by reusing the npm cache populated in 01-bloom-fetch.sh.
 npm run build
-npm prune --omit=dev
+if ! HOME=/tmp npm prune --omit=dev --cache /tmp/npm-cache --prefer-offline --offline; then
+	echo "warning: npm prune --omit=dev failed in offline image build; continuing with dev deps present" >&2
+fi
+rm -rf /tmp/npm-cache /var/roothome/.npm /root/.npm
 
 # Wire globally-installed Pi SDK packages into Bloom's node_modules
 # NOTE: linking the namespace dir itself can create a nested

@@ -12,4 +12,4 @@ HOME=/tmp npm install -g --cache /tmp/npm-cache \
 cd /usr/local/share/bloom
 HOME=/tmp npm install --cache /tmp/npm-cache
 
-rm -rf /tmp/npm-cache /var/roothome/.npm /root/.npm
+rm -rf /var/roothome/.npm /root/.npm

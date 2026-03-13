@@ -1,5 +1,5 @@
 [Unit]
-Description=Bloom dufs — WebDAV file server for home directory
+Description=Bloom dufs — WebDAV file server for dedicated Bloom share
 After=network-online.target
 Wants=network-online.target
 
@@ -10,8 +10,8 @@ ContainerName=bloom-dufs
 # Host networking for direct mesh access
 Network=host
 
-# Serve the user's home directory (no SELinux relabel — use label=disable)
-Volume=%h:/data
+# Serve only the dedicated Bloom share directory (no SELinux relabel — use label=disable)
+Volume=%h/Public/Bloom:/data
 
 # Listen on all host interfaces (mesh access controlled by network + auth)
 Exec=/data -A -b 0.0.0.0 -p 5000
@@ -20,13 +20,6 @@ PodmanArgs=--memory=128m
 PodmanArgs=--security-opt label=disable
 NoNewPrivileges=true
 LogDriver=journald
-
-# dufs minimal image has no wget/curl — verify process is alive
-HealthCmd=kill -0 1
-HealthInterval=60s
-HealthRetries=5
-HealthStartPeriod=30s
-HealthTimeout=10s
 
 [Service]
 Restart=on-failure

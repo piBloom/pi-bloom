@@ -81,3 +81,11 @@ describe("bloom-os tool structure", () => {
 		expect(new Set(names).size).toBe(names.length);
 	});
 });
+
+describe("bloom-os descriptions", () => {
+	it("documents socket-aware container deploy behavior", () => {
+		const containerTool = api._registeredTools.find((tool) => tool.name === "container");
+		expect(containerTool).toBeDefined();
+		expect(containerTool?.description).toContain("deploy");
+	});
+});

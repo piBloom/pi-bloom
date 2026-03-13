@@ -85,6 +85,27 @@ async function installDependency(
 	return { ok: true };
 }
 
+async function installDependencyChain(
+	deps: readonly string[],
+	catalog: Record<string, import("../../lib/services-catalog.js").ServiceCatalogEntry>,
+	bloomDir: string,
+	repoDir: string,
+	manifestPath: string,
+	signal: AbortSignal | undefined,
+): Promise<{ ok: true; depsInstalled: string[] } | { ok: false; note: string }> {
+	const depsInstalled: string[] = [];
+	for (const dep of deps) {
+		const depUnit = join(getQuadletDir(), `bloom-${dep}.container`);
+		if (existsSync(depUnit)) continue;
+		const depResult = await installDependency(dep, catalog, bloomDir, repoDir, manifestPath, signal);
+		if (!depResult.ok) {
+			return { ok: false, note: `Dependency ${dep} failed: ${depResult.note ?? "unknown error"}` };
+		}
+		depsInstalled.push(dep);
+	}
+	return { ok: true, depsInstalled };
+}
+
 export async function handleInstall(
 	params: {
 		name: string;
@@ -106,10 +127,18 @@ export async function handleInstall(
 
 	const catalog = loadServiceCatalog(repoDir);
 	const catalogEntry = catalog[params.name];
+	const deps = catalogEntry?.depends ?? [];
 
 	const preflight = await servicePreflightErrors(params.name, catalogEntry, signal);
 	if (preflight.length > 0) {
 		return errorResult(`Preflight failed: ${preflight.join("; ")}`);
+	}
+
+	// Resolve and install dependencies before mutating the primary service so
+	// dependency failures do not leave the requested service half-installed.
+	const depInstallResult = await installDependencyChain(deps, catalog, bloomDir, repoDir, manifestPath, signal);
+	if (!depInstallResult.ok) {
+		return errorResult(`${depInstallResult.note} while installing ${params.name}`);
 	}
 
 	const install = await installServicePackage(params.name, bloomDir, repoDir, signal);
@@ -156,21 +185,8 @@ export async function handleInstall(
 			version: version === "latest" ? catalogEntry?.version || meta.version : version,
 			enabled: true,
 		};
-		saveManifest(manifest, manifestPath);
-	}
-
-	// Auto-install dependencies (e.g., backend for frontend)
-	const deps = catalogEntry?.depends ?? [];
-	const depsInstalled: string[] = [];
-	for (const dep of deps) {
-		const depUnit = join(getQuadletDir(), `bloom-${dep}.container`);
-		if (existsSync(depUnit)) continue; // already installed
-		const depResult = await installDependency(dep, catalog, bloomDir, repoDir, manifestPath, signal);
-		if (!depResult.ok) {
-			return errorResult(`Dependency ${dep} failed while installing ${params.name}: ${depResult.note ?? "unknown error"}`);
+			saveManifest(manifest, manifestPath);
 		}
-		depsInstalled.push(dep);
-	}
 
 	return {
 		content: [
@@ -184,7 +200,7 @@ export async function handleInstall(
 				installSource: "local",
 				start,
 				manifestUpdated: updateManifest,
-				depsInstalled,
+				depsInstalled: depInstallResult.depsInstalled,
 			},
 		};
 	}

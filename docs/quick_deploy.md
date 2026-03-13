@@ -96,3 +96,4 @@ On first login:
 3. use `setup_status` if you need to inspect or resume the Pi-side setup state
 
 See [docs/pibloom-setup.md](pibloom-setup.md) for the full first-boot flow.
+Use [docs/live-testing-checklist.md](live-testing-checklist.md) as the acceptance checklist for a fresh device run.

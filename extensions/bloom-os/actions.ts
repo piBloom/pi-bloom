@@ -1,7 +1,10 @@
 /**
  * Handler / business logic for bloom-os.
  */
+import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
+import os from "node:os";
+import { join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../lib/exec.js";
 import { getUpdateStatusPath } from "../../lib/filesystem.js";
@@ -112,17 +115,23 @@ export async function handleContainerLogs(service: string, lines: number, signal
 	};
 }
 
+function resolveUserStartTarget(service: string): string {
+	const userSystemdDir = join(os.homedir(), ".config", "systemd", "user");
+	const socketUnitPath = join(userSystemdDir, `${service}.socket`);
+	return existsSync(socketUnitPath) ? `${service}.socket` : `${service}.service`;
+}
+
 export async function handleContainerDeploy(service: string, signal: AbortSignal | undefined, ctx: ExtensionContext) {
-	const unit = `${service}.service`;
-	const denied = await requireConfirmation(ctx, `Deploy container ${unit}`);
+	const target = resolveUserStartTarget(service);
+	const denied = await requireConfirmation(ctx, `Deploy container ${target}`);
 	if (denied) return errorResult(denied);
 	const reload = await run("systemctl", ["--user", "daemon-reload"], signal);
 	if (reload.exitCode !== 0) {
 		return errorResult(`systemctl --user daemon-reload failed:\n${reload.stderr}`);
 	}
-	const start = await run("systemctl", ["--user", "start", unit], signal);
+	const start = await run("systemctl", ["--user", "start", target], signal);
 	const text = truncate(
-		start.exitCode === 0 ? `Started ${unit} successfully.` : `Failed to start ${unit}:\n${start.stderr}`,
+		start.exitCode === 0 ? `Started ${target} successfully.` : `Failed to start ${target}:\n${start.stderr}`,
 	);
 	return {
 		content: [{ type: "text" as const, text }],
