@@ -7,11 +7,11 @@ const { runMock } = vi.hoisted(() => ({
 	runMock: vi.fn(),
 }));
 
-vi.mock("../../lib/exec.js", () => ({
+vi.mock("../../core/lib/exec.js", () => ({
 	run: runMock,
 }));
 
-import { installServicePackage } from "../../extensions/bloom-services/service-io.js";
+import { installServicePackage } from "../../core/extensions/bloom-services/service-io.js";
 
 describe("installServicePackage", () => {
 	let tempHome: string;
@@ -69,7 +69,9 @@ describe("installServicePackage", () => {
 		const result = await installServicePackage("cinny", join(tempHome, "Bloom"), tempRepo);
 
 		expect(result.ok).toBe(true);
-		const cinnyConfig = JSON.parse(readFileSync(join(tempHome, ".config", "bloom", "cinny", "config.json"), "utf-8")) as {
+		const cinnyConfig = JSON.parse(
+			readFileSync(join(tempHome, ".config", "bloom", "cinny", "config.json"), "utf-8"),
+		) as {
 			defaultHomeserver: number;
 			homeserverList: string[];
 		};

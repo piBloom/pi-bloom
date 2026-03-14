@@ -7,7 +7,7 @@ import {
 	isAgentCoolingDown,
 	markEventProcessed,
 	markReplySent,
-} from "../../daemon/room-state.js";
+} from "../../core/daemon/room-state.js";
 
 describe("room-state", () => {
 	it("tracks processed event ids", () => {

@@ -2,10 +2,10 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { buildLocalImage, downloadServiceModels } from "../../extensions/bloom-services/service-io.js";
-import { findLocalServicePackage, loadServiceCatalog } from "../../lib/services-catalog.js";
-import { loadManifest, saveManifest } from "../../lib/services-manifest.js";
-import { hasSubidRange } from "../../lib/services-validation.js";
+import { buildLocalImage, downloadServiceModels } from "../../core/extensions/bloom-services/service-io.js";
+import { findLocalServicePackage, loadServiceCatalog } from "../../core/lib/services-catalog.js";
+import { loadManifest, saveManifest } from "../../core/lib/services-manifest.js";
+import { hasSubidRange } from "../../core/lib/services-validation.js";
 
 describe("loadManifest", () => {
 	let tempDir: string;

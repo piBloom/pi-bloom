@@ -3,10 +3,10 @@
  */
 import os from "node:os";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { run } from "../../lib/exec.js";
-import { parseGithubSlugFromUrl, slugifyBranchPart } from "../../lib/git.js";
-import { getRemoteUrl } from "../../lib/repo.js";
-import { errorResult, requireConfirmation } from "../../lib/shared.js";
+import { run } from "../../core/lib/exec.js";
+import { parseGithubSlugFromUrl, slugifyBranchPart } from "../../core/lib/git.js";
+import { getRemoteUrl } from "../../core/lib/repo.js";
+import { errorResult, requireConfirmation } from "../../core/lib/shared.js";
 import { getRepoDir } from "./actions.js";
 
 export async function handleSubmitPr(
@@ -58,7 +58,9 @@ export async function handleSubmitPr(
 			.split("\n")
 			.map((line) => line.trimEnd())
 			.filter(Boolean)
-			.filter((line) => !line.startsWith("A ") && !line.startsWith("M ") && !line.startsWith("R ") && !line.startsWith("C "));
+			.filter(
+				(line) => !line.startsWith("A ") && !line.startsWith("M ") && !line.startsWith("R ") && !line.startsWith("C "),
+			);
 		if (unstaged.length > 0) {
 			return errorResult(
 				[

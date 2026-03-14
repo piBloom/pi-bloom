@@ -1,14 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { AgentDefinition } from "../../daemon/agent-registry.js";
-import { classifySender, extractMentions, routeRoomEnvelope } from "../../daemon/router.js";
-import { createRoomState } from "../../daemon/room-state.js";
+import type { AgentDefinition } from "../../core/daemon/agent-registry.js";
+import { createRoomState } from "../../core/daemon/room-state.js";
+import { classifySender, extractMentions, routeRoomEnvelope } from "../../core/daemon/router.js";
 
-function makeAgent(
-	id: string,
-	userId: string,
-	mode: AgentDefinition["respond"]["mode"],
-): AgentDefinition {
+function makeAgent(id: string, userId: string, mode: AgentDefinition["respond"]["mode"]): AgentDefinition {
 	return {
 		id,
 		name: id[0]?.toUpperCase() + id.slice(1),

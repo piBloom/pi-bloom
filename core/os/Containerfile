@@ -1,0 +1,81 @@
+# Bloom OS — Fedora bootc 42 with Pi coding agent
+# Build: podman build -f core/os/Containerfile -t bloom-os:latest .
+# Install: sudo bootc install to-disk /dev/sdX --source-imgref containers-storage:bloom-os:latest
+ARG CONTINUWUITY_IMAGE=forgejo.ellis.link/continuwuation/continuwuity:0.5.0-rc.6
+ARG PI_CODING_AGENT_VERSION=0.57.1
+ARG BIOME_VERSION=2.4.6
+ARG TYPESCRIPT_VERSION=5.9.3
+ARG CLAUDE_CODE_VERSION=2.1.73
+
+FROM ${CONTINUWUITY_IMAGE} AS continuwuity-src
+
+FROM scratch AS ctx
+COPY core/os/build_files /build
+COPY core/os/system_files /files
+COPY core/os/packages /packages
+
+FROM quay.io/fedora/fedora-bootc:42
+
+# Phase 1: Remove unwanted packages
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build/00-base-pre.sh
+
+# Phase 2: Install system packages (network)
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=cache,dst=/var/cache/libdnf5 \
+    --mount=type=tmpfs,dst=/tmp \
+    /ctx/build/00-base-fetch.sh
+
+# Phase 3: Copy system files, apply presets, branding (offline)
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    --network=none \
+    /ctx/build/00-base-post.sh
+
+# Phase 4: Install Node.js CLI tools + Bloom npm deps (network)
+ARG PI_CODING_AGENT_VERSION
+ARG BIOME_VERSION
+ARG TYPESCRIPT_VERSION
+ARG CLAUDE_CODE_VERSION
+COPY package.json package-lock.json /usr/local/share/bloom/
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    PI_CODING_AGENT_VERSION=${PI_CODING_AGENT_VERSION} \
+    BIOME_VERSION=${BIOME_VERSION} \
+    TYPESCRIPT_VERSION=${TYPESCRIPT_VERSION} \
+    CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION} \
+    /ctx/build/01-bloom-fetch.sh
+
+# Phase 5: Build Bloom TypeScript, configure Pi (offline)
+COPY . /usr/local/share/bloom/
+COPY --from=continuwuity-src /sbin/conduwuit /usr/local/bin/continuwuity
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
+    --mount=type=tmpfs,dst=/tmp \
+    --network=none \
+    /ctx/build/01-bloom-post.sh
+
+# Optional: pre-configure WiFi for headless first-boot
+ARG WIFI_SSID=""
+ARG WIFI_PSK=""
+RUN if [ -n "$WIFI_SSID" ]; then \
+    printf '[connection]\nid=%s\ntype=wifi\nautoconnect=true\n\n[wifi]\nmode=infrastructure\nssid=%s\n\n[wifi-security]\nkey-mgmt=wpa-psk\npsk=%s\n\n[ipv4]\nmethod=auto\n\n[ipv6]\nmethod=auto\n' \
+        "$WIFI_SSID" "$WIFI_SSID" "$WIFI_PSK" \
+        > /etc/NetworkManager/system-connections/wifi.nmconnection && \
+    chmod 600 /etc/NetworkManager/system-connections/wifi.nmconnection; \
+fi
+
+# Symlink /opt to /var/opt for day-2 package installs
+RUN rm -rf /opt && ln -s /var/opt /opt
+
+# Final cleanup + validation
+RUN rm -rf /var/* && mkdir -p /var/tmp /var/opt && bootc container lint
+
+# Login branding
+RUN printf '' > /etc/motd
+
+LABEL containers.bootc="1"
+LABEL org.opencontainers.image.title="Bloom OS"
+LABEL org.opencontainers.image.description="Pi-native AI companion OS on Fedora bootc"
+LABEL org.opencontainers.image.source="https://github.com/pibloom/pi-bloom"
+LABEL org.opencontainers.image.version="0.1.0"

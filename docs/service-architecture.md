@@ -21,9 +21,14 @@ OS-level infrastructure sits beside this model rather than inside it:
 - `netbird.service`
 - `pi-daemon.service`
 
+Repository shape:
+
+- `core/` contains Bloom's built-in platform and product code
+- `extensions/` contains non-core/operator extensions
+
 ## Skills
 
-Bundled skill directories in `skills/` are seeded into `~/Bloom/Skills/` by `bloom-garden`:
+Bundled skill directories in `core/skills/` are seeded into `~/Bloom/Skills/` by `bloom-garden`:
 
 - `first-boot`
 - `object-store`

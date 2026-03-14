@@ -6,7 +6,7 @@ import {
 	getStepsSummary,
 	isSetupComplete,
 	STEP_ORDER,
-} from "../../lib/setup.js";
+} from "../../core/lib/setup.js";
 
 describe("createInitialState", () => {
 	it("creates state with all steps pending", () => {

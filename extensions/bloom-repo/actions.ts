@@ -4,10 +4,10 @@
  */
 import os from "node:os";
 import { join } from "node:path";
-import { run } from "../../lib/exec.js";
-import { parseGithubSlugFromUrl } from "../../lib/git.js";
-import { getRemoteUrl } from "../../lib/repo.js";
-import { errorResult } from "../../lib/shared.js";
+import { run } from "../../core/lib/exec.js";
+import { parseGithubSlugFromUrl } from "../../core/lib/git.js";
+import { getRemoteUrl } from "../../core/lib/repo.js";
+import { errorResult } from "../../core/lib/shared.js";
 
 const bloomDir = join(os.homedir(), ".bloom");
 const repoDir = join(bloomDir, "pi-bloom");

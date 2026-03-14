@@ -1,0 +1,16 @@
+[Unit]
+Description=Bloom Pi Daemon (Matrix room agent)
+After=network-online.target bloom-matrix.service
+Wants=network-online.target
+ConditionPathExists=%h/.bloom/.setup-complete
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /usr/local/share/bloom/dist/core/daemon/index.js
+Environment=HOME=%h
+Environment=BLOOM_DIR=%h/Bloom
+Restart=on-failure
+RestartSec=15
+
+[Install]
+WantedBy=default.target

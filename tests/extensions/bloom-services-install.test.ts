@@ -10,25 +10,25 @@ const loadManifestMock = vi.fn();
 const saveManifestMock = vi.fn();
 const getQuadletDirMock = vi.fn();
 
-vi.mock("../../lib/exec.js", () => ({
+vi.mock("../../core/lib/exec.js", () => ({
 	run: runMock,
 }));
 
-vi.mock("../../lib/filesystem.js", () => ({
+vi.mock("../../core/lib/filesystem.js", () => ({
 	getQuadletDir: getQuadletDirMock,
 }));
 
-vi.mock("../../lib/services-catalog.js", () => ({
+vi.mock("../../core/lib/services-catalog.js", () => ({
 	loadServiceCatalog: loadServiceCatalogMock,
 	servicePreflightErrors: servicePreflightErrorsMock,
 }));
 
-vi.mock("../../lib/services-manifest.js", () => ({
+vi.mock("../../core/lib/services-manifest.js", () => ({
 	loadManifest: loadManifestMock,
 	saveManifest: saveManifestMock,
 }));
 
-vi.mock("../../extensions/bloom-services/service-io.js", () => ({
+vi.mock("../../core/extensions/bloom-services/service-io.js", () => ({
 	installServicePackage: installServicePackageMock,
 	buildLocalImage: buildLocalImageMock,
 	downloadServiceModels: downloadServiceModelsMock,
@@ -67,7 +67,7 @@ describe("handleInstall", () => {
 			return { ok: true, source: "local", ref: name };
 		});
 
-		const { handleInstall } = await import("../../extensions/bloom-services/actions-install.js");
+		const { handleInstall } = await import("../../core/extensions/bloom-services/actions-install.js");
 		const result = (await handleInstall(
 			{ name: "app" },
 			"/tmp/Bloom",
@@ -80,7 +80,12 @@ describe("handleInstall", () => {
 		expect(result.content[0].text).toContain("Dependency db failed: dependency exploded while installing app");
 		expect(installServicePackageMock).toHaveBeenCalledTimes(1);
 		expect(installServicePackageMock).toHaveBeenCalledWith("db", "/tmp/Bloom", "/tmp/repo", undefined);
-		expect(buildLocalImageMock).not.toHaveBeenCalledWith("app", expect.anything(), expect.anything(), expect.anything());
+		expect(buildLocalImageMock).not.toHaveBeenCalledWith(
+			"app",
+			expect.anything(),
+			expect.anything(),
+			expect.anything(),
+		);
 		expect(saveManifestMock).not.toHaveBeenCalled();
 	});
 });

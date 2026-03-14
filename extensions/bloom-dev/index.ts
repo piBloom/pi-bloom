@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { errorResult } from "../../lib/shared.js";
+import { errorResult } from "../../core/lib/shared.js";
 import { handleDevBuild, handleDevLoop, handleDevRollback, handleDevSwitch } from "./actions-build.js";
 import {
 	handleDevCodeServer,
@@ -212,7 +212,8 @@ export default function (pi: ExtensionAPI) {
 			extension_name: Type.String({ description: "Name of the extension to push" }),
 			source_path: Type.Optional(
 				Type.String({
-					description: "Optional extension path inside ~/Bloom/extensions/ (absolute paths must still resolve under that root)",
+					description:
+						"Optional extension path inside ~/Bloom/extensions/ (absolute paths must still resolve under that root)",
 				}),
 			),
 			title: Type.Optional(Type.String({ description: "PR title (auto-generated if omitted)" })),

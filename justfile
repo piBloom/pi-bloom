@@ -1,9 +1,9 @@
 # Bloom OS — build, test, and deploy
 
 image := env("BLOOM_IMAGE", "localhost/bloom-os:latest")
-output := "os/output"
+output := "core/os/output"
 bib := "quay.io/centos-bootc/bootc-image-builder:latest"
-bib_config := "os/disk_config/bib-config.toml"
+bib_config := "core/os/disk_config/bib-config.toml"
 podman := env("BLOOM_PODMAN", "sudo podman")
 storage := env("BLOOM_STORAGE", "/var/lib/containers/storage")
 ovmf := "/usr/share/edk2/ovmf/OVMF_CODE.fd"
@@ -13,7 +13,7 @@ remote_image := registry + "/bloom-os:latest"
 
 # Build the container image (rootful by default, so BIB can see it)
 build:
-	{{ podman }} build -f os/Containerfile -t {{ image }} .
+	{{ podman }} build -f core/os/Containerfile -t {{ image }} .
 
 # Generate qcow2 disk image via bootc-image-builder
 qcow2: build _require-bib-config
@@ -104,8 +104,8 @@ deps:
 
 # Lint OS build scripts with shellcheck
 lint-os:
-	shellcheck os/build_files/*.sh os/packages/repos.sh
+	shellcheck core/os/build_files/*.sh core/os/packages/repos.sh
 
 # Guard: ensure bib-config.toml exists before image generation
 _require-bib-config:
-	@test -f {{ bib_config }} || (echo "Error: {{ bib_config }} not found. Copy os/disk_config/bib-config.example.toml to {{ bib_config }} and set your password." && exit 1)
+	@test -f {{ bib_config }} || (echo "Error: {{ bib_config }} not found. Copy core/os/disk_config/bib-config.example.toml to {{ bib_config }} and set your password." && exit 1)

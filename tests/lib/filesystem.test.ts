@@ -1,7 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getBloomDir, safePath } from "../../lib/filesystem.js";
+import { getBloomDir, safePath } from "../../core/lib/filesystem.js";
 
 const ROOT = path.join(os.tmpdir(), "bloom-fs-test-root");
 

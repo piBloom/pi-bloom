@@ -26,7 +26,7 @@ This document defines the emoji notation used across Bloom documentation for vis
 - **Section headers** use emojis as visual anchors (e.g., `## 🧩 Extensions`)
 - **Table rows** use emojis as type prefixes for scanning
 - **CLAUDE.md is excluded** — it's loaded into AI context windows and must stay lean
-- **SKILL.md and persona/ files are excluded** — they're consumed by Pi at runtime, not developers
+- **`SKILL.md` and `core/persona/` files are excluded** — they're consumed by Pi at runtime, not developers
 
 ## 🔗 Related
 

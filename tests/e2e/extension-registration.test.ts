@@ -29,7 +29,7 @@ function eventNames(api: MockExtensionAPI): string[] {
 // ---------------------------------------------------------------------------
 describe("bloom-audit registration", () => {
 	it("registers expected tools and events", async () => {
-		const mod = await import("../../extensions/bloom-audit/index.js");
+		const mod = await import("../../core/extensions/bloom-audit/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
@@ -44,7 +44,7 @@ describe("bloom-audit registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-garden registration", () => {
 	it("registers expected tools, commands, and events", async () => {
-		const mod = await import("../../extensions/bloom-garden/index.js");
+		const mod = await import("../../core/extensions/bloom-garden/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
@@ -61,7 +61,7 @@ describe("bloom-garden registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-objects registration", () => {
 	it("registers expected tools (no events)", async () => {
-		const mod = await import("../../extensions/bloom-objects/index.js");
+		const mod = await import("../../core/extensions/bloom-objects/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
@@ -79,7 +79,7 @@ describe("bloom-objects registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-os registration", () => {
 	it("registers tools and events", async () => {
-		const mod = await import("../../extensions/bloom-os/index.js");
+		const mod = await import("../../core/extensions/bloom-os/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
@@ -106,7 +106,7 @@ describe("bloom-repo registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-persona registration", () => {
 	it("registers events only (no tools/commands)", async () => {
-		const mod = await import("../../extensions/bloom-persona/index.js");
+		const mod = await import("../../core/extensions/bloom-persona/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
@@ -123,7 +123,7 @@ describe("bloom-persona registration", () => {
 // ---------------------------------------------------------------------------
 describe("bloom-services registration", () => {
 	it("registers expected tools and events", async () => {
-		const mod = await import("../../extensions/bloom-services/index.js");
+		const mod = await import("../../core/extensions/bloom-services/index.js");
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 

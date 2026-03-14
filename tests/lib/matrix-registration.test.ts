@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
-import { registerMatrixAccount } from "../../lib/matrix.js";
+import { registerMatrixAccount } from "../../core/lib/matrix.js";
 
 describe("registerMatrixAccount", () => {
 	afterEach(() => {

@@ -21,14 +21,10 @@ Bloom also ships OS-level infrastructure that is part of the image rather than a
 ## Repository Structure
 
 ```text
-extensions/   Pi extensions
-lib/          shared logic and runtime helpers
-daemon/       Matrix daemon, RPC transport, room routing
+core/         Bloom core: OS image, daemon, persona, skills, built-in extensions, runtime helpers
+extensions/   non-core Pi extensions
 cli/          local command-line helpers
-skills/       bundled skills seeded into ~/Bloom/Skills/
 services/     bundled service packages and template
-persona/      default Bloom persona files
-os/           bootc image definition and system files
 tests/        unit, integration, and daemon tests
 docs/         live documentation only
 ```
@@ -38,7 +34,8 @@ docs/         live documentation only
 Every extension lives in its own directory:
 
 ```text
-extensions/bloom-{name}/
+core/extensions/bloom-{name}/
+or extensions/bloom-{name}/
   index.ts
   actions*.ts
   types.ts
@@ -49,17 +46,17 @@ Rules:
 1. `index.ts` is the registration entry point.
 2. Tool handlers and hook logic live in `actions.ts` or focused `actions-*.ts` files.
 3. `types.ts` is optional but preferred when the extension owns non-trivial types.
-4. Shared logic belongs in `lib/` when multiple areas benefit from it.
+4. Core runtime helpers belong in `core/lib/`. Non-core shared helpers can remain outside `core/` only when they truly support optional extensions.
 
 Current exception worth documenting honestly:
 
 - some extensions still keep light gating or setup helpers in `index.ts`
-- some `lib/` modules perform filesystem or process work, so `lib/` should be read as shared library code, not as a
+- some `core/lib/` modules perform filesystem or process work, so it should be read as shared library code, not as a
   strictly pure functional layer
 
 ## Shared Library
 
-`lib/` currently mixes three kinds of modules:
+`core/lib/` currently mixes three kinds of modules:
 
 - pure data/format helpers such as `frontmatter.ts`, `audit.ts`, and most of `setup.ts`
 - path and environment helpers such as `filesystem.ts`
@@ -68,7 +65,7 @@ Current exception worth documenting honestly:
 
 Rule:
 
-- keep reusable logic in `lib/`, but do not claim purity unless the module is actually side-effect free
+- keep reusable core logic in `core/lib/`, but do not claim purity unless the module is actually side-effect free
 
 ## Daemon
 
@@ -78,11 +75,11 @@ The daemon is a first-class part of the current architecture.
 
 | Path | Role |
 |------|------|
-| `daemon/index.ts` | daemon bootstrap and mode selection |
-| `daemon/matrix-listener.ts` | single-agent Matrix client |
-| `daemon/matrix-client-pool.ts` | per-agent Matrix clients for multi-agent mode |
-| `daemon/pi-room-session.ts` | Pi SDK-backed room session lifecycle |
-| `daemon/agent-supervisor.ts` | room routing, typing, session lifecycle, sequential handoff |
+| `core/daemon/index.ts` | daemon bootstrap and mode selection |
+| `core/daemon/matrix-listener.ts` | single-agent Matrix client |
+| `core/daemon/matrix-client-pool.ts` | per-agent Matrix clients for multi-agent mode |
+| `core/daemon/pi-room-session.ts` | Pi SDK-backed room session lifecycle |
+| `core/daemon/agent-supervisor.ts` | room routing, typing, session lifecycle, sequential handoff |
 
 ### Runtime Model
 

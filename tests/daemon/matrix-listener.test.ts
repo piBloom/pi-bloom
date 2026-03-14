@@ -25,7 +25,7 @@ vi.mock("matrix-bot-sdk", () => ({
 	AutojoinRoomsMixin: { setupOnClient: vi.fn() },
 }));
 
-import { MatrixListener } from "../../daemon/matrix-listener.js";
+import { MatrixListener } from "../../core/daemon/matrix-listener.js";
 
 describe("MatrixListener", () => {
 	let dir: string;

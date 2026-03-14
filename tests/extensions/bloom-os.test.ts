@@ -17,7 +17,7 @@ const EXPECTED_TOOL_NAMES = [
 beforeEach(async () => {
 	temp = createTempGarden();
 	api = createMockExtensionAPI();
-	const mod = await import("../../extensions/bloom-os/index.js");
+	const mod = await import("../../core/extensions/bloom-os/index.js");
 	mod.default(api as never);
 });
 

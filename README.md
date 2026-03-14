@@ -5,8 +5,8 @@
 Bloom is a Pi package and bootc-based OS image for running Pi as a personal, self-hosted companion on a Fedora host.
 This repository contains:
 
-- the Pi package: extensions, skills, persona blueprints, and bundled service packages
-- the Bloom OS image: `os/Containerfile`, systemd units, and first-boot tooling
+- the Bloom core: OS image assets, Pi runtime integration, persona, skills, and built-in extensions
+- optional extensions and bundled service packages
 - the Matrix room daemon: a long-running service that bridges Matrix rooms to Pi SDK-backed sessions
 
 ## What Ships Today
@@ -57,17 +57,15 @@ Operational hardening in the current tree:
 
 | Path | Purpose |
 |------|---------|
-| `extensions/` | Pi extensions |
-| `lib/` | shared logic and host/runtime helpers |
-| `daemon/` | Matrix room daemon and room/session orchestration |
-| `skills/` | bundled skills seeded into `~/Bloom/Skills/` |
+| `core/` | Bloom core: OS image, daemon, persona, skills, built-in extensions, and shared runtime code |
+| `extensions/` | non-core Pi extensions such as dev and repo tooling |
 | `services/` | bundled service packages and service template |
-| `persona/` | default persona layers seeded into `~/Bloom/Persona/` |
-| `os/` | Fedora bootc image build assets and system files |
 | `tests/` | unit, integration, daemon, and extension tests |
 | `docs/` | live project documentation |
 
-## Extensions
+## Core And Extensions
+
+Core extensions live under `core/extensions/`. Optional/operator extensions stay under `extensions/`.
 
 | Extension | Tools | Hooks / Commands |
 |-----------|-------|------------------|
@@ -83,7 +81,7 @@ Operational hardening in the current tree:
 
 ## Bundled Skills
 
-Bundled skill directories in `skills/`:
+Bundled skill directories in `core/skills/`:
 
 - `first-boot`
 - `object-store`
@@ -107,7 +105,7 @@ Reference material for OS-level infrastructure also lives under `services/`:
 
 ## Daemon Model
 
-`daemon/index.ts` starts the Bloom room daemon in one of two modes:
+`core/daemon/index.ts` starts the Bloom room daemon in one of two modes:
 
 - single-agent fallback when no valid agent definitions exist in `~/Bloom/Agents/*/AGENTS.md`
 - multi-agent mode when one or more agent overlays parse successfully, with one Matrix client per configured agent and

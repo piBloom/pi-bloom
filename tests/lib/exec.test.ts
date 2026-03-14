@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { run } from "../../lib/exec.js";
+import { run } from "../../core/lib/exec.js";
 
 describe("run()", () => {
 	it("returns stdout and exitCode 0 on success", async () => {

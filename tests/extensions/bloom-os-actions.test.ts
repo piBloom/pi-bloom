@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,7 +6,7 @@ import { createMockExtensionContext } from "../helpers/mock-extension-context.js
 
 const runMock = vi.fn();
 
-vi.mock("../../lib/exec.js", () => ({
+vi.mock("../../core/lib/exec.js", () => ({
 	run: runMock,
 }));
 
@@ -36,23 +36,13 @@ describe("handleContainerDeploy", () => {
 		mkdirSync(userSystemdDir, { recursive: true });
 		writeFileSync(join(userSystemdDir, "bloom-code-server.socket"), "[Socket]\n");
 
-		const { handleContainerDeploy } = await import("../../extensions/bloom-os/actions.js");
+		const { handleContainerDeploy } = await import("../../core/extensions/bloom-os/actions.js");
 		const ctx = createMockExtensionContext();
 		const result = await handleContainerDeploy("bloom-code-server", undefined, ctx as never);
 
 		expect(result.isError).toBe(false);
-		expect(runMock).toHaveBeenNthCalledWith(
-			1,
-			"systemctl",
-			["--user", "daemon-reload"],
-			undefined,
-		);
-		expect(runMock).toHaveBeenNthCalledWith(
-			2,
-			"systemctl",
-			["--user", "start", "bloom-code-server.socket"],
-			undefined,
-		);
+		expect(runMock).toHaveBeenNthCalledWith(1, "systemctl", ["--user", "daemon-reload"], undefined);
+		expect(runMock).toHaveBeenNthCalledWith(2, "systemctl", ["--user", "start", "bloom-code-server.socket"], undefined);
 		expect(result.content[0].text).toContain("Started bloom-code-server.socket successfully.");
 	});
 });

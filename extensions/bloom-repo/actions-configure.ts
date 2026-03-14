@@ -4,10 +4,10 @@
 import { mkdirSync } from "node:fs";
 import os from "node:os";
 import { dirname } from "node:path";
-import { run } from "../../lib/exec.js";
-import { parseGithubSlugFromUrl } from "../../lib/git.js";
-import { getRemoteUrl, inferRepoUrl } from "../../lib/repo.js";
-import { errorResult } from "../../lib/shared.js";
+import { run } from "../../core/lib/exec.js";
+import { parseGithubSlugFromUrl } from "../../core/lib/git.js";
+import { getRemoteUrl, inferRepoUrl } from "../../core/lib/repo.js";
+import { errorResult } from "../../core/lib/shared.js";
 import { getRepoDir } from "./actions.js";
 
 export async function handleConfigure(

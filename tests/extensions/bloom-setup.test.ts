@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 async function loadExtension() {
-	const mod = await import("../../extensions/bloom-setup/index.js");
+	const mod = await import("../../core/extensions/bloom-setup/index.js");
 	mod.default(api as never);
 }
 

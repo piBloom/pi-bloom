@@ -6,11 +6,11 @@
 import { cpSync, existsSync, mkdirSync } from "node:fs";
 import path, { join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { run } from "../../lib/exec.js";
-import { getBloomDir } from "../../lib/filesystem.js";
-import { safePathWithin } from "../../lib/fs-utils.js";
-import { slugifyBranchPart } from "../../lib/git.js";
-import { errorResult, requireConfirmation, truncate } from "../../lib/shared.js";
+import { run } from "../../core/lib/exec.js";
+import { getBloomDir } from "../../core/lib/filesystem.js";
+import { safePathWithin } from "../../core/lib/fs-utils.js";
+import { slugifyBranchPart } from "../../core/lib/git.js";
+import { errorResult, requireConfirmation, truncate } from "../../core/lib/shared.js";
 import type { DevTestResult } from "./types.js";
 
 /** Run tests and linting against the local repo. */
@@ -135,7 +135,7 @@ export async function handleDevPushSkill(
 		return errorResult(`Skill not found at ${skillSrc}`);
 	}
 
-	const skillDest = join(repoDir, "skills", params.skill_name);
+	const skillDest = join(repoDir, "core", "skills", params.skill_name);
 	mkdirSync(skillDest, { recursive: true });
 	cpSync(skillSrc, skillDest, { recursive: true });
 

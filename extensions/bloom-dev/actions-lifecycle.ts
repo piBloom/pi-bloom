@@ -5,8 +5,8 @@
  */
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { run } from "../../lib/exec.js";
-import { errorResult } from "../../lib/shared.js";
+import { run } from "../../core/lib/exec.js";
+import { errorResult } from "../../core/lib/shared.js";
 
 const SENTINEL = ".dev-enabled";
 

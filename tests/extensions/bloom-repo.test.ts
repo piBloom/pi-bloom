@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseGithubSlugFromUrl, slugifyBranchPart } from "../../lib/git.js";
+import { parseGithubSlugFromUrl, slugifyBranchPart } from "../../core/lib/git.js";
 
 // ---------------------------------------------------------------------------
 // parseGithubSlugFromUrl (inlined from lib/os-utils.ts)

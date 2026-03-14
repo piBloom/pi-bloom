@@ -6,8 +6,8 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { run } from "../../lib/exec.js";
-import { errorResult, requireConfirmation, truncate } from "../../lib/shared.js";
+import { run } from "../../core/lib/exec.js";
+import { errorResult, requireConfirmation, truncate } from "../../core/lib/shared.js";
 import type { DevBuildResult } from "./types.js";
 
 const DEV_IMAGE_TAG = "localhost/bloom:dev";

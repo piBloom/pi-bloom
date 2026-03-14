@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { PiRoomSessionOptions } from "../../daemon/pi-room-session.js";
+import type { PiRoomSessionOptions } from "../../core/daemon/pi-room-session.js";
 
 type SessionListener = (event: Record<string, unknown>) => void;
 
@@ -86,7 +86,7 @@ describe("PiRoomSession", () => {
 	});
 
 	it("creates a Pi SDK session and routes prompt then follow_up semantics", async () => {
-		const { PiRoomSession } = await import("../../daemon/pi-room-session.js");
+		const { PiRoomSession } = await import("../../core/daemon/pi-room-session.js");
 		const session = new PiRoomSession(options);
 
 		await session.spawn();
@@ -102,7 +102,7 @@ describe("PiRoomSession", () => {
 	});
 
 	it("forwards agent events and extracts final assistant text", async () => {
-		const { PiRoomSession } = await import("../../daemon/pi-room-session.js");
+		const { PiRoomSession } = await import("../../core/daemon/pi-room-session.js");
 		const session = new PiRoomSession(options);
 
 		await session.spawn();
@@ -123,7 +123,7 @@ describe("PiRoomSession", () => {
 	});
 
 	it("disposes the underlying Pi session", async () => {
-		const { PiRoomSession } = await import("../../daemon/pi-room-session.js");
+		const { PiRoomSession } = await import("../../core/daemon/pi-room-session.js");
 		const session = new PiRoomSession(options);
 
 		await session.spawn();

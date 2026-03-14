@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validatePinnedImage, validateServiceName } from "../../lib/services-validation.js";
+import { validatePinnedImage, validateServiceName } from "../../core/lib/services-validation.js";
 
 // ---------------------------------------------------------------------------
 // validateServiceName

@@ -38,7 +38,7 @@ describe("audit rotation", () => {
 		writeFileSync(join(auditDir, "notes.txt"), "not an audit file");
 
 		// Run extension session_start (triggers rotation)
-		const mod = await import("../../extensions/bloom-audit/index.js");
+		const mod = await import("../../core/extensions/bloom-audit/index.js");
 		const api = createMockExtensionAPI();
 		const ctx = createMockExtensionContext();
 		mod.default(api as never);
@@ -64,7 +64,7 @@ describe("audit rotation", () => {
 			writeFileSync(join(auditDir, name), '{"ts":"x","event":"tool_call","tool":"t","toolCallId":"1"}\n');
 		}
 
-		const mod = await import("../../extensions/bloom-audit/index.js");
+		const mod = await import("../../core/extensions/bloom-audit/index.js");
 		const api = createMockExtensionAPI();
 		const ctx = createMockExtensionContext();
 		mod.default(api as never);

@@ -12,6 +12,6 @@
 		"composite": true,
 		"sourceMap": true
 	},
-	"include": ["extensions/**/*.ts", "lib/**/*.ts", "daemon/**/*.ts", "cli/**/*.ts", "tests/**/*.ts"],
+	"include": ["core/**/*.ts", "extensions/**/*.ts", "cli/**/*.ts", "tests/**/*.ts"],
 	"exclude": ["node_modules", "dist"]
 }

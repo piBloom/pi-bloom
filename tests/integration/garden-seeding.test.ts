@@ -18,7 +18,7 @@ afterEach(() => {
 // We test garden seeding by importing and calling the bloom-garden extension
 // which calls ensureBloom + seedBlueprints in its session_start handler.
 async function runGardenExtension() {
-	const mod = await import("../../extensions/bloom-garden/index.js");
+	const mod = await import("../../core/extensions/bloom-garden/index.js");
 	const api = createMockExtensionAPI();
 	const ctx = createMockExtensionContext();
 	mod.default(api as never);

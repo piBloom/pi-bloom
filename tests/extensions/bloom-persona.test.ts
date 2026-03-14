@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { normalizeCommand } from "../../extensions/bloom-persona/actions.js";
+import { normalizeCommand } from "../../core/extensions/bloom-persona/actions.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
 
@@ -9,7 +9,7 @@ let api: MockExtensionAPI;
 beforeEach(async () => {
 	temp = createTempGarden();
 	api = createMockExtensionAPI();
-	const mod = await import("../../extensions/bloom-persona/index.js");
+	const mod = await import("../../core/extensions/bloom-persona/index.js");
 	mod.default(api as never);
 });
 

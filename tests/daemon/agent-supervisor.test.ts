@@ -1,15 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { AgentDefinition } from "../../daemon/agent-registry.js";
-import type { RoomEnvelope } from "../../daemon/router.js";
-import type { SessionEvent } from "../../daemon/session-events.js";
-import { AgentSupervisor } from "../../daemon/agent-supervisor.js";
+import type { AgentDefinition } from "../../core/daemon/agent-registry.js";
+import { AgentSupervisor } from "../../core/daemon/agent-supervisor.js";
+import type { RoomEnvelope } from "../../core/daemon/router.js";
+import type { SessionEvent } from "../../core/daemon/session-events.js";
 
-function makeAgent(
-	id: string,
-	userId: string,
-	mode: AgentDefinition["respond"]["mode"],
-): AgentDefinition {
+function makeAgent(id: string, userId: string, mode: AgentDefinition["respond"]["mode"]): AgentDefinition {
 	return {
 		id,
 		name: id[0]?.toUpperCase() + id.slice(1),
@@ -38,12 +34,12 @@ class FakeSession {
 	});
 
 	constructor(
-			public readonly opts: {
-				agent: AgentDefinition;
-				onAgentEnd: (agentId: string, text: string) => void;
-				onEvent: (agentId: string, event: SessionEvent) => void;
-				onExit: (agentId: string, code: number | null) => void;
-			},
+		public readonly opts: {
+			agent: AgentDefinition;
+			onAgentEnd: (agentId: string, text: string) => void;
+			onEvent: (agentId: string, event: SessionEvent) => void;
+			onExit: (agentId: string, code: number | null) => void;
+		},
 	) {}
 
 	async sendMessage(text: string): Promise<void> {
@@ -197,7 +193,9 @@ describe("AgentSupervisor", () => {
 
 		expect(createdSessions).toHaveLength(1);
 		expect(createdSessions[0]?.opts.agent.id).toBe("planner");
-		expect(createdSessions[0]?.sentMessages[0]).toContain("[matrix: @alex:bloom] @planner:bloom propose a plan, then @critic:bloom point out the biggest flaw");
+		expect(createdSessions[0]?.sentMessages[0]).toContain(
+			"[matrix: @alex:bloom] @planner:bloom propose a plan, then @critic:bloom point out the biggest flaw",
+		);
 
 		createdSessions[0]?.triggerAgentEnd("1. Clear junk\n2. Sort essentials\n3. Reset the desk");
 		await flushAsyncWork();

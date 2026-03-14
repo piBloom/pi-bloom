@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { formatEntries, handleAuditReview } from "../../extensions/bloom-audit/actions.js";
-import type { AuditEntry } from "../../extensions/bloom-audit/types.js";
+import { formatEntries, handleAuditReview } from "../../core/extensions/bloom-audit/actions.js";
+import type { AuditEntry } from "../../core/extensions/bloom-audit/types.js";
 import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
 
 let temp: TempGarden;

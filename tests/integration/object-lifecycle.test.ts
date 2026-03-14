@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { parseFrontmatter } from "../../lib/frontmatter.js";
+import { parseFrontmatter } from "../../core/lib/frontmatter.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
 import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 async function setupObjectsExtension() {
-	const mod = await import("../../extensions/bloom-objects/index.js");
+	const mod = await import("../../core/extensions/bloom-objects/index.js");
 	const api = createMockExtensionAPI();
 	const ctx = createMockExtensionContext();
 	mod.default(api as never);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getRemoteUrl, inferRepoUrl } from "../../lib/repo.js";
+import { getRemoteUrl, inferRepoUrl } from "../../core/lib/repo.js";
 
 describe("getRemoteUrl", () => {
 	it("returns null for a nonexistent repo directory", async () => {

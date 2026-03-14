@@ -20,6 +20,11 @@ OS-level infrastructure is separate from service packages and is baked into the 
 - `netbird.service`
 - `pi-daemon.service`
 
+Repository structure note:
+
+- `core/` is Bloom itself: OS image assets, daemon, persona, bundled skills, built-in extensions, and shared runtime code
+- `extensions/` is reserved for non-core/operator extensions such as dev and repo tooling
+
 ## Bloom Directory
 
 Default Bloom home is `~/Bloom/` unless `BLOOM_DIR` is set.
@@ -251,11 +256,11 @@ Key daemon files:
 
 | Path | Purpose |
 |------|---------|
-| `daemon/index.ts` | bootstrap and mode selection |
-| `daemon/pi-room-session.ts` | Pi SDK-backed room session lifecycle |
-| `daemon/agent-supervisor.ts` | multi-agent routing and session orchestration |
-| `daemon/router.ts` | routing policy |
-| `daemon/room-state.ts` | duplicate, cooldown, and reply-budget tracking |
+| `core/daemon/index.ts` | bootstrap and mode selection |
+| `core/daemon/pi-room-session.ts` | Pi SDK-backed room session lifecycle |
+| `core/daemon/agent-supervisor.ts` | multi-agent routing and session orchestration |
+| `core/daemon/router.ts` | routing policy |
+| `core/daemon/room-state.ts` | duplicate, cooldown, and reply-budget tracking |
 
 ## Bundled Skills
 

@@ -46,7 +46,7 @@ still depend on the local host and network.
 
 ## OS Image
 
-The bootc image is built from `os/Containerfile` and current `justfile` targets.
+The bootc image is built from `core/os/Containerfile` and current `justfile` targets.
 
 Current expectations:
 

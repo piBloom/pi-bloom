@@ -9,7 +9,7 @@ import {
 	handleGardenStatus,
 	handleSkillCreate,
 	handleSkillList,
-} from "../../extensions/bloom-garden/actions.js";
+} from "../../core/extensions/bloom-garden/actions.js";
 
 let bloomDir: string;
 

@@ -1,9 +1,9 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loadAgentDefinitions, loadAgentDefinitionsResult } from "../../daemon/agent-registry.js";
+import { loadAgentDefinitions, loadAgentDefinitionsResult } from "../../core/daemon/agent-registry.js";
 
 describe("loadAgentDefinitions", () => {
 	const tempDirs: string[] = [];
@@ -158,9 +158,7 @@ matrix:
 
 		const result = loadAgentDefinitionsResult({ bloomDir });
 		expect(result.agents).toEqual([]);
-		expect(result.errors).toEqual([
-			expect.stringContaining("missing required field 'id'"),
-		]);
+		expect(result.errors).toEqual([expect.stringContaining("missing required field 'id'")]);
 	});
 
 	it("skips agents with missing name and records the error", () => {
@@ -179,9 +177,7 @@ matrix:
 
 		const result = loadAgentDefinitionsResult({ bloomDir });
 		expect(result.agents).toEqual([]);
-		expect(result.errors).toEqual([
-			expect.stringContaining("missing required field 'name'"),
-		]);
+		expect(result.errors).toEqual([expect.stringContaining("missing required field 'name'")]);
 	});
 
 	it("skips agents with missing matrix.username and records the error", () => {
@@ -201,9 +197,7 @@ matrix:
 
 		const result = loadAgentDefinitionsResult({ bloomDir });
 		expect(result.agents).toEqual([]);
-		expect(result.errors).toEqual([
-			expect.stringContaining("missing required field 'matrix.username'"),
-		]);
+		expect(result.errors).toEqual([expect.stringContaining("missing required field 'matrix.username'")]);
 	});
 
 	it("loads valid agents even when another agent definition is malformed", () => {

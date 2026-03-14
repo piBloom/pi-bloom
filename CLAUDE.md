@@ -51,13 +51,9 @@ just clean
 
 | Path | Purpose |
 |------|---------|
-| `extensions/` | Pi extensions |
-| `daemon/` | room daemon |
-| `lib/` | shared helpers |
+| `core/` | Bloom core: OS image, daemon, persona, skills, built-in extensions, runtime helpers |
+| `extensions/` | non-core Pi extensions |
 | `services/` | packaged services and template |
-| `skills/` | bundled skills |
-| `persona/` | default persona layers |
-| `os/` | bootc image build assets |
 | `tests/` | test suite |
 | `docs/` | live docs only |
 
@@ -73,6 +69,6 @@ just clean
 ## Do Not
 
 - keep stale plan/spec archives in the live docs tree
-- describe `lib/` as purely functional when the current module is host-aware
+- describe `core/lib/` as purely functional when the current module is host-aware
 - document deleted daemon components such as `session-pool.ts` or `room-registry.ts`
 - claim a workflow is template- or policy-driven unless the code actually does that today

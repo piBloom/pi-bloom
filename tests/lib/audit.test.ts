@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayStamp, SENSITIVE_KEY, sanitize, summarizeInput } from "../../lib/audit.js";
+import { dayStamp, SENSITIVE_KEY, sanitize, summarizeInput } from "../../core/lib/audit.js";
 
 // ---------------------------------------------------------------------------
 // dayStamp

@@ -1,9 +1,9 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AgentDefinition } from "../../daemon/agent-registry.js";
+import type { AgentDefinition } from "../../core/daemon/agent-registry.js";
 
 interface MockClientInstance {
 	homeserver: string;
@@ -46,13 +46,9 @@ vi.mock("matrix-bot-sdk", () => ({
 	AutojoinRoomsMixin: { setupOnClient: mockSetupOnClient },
 }));
 
-import { MatrixClientPool } from "../../daemon/matrix-client-pool.js";
+import { MatrixClientPool } from "../../core/daemon/matrix-client-pool.js";
 
-function makeAgent(
-	id: string,
-	userId: string,
-	mode: AgentDefinition["respond"]["mode"],
-): AgentDefinition {
+function makeAgent(id: string, userId: string, mode: AgentDefinition["respond"]["mode"]): AgentDefinition {
 	return {
 		id,
 		name: id[0]?.toUpperCase() + id.slice(1),
@@ -76,10 +72,7 @@ describe("MatrixClientPool", () => {
 	let dir: string;
 	let credentialsDir: string;
 	let storageDir: string;
-	const agents = [
-		makeAgent("host", "@pi:bloom", "host"),
-		makeAgent("planner", "@planner:bloom", "mentioned"),
-	];
+	const agents = [makeAgent("host", "@pi:bloom", "host"), makeAgent("planner", "@planner:bloom", "mentioned")];
 
 	beforeEach(() => {
 		dir = mkdtempSync(join(tmpdir(), "matrix-client-pool-"));

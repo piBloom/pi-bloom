@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generatePassword, matrixCredentialsPath } from "../../lib/matrix.js";
+import { generatePassword, matrixCredentialsPath } from "../../core/lib/matrix.js";
 
 describe("generatePassword", () => {
 	it("returns a base64url string of expected length", () => {

@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { parseFrontmatter } from "../../lib/frontmatter.js";
+import { parseFrontmatter } from "../../core/lib/frontmatter.js";
 import {
 	generateAgentInstructionsMarkdown,
 	matrixAgentCredentialsDir,
 	matrixAgentCredentialsPath,
 	provisionMatrixAgentAccount,
-} from "../../lib/matrix.js";
+} from "../../core/lib/matrix.js";
 
 describe("matrixAgentCredentialsDir", () => {
 	it("returns the per-agent credentials directory under .pi", () => {
@@ -16,9 +16,7 @@ describe("matrixAgentCredentialsDir", () => {
 
 describe("matrixAgentCredentialsPath", () => {
 	it("returns the credential file path for an agent id", () => {
-		expect(matrixAgentCredentialsPath("planner", "/var/home/pi")).toBe(
-			"/var/home/pi/.pi/matrix-agents/planner.json",
-		);
+		expect(matrixAgentCredentialsPath("planner", "/var/home/pi")).toBe("/var/home/pi/.pi/matrix-agents/planner.json");
 	});
 });
 

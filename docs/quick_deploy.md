@@ -15,10 +15,10 @@ sudo dnf install -y just podman qemu-system-x86 edk2-ovmf
 Create a local bootc-image-builder config before generating images:
 
 ```bash
-cp os/disk_config/bib-config.example.toml os/disk_config/bib-config.toml
+cp core/os/disk_config/bib-config.example.toml core/os/disk_config/bib-config.toml
 ```
 
-Edit `os/disk_config/bib-config.toml` with your desired password, SSH key, and optional customizations.
+Edit `core/os/disk_config/bib-config.toml` with your desired password, SSH key, and optional customizations.
 
 ## Fast Dev Path: QEMU
 
@@ -31,7 +31,7 @@ just vm
 Important outputs:
 
 - image tag default: `localhost/bloom-os:latest`
-- qcow2 path: `os/output/qcow2/disk.qcow2`
+- qcow2 path: `core/os/output/qcow2/disk.qcow2`
 
 Forwarded ports in `just vm`:
 
@@ -67,7 +67,7 @@ Build a production-style ISO flow:
 just iso-production
 ```
 
-Both write outputs under `os/output/`.
+Both write outputs under `core/os/output/`.
 
 ## Direct bootc Install
 
