@@ -1,18 +1,30 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { mkdirSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type MockExtensionAPI, createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { type TempGarden, createTempGarden } from "../helpers/temp-garden.js";
 
 let temp: TempGarden;
 let api: MockExtensionAPI;
+let originalHome: string | undefined;
 
 const EXPECTED_TOOL_NAMES = ["setup_status", "setup_advance", "setup_reset"];
 
 beforeEach(async () => {
 	temp = createTempGarden();
 	api = createMockExtensionAPI();
+	originalHome = process.env.HOME;
+	process.env.HOME = temp.gardenDir;
+	vi.resetModules();
 });
 
 afterEach(() => {
+	if (originalHome === undefined) {
+		process.env.HOME = undefined;
+	} else {
+		process.env.HOME = originalHome;
+	}
 	temp.cleanup();
 });
 
@@ -74,5 +86,35 @@ describe("bloom-setup tool structure", () => {
 		await loadExtension();
 		const names = toolNames();
 		expect(new Set(names).size).toBe(names.length);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Startup gating
+// ---------------------------------------------------------------------------
+describe("bloom-setup startup gating", () => {
+	it("injects a setup-first prompt after the wizard completes and persona is still pending", async () => {
+		mkdirSync(path.join(os.homedir(), ".bloom"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".bloom", ".setup-complete"), "done", "utf-8");
+
+		await loadExtension();
+		const result = await api.fireEvent("before_agent_start", { systemPrompt: "BASE_PROMPT" });
+
+		expect(result).toEqual({
+			systemPrompt: expect.stringContaining("Before sending any normal reply in this session, you must call setup_status()"),
+		});
+		expect((result as { systemPrompt: string }).systemPrompt).toContain("Your first action for this session is setup_status().");
+		expect((result as { systemPrompt: string }).systemPrompt).toContain("BASE_PROMPT");
+	});
+
+	it("does not inject setup guidance after persona setup is already complete", async () => {
+		mkdirSync(path.join(os.homedir(), ".bloom", "wizard-state"), { recursive: true });
+		writeFileSync(path.join(os.homedir(), ".bloom", ".setup-complete"), "done", "utf-8");
+		writeFileSync(path.join(os.homedir(), ".bloom", "wizard-state", "persona-done"), "done", "utf-8");
+
+		await loadExtension();
+		const result = await api.fireEvent("before_agent_start", { systemPrompt: "BASE_PROMPT" });
+
+		expect(result).toBeUndefined();
 	});
 });

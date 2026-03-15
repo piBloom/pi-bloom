@@ -49,6 +49,13 @@ After the wizard is complete, `bloom-setup` tracks a single Pi-side step:
 
 Pi injects setup guidance until that step is marked complete.
 
+During that Pi-side first conversation, Pi should also orient the user to the platform:
+
+- Bloom keeps durable state in `~/Bloom/` using inspectable files
+- Bloom can propose persona or workflow changes through tracked evolutions instead of silently changing itself
+- Matrix is the native messaging surface, with `pi-daemon.service` keeping Pi active in rooms outside the local terminal session
+- multi-agent rooms are optional and activate when valid overlays exist in `~/Bloom/Agents/*/AGENTS.md`
+
 ### Recovery
 
 If setup state is corrupt:
@@ -84,7 +91,9 @@ Current tool surface:
 Current behavior:
 
 - before the wizard completes, `setup_status` reports that Pi is waiting for the wizard
-- after the wizard completes, Pi injects persona-step guidance until the `persona` step is marked complete
+- after the wizard completes, opening Pi causes it to check `setup_status()` before normal conversation
+- if any Pi-side setup step is still pending, Pi starts that setup flow first and defers unrelated conversation until the step is completed or skipped
+- after all Pi-side setup steps are done, Pi resumes normal conversation and the `persona` step remains marked complete
 - the wizard enables `pi-daemon.service` only when both Pi auth and default model settings are present
 - the wizard provisions built-in Bloom Home so NetBird peers have a stable page listing installed services, URLs, and shareable host info
 

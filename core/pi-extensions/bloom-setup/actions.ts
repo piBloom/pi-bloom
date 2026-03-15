@@ -163,7 +163,10 @@ export function getSetupSystemPrompt(): string {
 	const lines: string[] = [];
 	lines.push("# First-Boot Setup Wizard");
 	lines.push("");
-	lines.push("You are guiding the user through first-time setup. This is their first experience with Bloom.");
+	lines.push("The bash wizard is already complete, but Pi-side setup is not.");
+	lines.push("Before sending any normal reply in this session, you must call setup_status() and treat the remaining setup as the top priority.");
+	lines.push("If setup is still incomplete, do not continue with unrelated conversation yet. Start the current setup step immediately and keep the user in setup until all steps are completed or skipped.");
+	lines.push("Once setup_status() reports no remaining steps, normal conversation can continue.");
 	lines.push("Be warm, conversational, and guide one step at a time. Never overwhelm.");
 	lines.push('The user can say "skip" at any step.');
 	lines.push("");
@@ -176,6 +179,7 @@ export function getSetupSystemPrompt(): string {
 	lines.push(`## Current Step: ${next}`);
 	lines.push(STEP_GUIDANCE[next]);
 	lines.push("");
+	lines.push("Your first action for this session is setup_status().");
 	lines.push("After completing each step, call setup_advance(step, result) to record progress and get the next step.");
 	lines.push("If the user wants to skip, call setup_advance(step, 'skipped', reason).");
 	lines.push("Call setup_status() at any time to check progress.");
