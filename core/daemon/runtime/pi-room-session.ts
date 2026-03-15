@@ -95,7 +95,7 @@ export class PiRoomSession implements BloomSessionLike {
 
 		try {
 			if (shouldQueueFollowUp) {
-				await this.session.followUp(text);
+				await this.session.prompt(text, { streamingBehavior: "followUp" });
 			} else {
 				await this.session.prompt(text);
 			}

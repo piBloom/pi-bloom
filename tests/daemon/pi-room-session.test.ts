@@ -9,7 +9,6 @@ type SessionListener = (event: Record<string, unknown>) => void;
 
 const {
 	mockPrompt,
-	mockFollowUp,
 	mockDispose,
 	mockCreateCodingTools,
 	mockLoaderReload,
@@ -20,7 +19,6 @@ const {
 	const fakeSession = {
 		isStreaming: false,
 		prompt: vi.fn().mockResolvedValue(undefined),
-		followUp: vi.fn().mockResolvedValue(undefined),
 		dispose: vi.fn(),
 		subscribe: vi.fn((fn: SessionListener) => {
 			listener = fn;
@@ -35,7 +33,6 @@ const {
 
 	return {
 		mockPrompt: fakeSession.prompt,
-		mockFollowUp: fakeSession.followUp,
 		mockDispose: fakeSession.dispose,
 		mockCreateCodingTools: vi.fn().mockReturnValue([]),
 		mockLoaderReload: vi.fn().mockResolvedValue(undefined),
@@ -77,7 +74,6 @@ describe("PiRoomSession", () => {
 			onExit: vi.fn(),
 		};
 		mockPrompt.mockClear();
-		mockFollowUp.mockClear();
 		mockDispose.mockClear();
 		mockCreateCodingTools.mockClear();
 		mockLoaderReload.mockClear();
@@ -85,7 +81,7 @@ describe("PiRoomSession", () => {
 		mockFakeSession.isStreaming = false;
 	});
 
-	it("creates a Pi SDK session and routes prompt then follow_up semantics", async () => {
+	it("creates a Pi SDK session and routes prompt then queued follow-up via prompt()", async () => {
 		const { PiRoomSession } = await import("../../core/daemon/runtime/pi-room-session.js");
 		const session = new PiRoomSession(options);
 
@@ -95,10 +91,20 @@ describe("PiRoomSession", () => {
 
 		await session.sendMessage("hello");
 		expect(mockPrompt).toHaveBeenCalledWith("hello");
-		expect(mockFollowUp).not.toHaveBeenCalled();
 
 		await session.sendMessage("queued");
-		expect(mockFollowUp).toHaveBeenCalledWith("queued");
+		expect(mockPrompt).toHaveBeenLastCalledWith("queued", { streamingBehavior: "followUp" });
+	});
+
+	it("queues follow-up prompts while the Pi session is streaming", async () => {
+		const { PiRoomSession } = await import("../../core/daemon/runtime/pi-room-session.js");
+		const session = new PiRoomSession(options);
+
+		await session.spawn();
+		mockFakeSession.isStreaming = true;
+
+		await session.sendMessage("confirm v4si66");
+		expect(mockPrompt).toHaveBeenCalledWith("confirm v4si66", { streamingBehavior: "followUp" });
 	});
 
 	it("forwards agent events and extracts final assistant text", async () => {
