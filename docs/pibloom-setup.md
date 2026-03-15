@@ -32,6 +32,7 @@ Current responsibilities:
 
 Optional service prompts offered by the wizard:
 
+- Bloom Home landing page on port `8080`
 - Bloom Web Chat (`cinny`) on port `8081`
 - `dufs` WebDAV file server on port `5000`
 
@@ -85,6 +86,7 @@ Current behavior:
 - before the wizard completes, `setup_status` reports that Pi is waiting for the wizard
 - after the wizard completes, Pi injects persona-step guidance until the `persona` step is marked complete
 - the wizard enables `pi-daemon.service` only when both Pi auth and default model settings are present
+- the wizard installs Bloom Home so NetBird peers have a stable page listing installed services, URLs, and shareable host info
 
 ## 🔗 Related
 

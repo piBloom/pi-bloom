@@ -7,6 +7,7 @@ import { join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../lib/exec.js";
 import { getQuadletDir } from "../../lib/filesystem.js";
+import { writeServiceHomeRuntime } from "../../lib/service-home.js";
 import { loadServiceCatalog } from "../../lib/services-catalog.js";
 import { loadManifest, saveManifest } from "../../lib/services-manifest.js";
 import { errorResult, requireConfirmation, truncate } from "../../lib/shared.js";
@@ -166,6 +167,10 @@ export async function handleManifestApply(
 
 	if (manifestChanged && !dryRun) {
 		saveManifest(manifest, manifestPath);
+	}
+
+	if (!dryRun) {
+		await writeServiceHomeRuntime(join(os.homedir(), ".config", "bloom"), repoDir, signal);
 	}
 
 	const summary = [

@@ -108,7 +108,7 @@ export default function (pi: ExtensionAPI) {
 			),
 		}),
 		async execute(_toolCallId, params, signal) {
-			return handleManifestSync(params, manifestPath, signal);
+			return handleManifestSync(params, manifestPath, repoDir, signal);
 		},
 	});
 
@@ -123,7 +123,7 @@ export default function (pi: ExtensionAPI) {
 			enabled: Type.Optional(Type.Boolean({ description: "Whether service should be running (default: true)" })),
 		}),
 		async execute(_toolCallId, params) {
-			return handleManifestSetService(params, manifestPath);
+			return handleManifestSetService(params, manifestPath, repoDir);
 		},
 	});
 

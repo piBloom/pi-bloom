@@ -37,6 +37,7 @@ Current packages:
 
 | Path | Role |
 |------|------|
+| `services/home/` | packaged NetBird landing page for service discovery on port `8080` |
 | `services/cinny/` | packaged Bloom Web Chat client using a pinned upstream image on port `8081` |
 | `services/dufs/` | packaged WebDAV file server using a pinned upstream image on port `5000` |
 | `services/code-server/` | packaged editor service built as a local image and exposed on port `8443` |

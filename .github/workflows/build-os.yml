@@ -39,8 +39,16 @@ jobs:
       - name: Biome check
         run: npm run check
 
-      - name: Run tests with coverage
-        run: npm run test:coverage
+      - name: Run CI test suite
+        run: npm run test:ci
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-os-coverage
+          path: coverage/
+          if-no-files-found: warn
 
       - name: Lint OS build scripts
         run: shellcheck core/os/build_files/*.sh core/os/packages/repos.sh

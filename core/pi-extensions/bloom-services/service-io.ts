@@ -13,6 +13,7 @@ import os from "node:os";
 import { join, posix as posixPath } from "node:path";
 import { run } from "../../lib/exec.js";
 import { getQuadletDir } from "../../lib/filesystem.js";
+import { writeServiceHomeRuntime } from "../../lib/service-home.js";
 import { findLocalServicePackage } from "../../lib/services-catalog.js";
 
 /** Install a service from a bundled local package. Copies Quadlet files, SKILL.md, and config files. */
@@ -83,6 +84,8 @@ export async function installServicePackage(
 			writeFileSync(dest, readFileSync(src));
 		}
 	}
+
+	await writeServiceHomeRuntime(configDir, repoDir, signal);
 
 	return { ok: true, source: "local", ref: name };
 }

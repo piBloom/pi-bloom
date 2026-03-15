@@ -7,7 +7,7 @@ ConditionPathExists=!/etc/hostname
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/sh -c 'printf "%s\n" bloom > /etc/hostname && /usr/bin/hostname -F /etc/hostname'
+ExecStart=/usr/bin/sh -c 'printf "%s\n" bloom > /etc/hostname && printf "%s\n" bloom > /proc/sys/kernel/hostname'
 RemainAfterExit=yes
 
 [Install]

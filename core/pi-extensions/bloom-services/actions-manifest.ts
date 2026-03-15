@@ -2,7 +2,9 @@
  * Manifest handlers for bloom-services — show, sync, set, and apply declarative service state.
  */
 import os from "node:os";
+import { join } from "node:path";
 import { run } from "../../lib/exec.js";
+import { writeServiceHomeRuntime } from "../../lib/service-home.js";
 import { type Manifest, loadManifest, saveManifest } from "../../lib/services-manifest.js";
 import { validateServiceName } from "../../lib/services-validation.js";
 import { errorResult } from "../../lib/shared.js";
@@ -42,6 +44,7 @@ export function handleManifestShow(manifestPath: string) {
 export async function handleManifestSync(
 	params: { mode?: "detect" | "update" },
 	manifestPath: string,
+	repoDir: string,
 	signal: AbortSignal | undefined,
 ) {
 	const mode = params.mode ?? "detect";
@@ -107,6 +110,7 @@ export async function handleManifestSync(
 		}
 
 		saveManifest(updated, manifestPath);
+		await writeServiceHomeRuntime(join(os.homedir(), ".config", "bloom"), repoDir, signal);
 		const text =
 			drifts.length > 0
 				? `Manifest updated. Resolved ${drifts.length} drift(s):\n${drifts.join("\n")}`
@@ -131,7 +135,7 @@ export async function handleManifestSync(
 	};
 }
 
-export function handleManifestSetService(
+export async function handleManifestSetService(
 	params: {
 		name: string;
 		image: string;
@@ -139,6 +143,7 @@ export function handleManifestSetService(
 		enabled?: boolean;
 	},
 	manifestPath: string,
+	repoDir: string,
 ) {
 	const guard = validateServiceName(params.name);
 	if (guard) return errorResult(guard);
@@ -150,6 +155,7 @@ export function handleManifestSetService(
 		enabled: params.enabled ?? true,
 	};
 	saveManifest(manifest, manifestPath);
+	await writeServiceHomeRuntime(join(os.homedir(), ".config", "bloom"), repoDir);
 	return {
 		content: [
 			{

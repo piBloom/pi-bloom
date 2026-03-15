@@ -1,0 +1,25 @@
+[Unit]
+Description=Bloom Home - NetBird service landing page
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/library/nginx:1.29.1-alpine
+ContainerName=bloom-home
+
+PublishPort=8080:80
+
+Volume=%h/.config/bloom/home:/usr/share/nginx/html:ro
+
+PodmanArgs=--memory=96m
+PodmanArgs=--security-opt label=disable
+NoNewPrivileges=true
+LogDriver=journald
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

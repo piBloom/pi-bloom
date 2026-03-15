@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { run } from "../../lib/exec.js";
 import { getQuadletDir } from "../../lib/filesystem.js";
 import { parseFrontmatter } from "../../lib/frontmatter.js";
+import { writeServiceHomeRuntime } from "../../lib/service-home.js";
 import { loadServiceCatalog, servicePreflightErrors } from "../../lib/services-catalog.js";
 import { loadManifest, saveManifest } from "../../lib/services-manifest.js";
 import { validateServiceName } from "../../lib/services-validation.js";
@@ -80,6 +81,7 @@ async function installDependency(
 	const depManifest = loadManifest(manifestPath);
 	depManifest.services[dep] = { image: depImage || "unknown", version: depVersion, enabled: true };
 	saveManifest(depManifest, manifestPath);
+	await writeServiceHomeRuntime(join(os.homedir(), ".config", "bloom"), repoDir, signal);
 	return { ok: true };
 }
 
@@ -207,6 +209,8 @@ export async function handleInstall(
 		};
 		saveManifest(manifest, manifestPath);
 	}
+
+	await writeServiceHomeRuntime(join(os.homedir(), ".config", "bloom"), repoDir, signal);
 
 	return {
 		content: [

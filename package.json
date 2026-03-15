@@ -35,6 +35,10 @@
 	"scripts": {
 		"docs:check": "node scripts/check-docs-links.mjs",
 		"test": "vitest run",
+		"test:unit": "vitest run tests/lib tests/extensions tests/daemon",
+		"test:integration": "vitest run tests/integration",
+		"test:e2e": "vitest run tests/e2e",
+		"test:ci": "npm run test:unit && npm run test:integration && npm run test:e2e && npm run test:coverage",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
 		"build": "rm -rf dist && tsc --build",

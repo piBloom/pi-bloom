@@ -11,6 +11,7 @@ const requireConfirmationMock = vi.fn();
 const truncateMock = vi.fn((text: string) => text);
 const getQuadletDirMock = vi.fn();
 const ensureServiceInstalledMock = vi.fn();
+const writeServiceHomeRuntimeMock = vi.fn();
 
 vi.mock("../../core/lib/exec.js", () => ({
 	run: runMock,
@@ -27,6 +28,10 @@ vi.mock("../../core/lib/services-catalog.js", () => ({
 vi.mock("../../core/lib/services-manifest.js", () => ({
 	loadManifest: loadManifestMock,
 	saveManifest: saveManifestMock,
+}));
+
+vi.mock("../../core/lib/service-home.js", () => ({
+	writeServiceHomeRuntime: writeServiceHomeRuntimeMock,
 }));
 
 vi.mock("../../core/lib/shared.js", () => ({
@@ -56,6 +61,7 @@ describe("handleManifestApply", () => {
 		truncateMock.mockClear();
 		getQuadletDirMock.mockReset();
 		ensureServiceInstalledMock.mockReset();
+		writeServiceHomeRuntimeMock.mockReset();
 
 		quadletDir = fs.mkdtempSync(path.join(os.tmpdir(), "bloom-apply-quadlet-"));
 		getQuadletDirMock.mockReturnValue(quadletDir);
@@ -74,6 +80,7 @@ describe("handleManifestApply", () => {
 		});
 		requireConfirmationMock.mockResolvedValue(null);
 		runMock.mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+		writeServiceHomeRuntimeMock.mockResolvedValue(undefined);
 		ensureServiceInstalledMock.mockImplementation(async () => {
 			fs.writeFileSync(path.join(quadletDir, "bloom-app.container"), "[Container]\nImage=test\n");
 			return {
@@ -126,6 +133,7 @@ describe("handleManifestApply", () => {
 			},
 			"/tmp/Bloom/manifest.yaml",
 		);
+		expect(writeServiceHomeRuntimeMock).toHaveBeenCalledWith("/home/alex/.config/bloom", "/tmp/repo", undefined);
 		expect(result.content[0].text).toContain("Installed app from bundled local package");
 	});
 });

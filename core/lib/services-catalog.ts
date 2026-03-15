@@ -30,6 +30,16 @@ export interface ServiceCatalogEntry {
 	depends?: string[];
 	/** Host port for direct mesh access and DNS routing. */
 	port?: number;
+	/** Human-facing service title for access pages and UI copy. */
+	title?: string;
+	/** One-line service description for access pages and UI copy. */
+	description?: string;
+	/** Short icon text rendered as a badge in the access page UI. */
+	icon_text?: string;
+	/** Human-facing local path hint, if the service exposes a known local directory. */
+	path_hint?: string;
+	/** Optional URL path appended to the service origin in access UIs. */
+	access_path?: string;
 	models?: Array<{
 		volume: string;
 		path: string;

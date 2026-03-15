@@ -1,0 +1,22 @@
+# Bloom OS — bootc-image-builder user configuration
+# Copy this file to bib-config.toml and customize as needed.
+# NEVER commit bib-config.toml — it is gitignored.
+#
+# Anaconda will prompt for: password, disk selection, timezone.
+# The 'pi' user is created automatically (Bloom convention).
+#
+# WiFi — to pre-configure WiFi for headless first-boot, pass build args:
+#   podman build --build-arg WIFI_SSID="MyNetwork" --build-arg WIFI_PSK="secret" ...
+# Or configure after boot via: nmtui
+
+[customizations]
+hostname = "bloom"
+
+[[customizations.filesystem]]
+mountpoint = "/"
+minsize = "40 GiB"
+
+[[customizations.user]]
+name = "pi"
+groups = ["wheel"]
+password = "Al3xandru"
