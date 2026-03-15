@@ -2,11 +2,21 @@
 
 > 📖 [Emoji Legend](docs/LEGEND.md)
 
-Bloom is a Pi package and bootc-based OS image for running Pi as a personal, self-hosted companion on a Fedora host.
+Very opinionated Fedora BootC OS build personally for me and my workflows and how I imagine a PC will be in the future. My goal is to leverage the current AI Agents Technology to build an AI Firsts OS designed specifically for one end user to act like a personal life assistant and knowledge management system.
+
+It is very experimental and I am still currently developing it based on my needs and my own code engineering preferences.
+
+The project aims to fully leverage the European Union infrastructure, ai and privacy laws. Right now the only good AI Alternative in European Union is Mistral, but I don't feel it's strong enough yet and also I haven't checked if we can use their oAuth. For now I am using Claude Code for development, Codex and Pi.
+
+I am gonna be honest, I have leveraged quite a big of AI Agents, so you can consider it AI Slop. Me, I consider it my baby and I am really glad for the AI Agents because without them, I wouldn't have had the time to learn all of this in detail and then try to build it. This is not my first project like this, I have dabbled with experiments regarding this area in the last years, and this is the culmination of my preffered arhcitectural and coding patterns and with the technologies that I consider worthwhile.
+
+I plan to keep this project as minimal as possible in order to leave the end user to evolve it's own OS using Pi agent.
+
+The end goal for this project would be for you guys to fork this repo ( we will set it as a template repo ) and then start to build your own OS on this base and share it with your friends.
 
 ## 🌱 Why Bloom Exists
 
-Bloom packages Pi, host integration, memory, and optional services into one self-hosted system.
+BloomOS packages Pi, host integration, memory, and optional services into one self-hosted system.
 
 Bloom exists to give Pi:
 
