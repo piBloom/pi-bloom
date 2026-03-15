@@ -82,7 +82,7 @@ describe("daemon bootstrap", () => {
 		createSingleAgentRuntimeMock.mockReturnValue({ start: startMock, stop: stopMock });
 		loadAgentDefinitionsResultMock.mockReturnValue({ agents: [], errors: ["bad overlay"] });
 
-		await import("../../core/daemon/index.ts");
+		await import("../../core/daemon/index.js");
 
 		expect(logWarnMock).toHaveBeenCalledWith("skipping invalid agent definition", { error: "bad overlay" });
 		expect(createSingleAgentRuntimeMock).toHaveBeenCalledWith(
@@ -108,7 +108,8 @@ describe("daemon bootstrap", () => {
 			errors: [],
 		});
 
-		await import("../../core/daemon/index.ts?multi");
+		const bootstrapModule = "../../core/daemon/index.js?multi";
+		await import(bootstrapModule);
 
 		expect(createMultiAgentRuntimeMock).toHaveBeenCalledWith(
 			expect.objectContaining({
