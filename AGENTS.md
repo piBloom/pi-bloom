@@ -340,8 +340,14 @@ Additional service documentation in-tree:
 
 | Path | Role |
 |------|------|
-| `services/matrix/SKILL.md` | Matrix infrastructure reference |
-| `services/netbird/SKILL.md` | NetBird infrastructure reference |
+| `docs/matrix-infrastructure.md` | Matrix infrastructure reference |
+| `docs/netbird-infrastructure.md` | NetBird infrastructure reference |
+
+Built-in infrastructure:
+
+| Name | Role |
+|------|------|
+| `Bloom Home` | image-baked landing page on port `8080`, generated from installed web services |
 
 ## 🛡️ Safety And Trust
 

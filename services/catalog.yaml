@@ -1,22 +1,12 @@
 version: 1
 source_repo: https://github.com/pibloom/pi-bloom
 services:
-  home:
-    version: "0.1.0"
-    category: utility
-    image: docker.io/library/nginx:1.29.1-alpine
-    optional: false
-    port: 8080
-    title: Bloom Home
-    description: NetBird landing page showing installed services and shareable access URLs
-    icon_text: HM
-    access_path: /
   cinny:
     version: "0.1.0"
     category: messaging
     image: ghcr.io/cinnyapp/cinny:v4.10.2
     optional: true
-    depends: [home]
+    home_visible: true
     port: 8081
     title: Bloom Web Chat
     description: Browser Matrix client preconfigured for this Bloom node
@@ -29,7 +19,7 @@ services:
     category: sync
     image: docker.io/sigoden/dufs:v0.38.0
     optional: false
-    depends: [home]
+    home_visible: true
     port: 5000
     title: Bloom Files
     description: WebDAV share for the intentional cross-device Bloom folder
@@ -43,7 +33,7 @@ services:
     category: development
     image: localhost/bloom-code-server:latest
     optional: true
-    depends: [home]
+    home_visible: true
     port: 8443
     title: Code Server
     description: Browser-based code editor running on the Bloom node

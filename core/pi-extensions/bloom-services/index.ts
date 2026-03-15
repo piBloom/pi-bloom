@@ -35,8 +35,18 @@ export default function (pi: ExtensionAPI) {
 			image: Type.String({ description: "Container image reference" }),
 			version: Type.Optional(Type.String({ description: "Service package version", default: "0.1.0" })),
 			category: Type.Optional(Type.String({ description: "Category annotation (e.g. utility, media)" })),
+			optional: Type.Optional(Type.Boolean({ description: "Whether the packaged service is optional", default: true })),
 			port: Type.Optional(Type.Number({ description: "Exposed local port (if any)" })),
 			container_port: Type.Optional(Type.Number({ description: "Port inside container", default: 8000 })),
+			web_service: Type.Optional(
+				Type.Boolean({
+					description: "Whether this service should appear on Bloom Home as a browser-reachable service",
+				}),
+			),
+			title: Type.Optional(Type.String({ description: "Display title for Bloom Home cards" })),
+			icon_text: Type.Optional(Type.String({ description: "Short icon badge text for Bloom Home" })),
+			path_hint: Type.Optional(Type.String({ description: "Optional local path hint shown on Bloom Home" })),
+			access_path: Type.Optional(Type.String({ description: "Optional URL path appended on Bloom Home", default: "/" })),
 			network: Type.Optional(Type.String({ description: "Podman network name", default: "host" })),
 			memory: Type.Optional(Type.String({ description: "Memory limit (e.g. 256m)", default: "256m" })),
 			socket_activated: Type.Optional(

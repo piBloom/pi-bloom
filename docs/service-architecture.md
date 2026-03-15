@@ -20,6 +20,7 @@ The rule is simple: use the lightest mechanism that solves the problem.
 
 OS-level infrastructure sits beside this model rather than inside it:
 
+- `Bloom Home` on port `8080`
 - `bloom-matrix.service`
 - `netbird.service`
 - `pi-daemon.service`
@@ -86,7 +87,6 @@ Bundled packages:
 
 | Package | Image source | Notes |
 |---------|--------------|-------|
-| `home` | pinned upstream image | default NetBird landing page on port `8080` |
 | `cinny` | pinned upstream image | optional Bloom Web Chat client on port `8081` |
 | `dufs` | pinned upstream image | packaged WebDAV file server on port `5000` |
 | `code-server` | local image `localhost/bloom-code-server:latest` | built from `services/code-server/Containerfile` and exposed on port `8443` |
@@ -112,6 +112,7 @@ Current bridge names from `services/catalog.yaml`:
 Keep this distinction clear:
 
 - daemon: core platform runtime
+- Bloom Home: image-baked access page generated from installed web services
 - service packages: optional user workloads
 
 ## 🔗 Related

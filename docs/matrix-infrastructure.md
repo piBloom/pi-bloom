@@ -10,7 +10,7 @@ Native Continuwuity Matrix server baked into the Bloom OS image.
 
 ## Overview
 
-Bloom runs its own Matrix homeserver as a native systemd service (`bloom-matrix.service`). Users register with any Matrix client and message Pi directly. No data leaves the device. No federation — fully private.
+Bloom runs its own Matrix homeserver as a native systemd service (`bloom-matrix.service`). Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
 
 ## Setup
 

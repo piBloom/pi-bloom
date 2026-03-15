@@ -225,15 +225,13 @@ print_service_access_summary() {
 	local mesh_host="${mesh_fqdn:-$mesh_ip}"
 
 	echo "  Service access:"
-	if [[ "$installed_services" == *"home"* ]]; then
-		if [[ -n "$mesh_host" ]]; then
-			echo "    Bloom Home   - http://${mesh_host}:8080"
-		fi
-		if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-			echo "    Bloom Home   - http://${mesh_ip}:8080"
-		fi
-		echo "    Share this   - send other NetBird peers the Bloom Home URL"
+	if [[ -n "$mesh_host" ]]; then
+		echo "    Bloom Home   - http://${mesh_host}:8080"
 	fi
+	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
+		echo "    Bloom Home   - http://${mesh_ip}:8080"
+	fi
+	echo "    Share this   - send other NetBird peers the Bloom Home URL"
 	if [[ "$installed_services" == *"cinny"* ]]; then
 		if [[ -n "$mesh_host" ]]; then
 			echo "    Bloom Web Chat - http://${mesh_host}:8081"
@@ -523,6 +521,40 @@ write_service_home_runtime() {
 	</body>
 	</html>
 	HTML
+}
+
+install_home_infrastructure() {
+	mkdir -p "$QUADLET_DIR" "$BLOOM_CONFIG/home"
+	cat > "$QUADLET_DIR/bloom-home.container" <<-'UNIT'
+	[Unit]
+	Description=Bloom Home - NetBird service landing page
+	After=network-online.target
+	Wants=network-online.target
+
+	[Container]
+	Image=docker.io/library/nginx:1.29.1-alpine
+	ContainerName=bloom-home
+
+	PublishPort=8080:80
+
+	Volume=%h/.config/bloom/home:/usr/share/nginx/html:ro
+
+	PodmanArgs=--memory=96m
+	PodmanArgs=--security-opt label=disable
+	NoNewPrivileges=true
+	LogDriver=journald
+
+	[Service]
+	Restart=on-failure
+	RestartSec=10
+	TimeoutStartSec=120
+
+	[Install]
+	WantedBy=default.target
+	UNIT
+
+	systemctl --user daemon-reload
+	systemctl --user start bloom-home.service
 }
 
 write_cinny_runtime_config() {
@@ -922,14 +954,12 @@ step_services() {
 	mesh_ip=$(read_checkpoint_data netbird)
 	mesh_fqdn=$(netbird_fqdn)
 
-	echo "  Installing Bloom Home landing page..."
-	write_service_home_runtime "home" "$mesh_ip" "$mesh_fqdn"
-	if install_service home; then
-		echo "  Bloom Home installed."
-		installed="home"
-		write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
+	echo "  Provisioning Bloom Home landing page..."
+	write_service_home_runtime "$installed" "$mesh_ip" "$mesh_fqdn"
+	if install_home_infrastructure; then
+		echo "  Bloom Home ready."
 	else
-		echo "  Bloom Home installation failed."
+		echo "  Bloom Home setup failed."
 	fi
 
 	read -rp "Install Bloom Web Chat? (Cinny web client for Matrix over NetBird) [y/N]: " cinny_answer

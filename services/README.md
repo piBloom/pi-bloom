@@ -37,19 +37,24 @@ Current packages:
 
 | Path | Role |
 |------|------|
-| `services/home/` | packaged NetBird landing page for service discovery on port `8080` |
 | `services/cinny/` | packaged Bloom Web Chat client using a pinned upstream image on port `8081` |
 | `services/dufs/` | packaged WebDAV file server using a pinned upstream image on port `5000` |
 | `services/code-server/` | packaged editor service built as a local image and exposed on port `8443` |
 | `services/_template/` | scaffold template source for new packages |
 | `services/catalog.yaml` | service and bridge metadata catalog |
 
+Built-in infrastructure:
+
+| Path | Role |
+|------|------|
+| Bloom Home | image-baked landing page on port `8080`, regenerated from installed web services |
+
 Reference-only infrastructure docs:
 
 | Path | Role |
 |------|------|
-| `services/matrix/SKILL.md` | Matrix infrastructure notes |
-| `services/netbird/SKILL.md` | NetBird infrastructure notes |
+| `docs/matrix-infrastructure.md` | Matrix infrastructure notes |
+| `docs/netbird-infrastructure.md` | NetBird infrastructure notes |
 
 Bridge tools use the `bridges:` section in `services/catalog.yaml` and do not require a per-bridge package directory under `services/`.
 

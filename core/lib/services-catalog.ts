@@ -28,6 +28,8 @@ export interface ServiceCatalogEntry {
 	image?: string;
 	optional?: boolean;
 	depends?: string[];
+	/** Whether this service should appear on the Bloom Home landing page. */
+	home_visible?: boolean;
 	/** Host port for direct mesh access and DNS routing. */
 	port?: number;
 	/** Human-facing service title for access pages and UI copy. */

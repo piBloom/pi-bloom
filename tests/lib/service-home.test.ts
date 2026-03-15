@@ -2,44 +2,36 @@ import { describe, expect, it } from "vitest";
 import { buildServiceHomeCards, renderServiceHomeHtml } from "../../core/lib/service-home.js";
 
 describe("buildServiceHomeCards", () => {
-	it("renders service URLs, path hints, and running status from catalog metadata", () => {
+	it("renders only Home-visible services with URLs, path hints, and running status from catalog metadata", () => {
 		const cards = buildServiceHomeCards({
 			catalog: {
-				home: {
-					title: "Bloom Home",
-					description: "Landing page",
-					icon_text: "HM",
-					port: 8080,
-				},
 				dufs: {
 					title: "Bloom Files",
 					description: "WebDAV share",
 					icon_text: "FS",
+					home_visible: true,
 					port: 5000,
 					path_hint: "~/Public/Bloom",
 				},
+				worker: {
+					title: "Background Worker",
+					description: "Hidden service",
+					port: 7000,
+				},
 			},
-			installedServices: ["home", "dufs"],
-			runningServices: new Set(["home"]),
+			installedServices: ["dufs"],
+			runningServices: new Set(["dufs"]),
 			meshAccess: { preferredHost: "bloom.mesh" },
 		});
 
 		expect(cards).toEqual([
-			{
-				name: "home",
-				title: "Bloom Home",
-				description: "Landing page",
-				iconText: "HM",
-				status: "running",
-				url: "http://bloom.mesh:8080",
-			},
 			{
 				name: "dufs",
 				title: "Bloom Files",
 				description: "WebDAV share",
 				iconText: "FS",
 				pathHint: "~/Public/Bloom",
-				status: "installed",
+				status: "running",
 				url: "http://bloom.mesh:5000",
 			},
 		]);

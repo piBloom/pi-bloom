@@ -5,7 +5,7 @@ description: Install, manage, and discover bundled service packages
 
 # Service Management
 
-Bloom services are modular capabilities bundled as local packages. Each package contains Quadlet container units and a SKILL.md file.
+Bloom services are modular capabilities bundled as local packages. Each package contains Quadlet container units and a SKILL.md file. Bloom Home is not one of those packages; it is built into the OS image and reads web-service metadata from `services/catalog.yaml`.
 
 Follow `docs/supply-chain.md` for reproducibility and verification policy.
 
@@ -15,7 +15,7 @@ Service metadata defaults (version, preflight requirements) are tracked in `serv
 
 Bloom exposes service lifecycle tools:
 
-- `service_scaffold` — create a new service package skeleton
+- `service_scaffold` — create a new service package skeleton and catalog entry
 - `service_install` — install service from bundled local package
 - `service_test` — run a local smoke test on installed units
 
@@ -50,7 +50,7 @@ If no NetBird token is configured, DNS is skipped. Services remain accessible vi
 Use this sequence when creating a new service package:
 
 1. Scaffold package files:
-   - `service_scaffold(name="demo-api", description="Demo HTTP API", image="docker.io/library/nginx:stable", version="0.1.0", port=9080, container_port=80)`
+   - `service_scaffold(name="demo-api", description="Demo HTTP API", image="docker.io/library/nginx:stable", version="0.1.0", port=9080, container_port=80, web_service=true, title="Demo API")`
 2. Smoke test locally:
    - `service_test(name="demo-api", start_timeout_sec=120)`
 3. Install from local package:
@@ -86,6 +86,8 @@ fi
 
 Use `service_install(name="{name}")` to automate this process.
 
+If the service is browser-reachable, set `web_service=true` when scaffolding it. That writes the Bloom Home metadata into `services/catalog.yaml` so the service appears on the built-in landing page after install.
+
 ## Remove a Service
 
 ```bash
@@ -110,6 +112,7 @@ These are baked into the OS image and run as native systemd services:
 
 | Service | Unit | Purpose |
 |---------|------|---------|
+| Bloom Home | `bloom-home.service` | Landing page showing installed web services and shareable URLs |
 | Matrix (Continuwuity) | `bloom-matrix.service` | Communication backbone |
 | NetBird | `netbird.service` | Mesh networking |
 

@@ -54,7 +54,10 @@ function detectInstalledServices(catalog: Record<string, ServiceCatalogEntry>): 
 	return readdirSync(quadletDir)
 		.filter((file) => file.startsWith("bloom-") && file.endsWith(".container"))
 		.map((file) => file.slice("bloom-".length, -".container".length))
-		.filter((name) => Boolean(catalog[name]))
+		.filter((name) => {
+			const entry = catalog[name];
+			return Boolean(entry?.home_visible && entry.port);
+		})
 		.sort((a, b) => a.localeCompare(b));
 }
 
@@ -167,7 +170,7 @@ export function renderServiceHomeHtml(params: {
 				})
 				.join("\n")
 		: `<article class="service-card empty-state">
-				<h2>No packaged web services installed yet</h2>
+				<h2>No web services installed yet</h2>
 				<p class="service-description">Install Cinny, dufs, code-server, or other Bloom services and this page will update itself.</p>
 			</article>`;
 

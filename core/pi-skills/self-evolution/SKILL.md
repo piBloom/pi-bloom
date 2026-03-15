@@ -36,7 +36,7 @@ When extending capabilities, prefer the lightest option: **Skill → Extension �
 - `persona_evolve` — Propose a change to a persona layer (SOUL, BODY, FACULTY, SKILL), tracked as an evolution object requiring user approval
 
 ### Service Lifecycle
-- `service_scaffold` — Generate a new service package skeleton (Quadlet + SKILL.md)
+- `service_scaffold` — Generate a new service package skeleton (Quadlet + SKILL.md) and update the service catalog
 - `service_install` — Install a service from bundled local package into Quadlet + skill paths
 - `service_test` — Smoke-test installed service units before release
 
@@ -121,6 +121,8 @@ When Bloom identifies a code-level fix or improvement to its own OS/extensions, 
 
 When Bloom identifies a need for a new containerized service, follow this workflow to create and install it.
 
+If the new service exposes a browser or HTTP UI, treat it as a Bloom Home entry as well: scaffold it with `web_service=true` and include the Home metadata (`title`, `icon_text`, `path_hint`, `access_path`) so the built-in landing page advertises it after install.
+
 ### Directory Convention
 
 ```
@@ -172,7 +174,7 @@ Reference package:
 
 Use this tool flow for repeatable service delivery:
 
-1. `service_scaffold` — generate package skeleton
+1. `service_scaffold` — generate package skeleton and, for web services, register Bloom Home metadata
 2. `service_test` — smoke test unit startup and logs
 3. `service_install` — install from local package
 4. `manifest_show` / `manifest_sync` — verify tracked state and drift

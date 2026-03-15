@@ -16,7 +16,7 @@ NetBird is installed as a native system service (not a container) because WireGu
 
 NetBird authentication is handled during Bloom's first-boot wizard using a setup key. If you need to re-authenticate:
 
-1. Get a new setup key from https://app.netbird.io → Setup Keys
+1. Get a new setup key from https://app.netbird.io -> Setup Keys
 2. Run: `sudo netbird up --setup-key <KEY>`
 3. Verify: `sudo netbird status`
 
