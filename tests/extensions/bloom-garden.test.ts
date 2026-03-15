@@ -177,7 +177,7 @@ describe("bloom-garden extension", () => {
 
 		expect(pendingReply).toEqual({ action: "handled" });
 		expect(api._sentMessages.at(-1)).toEqual({
-			message: expect.stringContaining('most recent pending confirmation for "Create Matrix agent ops"'),
+			message: expect.stringContaining("most recent pending interaction"),
 			options: undefined,
 		});
 
@@ -195,6 +195,39 @@ describe("bloom-garden extension", () => {
 		);
 
 		expect(deniedRetry.content[0]?.text).toBe("User declined: Create Matrix agent ops");
+	});
+
+	it("uses a chat selection prompt for /bloom without arguments", async () => {
+		vi.resetModules();
+		const api = createMockExtensionAPI();
+		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
+		mod.default(api as never);
+
+		const ctx = createMockExtensionContext({ hasUI: false });
+		const sessionFile = path.join(bloomDir, "session.jsonl");
+		ctx.sessionManager.getSessionFile.mockReturnValue(sessionFile);
+		ctx.sessionManager.getSessionDir.mockReturnValue(bloomDir);
+		ctx.sessionManager.getSessionId.mockReturnValue("session");
+
+		const command = api._registeredCommands.find((entry) => entry.name === "bloom") as unknown as {
+			handler: (args: string, ctx: ReturnType<typeof createMockExtensionContext>) => Promise<void>;
+		};
+
+		await command.handler("", ctx);
+
+		expect(api._sentCustomMessages).toContainEqual({
+			message: {
+				customType: "bloom-interaction",
+				content: expect.stringContaining("1. init"),
+				display: true,
+			},
+			options: { triggerTurn: false },
+		});
+
+		const reply = await api.fireEvent("input", { source: "user", text: "2" }, ctx);
+
+		expect(reply).toEqual({ action: "handled" });
+		expect(api._sentMessages.at(-1)?.message).toContain('The user selected the Bloom command action "status"');
 	});
 });
 

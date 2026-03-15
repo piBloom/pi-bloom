@@ -60,14 +60,16 @@ describe("handleContainerDeploy", () => {
 		expect(first.content[0]?.text).toContain('Confirmation required for "Deploy container bloom-code-server.service"');
 		expect(runMock).not.toHaveBeenCalled();
 
-		const pendingStore = JSON.parse(readFileSync(`${sessionFile}.bloom-confirmations.json`, "utf-8")) as {
-			records: Array<{ token: string; action: string; status: string }>;
+		const pendingStore = JSON.parse(readFileSync(`${sessionFile}.bloom-interactions.json`, "utf-8")) as {
+			records: Array<{ token: string; key: string; status: string; kind: string; resolution?: string }>;
 		};
 		expect(pendingStore.records).toHaveLength(1);
+		expect(pendingStore.records[0]?.kind).toBe("confirm");
 		expect(pendingStore.records[0]?.status).toBe("pending");
 
-		pendingStore.records[0]!.status = "approved";
-		writeFileSync(`${sessionFile}.bloom-confirmations.json`, JSON.stringify(pendingStore));
+		pendingStore.records[0]!.status = "resolved";
+		pendingStore.records[0]!.resolution = "approved";
+		writeFileSync(`${sessionFile}.bloom-interactions.json`, JSON.stringify(pendingStore));
 
 		const second = await handleContainerDeploy("bloom-code-server", undefined, ctx as never);
 

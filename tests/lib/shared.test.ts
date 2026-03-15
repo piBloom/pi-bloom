@@ -4,7 +4,15 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getBloomDir, safePath } from "../../core/lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../core/lib/frontmatter.js";
-import { createLogger, errorResult, guardBloom, nowIso, requireConfirmation } from "../../core/lib/shared.js";
+import {
+	createLogger,
+	errorResult,
+	guardBloom,
+	nowIso,
+	requestSelection,
+	requestTextInput,
+	requireConfirmation,
+} from "../../core/lib/shared.js";
 
 // ---------------------------------------------------------------------------
 // safePath
@@ -324,10 +332,11 @@ describe("requireConfirmation", () => {
 		const second = await requireConfirmation(ctx, "delete file");
 
 		expect(first).toBe(second);
-		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.bloom-confirmations.json`, "utf-8")) as {
-			records: Array<{ token: string; status: string }>;
+		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.bloom-interactions.json`, "utf-8")) as {
+			records: Array<{ token: string; status: string; kind: string }>;
 		};
 		expect(saved.records).toHaveLength(1);
+		expect(saved.records[0]?.kind).toBe("confirm");
 		expect(saved.records[0]?.status).toBe("pending");
 		fs.rmSync(dir, { recursive: true, force: true });
 	});
@@ -349,13 +358,16 @@ describe("requireConfirmation", () => {
 		const sessionFile = path.join(dir, "session.jsonl");
 		const token = "abc123";
 		fs.writeFileSync(
-			`${sessionFile}.bloom-confirmations.json`,
+			`${sessionFile}.bloom-interactions.json`,
 			JSON.stringify({
 				records: [
 					{
 						token,
-						action: "delete file",
-						status: "approved",
+						kind: "confirm",
+						key: "delete file",
+						prompt: "Allow: delete file?",
+						status: "resolved",
+						resolution: "approved",
 						createdAt: "2026-03-15T00:00:00Z",
 						updatedAt: "2026-03-15T00:00:00Z",
 					},
@@ -374,7 +386,7 @@ describe("requireConfirmation", () => {
 		const result = await requireConfirmation(ctx, "delete file");
 
 		expect(result).toBeNull();
-		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.bloom-confirmations.json`, "utf-8")) as {
+		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.bloom-interactions.json`, "utf-8")) as {
 			records: Array<{ token: string; status: string }>;
 		};
 		expect(saved.records[0]?.token).toBe(token);
@@ -386,13 +398,16 @@ describe("requireConfirmation", () => {
 		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "shared-confirm-"));
 		const sessionFile = path.join(dir, "session.jsonl");
 		fs.writeFileSync(
-			`${sessionFile}.bloom-confirmations.json`,
+			`${sessionFile}.bloom-interactions.json`,
 			JSON.stringify({
 				records: [
 					{
 						token: "abc123",
-						action: "delete file",
-						status: "denied",
+						kind: "confirm",
+						key: "delete file",
+						prompt: "Allow: delete file?",
+						status: "resolved",
+						resolution: "denied",
 						createdAt: "2026-03-15T00:00:00Z",
 						updatedAt: "2026-03-15T00:00:00Z",
 					},
@@ -411,10 +426,94 @@ describe("requireConfirmation", () => {
 		const result = await requireConfirmation(ctx, "delete file");
 
 		expect(result).toBe("User declined: delete file");
-		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.bloom-confirmations.json`, "utf-8")) as {
+		const saved = JSON.parse(fs.readFileSync(`${sessionFile}.bloom-interactions.json`, "utf-8")) as {
 			records: Array<{ status: string }>;
 		};
 		expect(saved.records[0]?.status).toBe("consumed");
+		fs.rmSync(dir, { recursive: true, force: true });
+	});
+});
+
+describe("requestSelection", () => {
+	it("returns a numbered prompt for no-UI sessions and resolves the saved choice", async () => {
+		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "shared-select-"));
+		const sessionFile = path.join(dir, "session.jsonl");
+		const ctx = {
+			hasUI: false,
+			sessionManager: {
+				getSessionFile: () => sessionFile,
+				getSessionDir: () => dir,
+				getSessionId: () => "session",
+			},
+		} as never;
+
+		const first = await requestSelection(ctx, "pick-action", "Choose action", ["init", "status"]);
+		expect(first.value).toBeNull();
+		expect(first.prompt).toContain("1. init");
+		expect(first.prompt).toContain("2. status");
+
+		fs.writeFileSync(
+			`${sessionFile}.bloom-interactions.json`,
+			JSON.stringify({
+				records: [
+					{
+						token: "abc123",
+						kind: "select",
+						key: "pick-action",
+						prompt: "Choose action",
+						options: ["init", "status"],
+						status: "resolved",
+						resolution: "status",
+						createdAt: "2026-03-15T00:00:00Z",
+						updatedAt: "2026-03-15T00:00:00Z",
+					},
+				],
+			}),
+		);
+
+		const second = await requestSelection(ctx, "pick-action", "Choose action", ["init", "status"]);
+		expect(second.value).toBe("status");
+		fs.rmSync(dir, { recursive: true, force: true });
+	});
+});
+
+describe("requestTextInput", () => {
+	it("returns a chat prompt and consumes resolved input", async () => {
+		const dir = fs.mkdtempSync(path.join(os.tmpdir(), "shared-input-"));
+		const sessionFile = path.join(dir, "session.jsonl");
+		const ctx = {
+			hasUI: false,
+			sessionManager: {
+				getSessionFile: () => sessionFile,
+				getSessionDir: () => dir,
+				getSessionId: () => "session",
+			},
+		} as never;
+
+		const first = await requestTextInput(ctx, "note", "Enter a short note", { placeholder: "one sentence" });
+		expect(first.value).toBeNull();
+		expect(first.prompt).toContain("Enter a short note");
+
+		fs.writeFileSync(
+			`${sessionFile}.bloom-interactions.json`,
+			JSON.stringify({
+				records: [
+					{
+						token: "abc123",
+						kind: "input",
+						key: "note",
+						prompt: "Enter a short note",
+						status: "resolved",
+						resolution: "hello world",
+						createdAt: "2026-03-15T00:00:00Z",
+						updatedAt: "2026-03-15T00:00:00Z",
+					},
+				],
+			}),
+		);
+
+		const second = await requestTextInput(ctx, "note", "Enter a short note");
+		expect(second.value).toBe("hello world");
 		fs.rmSync(dir, { recursive: true, force: true });
 	});
 });

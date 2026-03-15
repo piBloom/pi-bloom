@@ -1,7 +1,7 @@
 /** Shared utilities: text truncation, error formatting, and Bloom directory resolution. */
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { truncateHead } from "@mariozechner/pi-coding-agent";
-import { consumeConfirmationDecision, ensurePendingConfirmation } from "./confirmations.js";
+import { requestInteraction } from "./interactions.js";
 
 /** Truncate text to 2000 lines / 50KB using Pi's truncateHead utility. */
 export function truncate(text: string): string {
@@ -26,20 +26,76 @@ export async function requireConfirmation(
 	const requireUi = options?.requireUi ?? true;
 	if (!ctx.hasUI) {
 		if (!requireUi) return null;
-
-		const decision = consumeConfirmationDecision(ctx, action);
-		if (decision === "approved") return null;
-		if (decision === "denied") return `User declined: ${action}`;
-
-		const pending = ensurePendingConfirmation(ctx, action);
-		if (!pending) {
+		const interaction = requestInteraction(ctx, {
+			kind: "confirm",
+			key: action,
+			prompt: `Allow: ${action}?`,
+		});
+		if (!interaction) {
 			return `Cannot perform "${action}" without interactive user confirmation.`;
 		}
-		return `Confirmation required for "${action}". Reply here with "confirm ${pending.token}" to approve or "deny ${pending.token}" to cancel.`;
+		if (interaction.state === "resolved") {
+			return interaction.value === "approved" ? null : `User declined: ${action}`;
+		}
+		return interaction.prompt;
 	}
 	const confirmed = await ctx.ui.confirm("Confirm action", `Allow: ${action}?`);
 	if (!confirmed) return `User declined: ${action}`;
 	return null;
+}
+
+export async function requestSelection(
+	ctx: ExtensionContext,
+	key: string,
+	title: string,
+	options: string[],
+	config?: { resumeMessage?: string },
+): Promise<{ value: string | null; prompt?: string }> {
+	if (ctx.hasUI) {
+		const selected = await ctx.ui.select(title, options);
+		return { value: selected ?? null };
+	}
+
+	const interaction = requestInteraction(ctx, {
+		kind: "select",
+		key,
+		prompt: title,
+		options,
+		resumeMessage: config?.resumeMessage,
+	});
+	if (!interaction) {
+		return { value: null, prompt: `Cannot complete "${title}" without interactive input.` };
+	}
+	if (interaction.state === "resolved") {
+		return { value: interaction.value };
+	}
+	return { value: null, prompt: interaction.prompt };
+}
+
+export async function requestTextInput(
+	ctx: ExtensionContext,
+	key: string,
+	title: string,
+	config?: { placeholder?: string; resumeMessage?: string },
+): Promise<{ value: string | null; prompt?: string }> {
+	if (ctx.hasUI) {
+		const entered = await ctx.ui.input(title, config?.placeholder);
+		return { value: entered ?? null };
+	}
+
+	const interaction = requestInteraction(ctx, {
+		kind: "input",
+		key,
+		prompt: config?.placeholder ? `${title}\nHint: ${config.placeholder}` : title,
+		resumeMessage: config?.resumeMessage,
+	});
+	if (!interaction) {
+		return { value: null, prompt: `Cannot complete "${title}" without interactive input.` };
+	}
+	if (interaction.state === "resolved") {
+		return { value: interaction.value };
+	}
+	return { value: null, prompt: interaction.prompt };
 }
 
 /** Return current time as ISO 8601 string without milliseconds (e.g., `2026-03-06T12:00:00Z`). */

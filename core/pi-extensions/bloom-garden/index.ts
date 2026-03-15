@@ -9,8 +9,8 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { getBloomDir } from "../../lib/filesystem.js";
-import { resolveConfirmationReply } from "../../lib/confirmations.js";
-import { requireConfirmation } from "../../lib/shared.js";
+import { formatResumeMessage, resolveInteractionReply } from "../../lib/interactions.js";
+import { requestSelection, requireConfirmation } from "../../lib/shared.js";
 import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
 import {
 	type AgentCreateParams,
@@ -57,7 +57,33 @@ export default function (pi: ExtensionAPI) {
 	pi.registerCommand("bloom", {
 		description: "Bloom directory management: /bloom init | status | update-blueprints",
 		handler: async (args: string, ctx) => {
-			const sub = args.trim().split(/\s+/)[0] ?? "";
+			let sub = args.trim().split(/\s+/)[0] ?? "";
+			if (!sub) {
+				const selection = await requestSelection(
+					ctx,
+					"bloom-command",
+					"Choose a Bloom command action",
+					["init", "status", "update-blueprints"],
+					{
+						resumeMessage:
+							'The user selected the Bloom command action "{{value}}". Carry out that action now.',
+					},
+				);
+				if (!selection.value) {
+					if (selection.prompt) {
+						pi.sendMessage(
+							{
+								customType: "bloom-interaction",
+								content: selection.prompt,
+								display: true,
+							},
+							{ triggerTurn: false },
+						);
+					}
+					return;
+				}
+				sub = selection.value;
+			}
 
 			switch (sub) {
 				case "init": {
@@ -97,20 +123,17 @@ export default function (pi: ExtensionAPI) {
 			return { action: "continue" as const };
 		}
 
-		const resolution = resolveConfirmationReply(ctx, event.text);
+		const resolution = resolveInteractionReply(ctx, event.text);
 		if (!resolution) {
 			return { action: "continue" as const };
 		}
 
-		if (resolution.ambiguous) {
-			pi.sendUserMessage(
-				`The user ${resolution.status === "approved" ? "approved" : "denied"} the most recent pending confirmation for "${resolution.record.action}". Resume carefully and mention the token if you need to disambiguate future confirmations.`,
-			);
-		} else {
-			pi.sendUserMessage(
-				`The user ${resolution.status === "approved" ? "approved" : "denied"} confirmation ${resolution.record.token} for "${resolution.record.action}". Resume the blocked task if appropriate.`,
-			);
-		}
+		const message = formatResumeMessage(resolution.record, resolution.value);
+		pi.sendUserMessage(
+			resolution.ambiguous
+				? `${message} This reply was applied to the most recent pending interaction because no token was provided.`
+				: message,
+		);
 		return { action: "handled" as const };
 	});
 
