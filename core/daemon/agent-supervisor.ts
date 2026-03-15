@@ -4,6 +4,15 @@ import { createLogger } from "../lib/shared.js";
 import type { AgentDefinition } from "./agent-registry.js";
 import type { DaemonConfig } from "./config.js";
 import type { BloomSessionLike, SessionEvent } from "./contracts/session.js";
+import {
+	emitMessageBlocked,
+	emitMessageRouted,
+	emitProactiveJobCompleted,
+	emitProactiveJobFailed,
+	emitProactiveJobStarted,
+	emitSessionExit,
+	emitSessionSpawned,
+} from "./metrics.js";
 import { createRoomState } from "./room-state.js";
 import { type RoomEnvelope, routeRoomEnvelope } from "./router.js";
 import { PiRoomSession, type PiRoomSessionOptions } from "./runtime/pi-room-session.js";
@@ -78,19 +87,28 @@ export class AgentSupervisor {
 
 	async handleEnvelope(envelope: RoomEnvelope): Promise<void> {
 		if (this.shuttingDown) return;
+		const startTime = Date.now();
 		const decision = routeRoomEnvelope(envelope, this.agents, this.roomState, {
 			totalReplyBudget: this.config.totalReplyBudget,
 		});
-		if (decision.targets.length === 0) return;
+
+		if (decision.targets.length === 0) {
+			emitMessageBlocked(envelope.roomId, decision.reason);
+			return;
+		}
 
 		const [targetAgentId] = decision.targets;
-		if (!targetAgentId) return;
+		if (!targetAgentId) {
+			emitMessageBlocked(envelope.roomId, "no-target");
+			return;
+		}
 
 		await this.dispatchMessageToAgent(
 			envelope.roomId,
 			targetAgentId,
 			`[matrix: ${envelope.senderUserId}] ${envelope.body}`,
 		);
+		emitMessageRouted(targetAgentId, envelope.roomId, decision.reason, Date.now() - startTime);
 	}
 
 	async shutdown(): Promise<void> {
@@ -108,12 +126,20 @@ export class AgentSupervisor {
 
 	async dispatchProactiveJob(job: TriggeredJob): Promise<void> {
 		if (this.shuttingDown) return;
+		const startTime = Date.now();
+		emitProactiveJobStarted(job.agentId, job.roomId, job.jobId);
 		const message = [
 			`[system] Scheduled ${job.kind} job: ${job.jobId}`,
 			"You are being triggered proactively by the Bloom daemon.",
 			job.prompt,
 		].join("\n\n");
-		await this.dispatchMessageToAgent(job.roomId, job.agentId, message);
+		try {
+			await this.dispatchMessageToAgent(job.roomId, job.agentId, message);
+			emitProactiveJobCompleted(job.agentId, job.roomId, job.jobId, Date.now() - startTime);
+		} catch (error) {
+			emitProactiveJobFailed(job.agentId, job.roomId, job.jobId, String(error));
+			throw error;
+		}
 		this.enqueueProactiveJob(job.roomId, job.agentId, {
 			jobId: job.jobId,
 			kind: job.kind,
@@ -182,16 +208,18 @@ export class AgentSupervisor {
 			onEvent: (eventAgentId, event) => {
 				this.handleSessionEvent(roomId, eventAgentId, event);
 			},
-			onExit: (exitedAgentId, _code) => {
+			onExit: (exitedAgentId, code) => {
 				const sessionKey = this.sessionKey(roomId, exitedAgentId);
 				this.sessions.delete(sessionKey);
 				this.preambleSent.delete(sessionKey);
 				this.stopTyping(roomId, exitedAgentId);
+				emitSessionExit(exitedAgentId, roomId, code);
 			},
 		});
 
 		await session.spawn();
 		this.sessions.set(key, session);
+		emitSessionSpawned(agent.id, roomId);
 		return session;
 	}
 

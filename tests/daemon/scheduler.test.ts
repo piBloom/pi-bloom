@@ -64,18 +64,61 @@ describe("computeNextRunAt", () => {
 
 		expect(computeNextRunAt(job, Date.UTC(2026, 2, 14, 8, 30, 0))).toBe(Date.UTC(2026, 2, 14, 9, 0, 0));
 	});
+
+	it("supports the @weekly cron macro (Sunday at midnight)", () => {
+		const job: ScheduledJob = {
+			id: "weekly-check",
+			agentId: "host",
+			roomId: "!ops:bloom",
+			kind: "cron",
+			cron: "@weekly",
+			prompt: "Weekly check",
+		};
+
+		// 2026-03-14 is a Saturday (day 6)
+		// Next Sunday (day 0) is 2026-03-15
+		expect(computeNextRunAt(job, Date.UTC(2026, 2, 14, 12, 0, 0))).toBe(Date.UTC(2026, 2, 15, 0, 0, 0));
+	});
+
+	it("schedules day-of-week cron jobs correctly", () => {
+		const job: ScheduledJob = {
+			id: "monday-check",
+			agentId: "host",
+			roomId: "!ops:bloom",
+			kind: "cron",
+			cron: "0 9 * * 1", // Mondays at 9 AM
+			prompt: "Monday check",
+		};
+
+		// 2026-03-14 is a Saturday (day 6)
+		// Next Monday (day 1) is 2026-03-16
+		expect(computeNextRunAt(job, Date.UTC(2026, 2, 14, 12, 0, 0))).toBe(Date.UTC(2026, 2, 16, 9, 0, 0));
+
+		// If today is Monday before 9 AM, schedule today
+		// 2026-03-16 is a Monday
+		expect(computeNextRunAt(job, Date.UTC(2026, 2, 16, 8, 0, 0))).toBe(Date.UTC(2026, 2, 16, 9, 0, 0));
+
+		// If today is Monday after 9 AM, schedule next Monday
+		expect(computeNextRunAt(job, Date.UTC(2026, 2, 16, 10, 0, 0))).toBe(Date.UTC(2026, 2, 23, 9, 0, 0));
+	});
 });
 
 describe("isSupportedCronExpression", () => {
 	it("accepts the small cron subset used by Bloom", () => {
 		expect(isSupportedCronExpression("@daily")).toBe(true);
 		expect(isSupportedCronExpression("@hourly")).toBe(true);
+		expect(isSupportedCronExpression("@weekly")).toBe(true);
 		expect(isSupportedCronExpression("0 9 * * *")).toBe(true);
+		expect(isSupportedCronExpression("0 9 * * 1")).toBe(true); // Monday
+		expect(isSupportedCronExpression("0 9 * * 0")).toBe(true); // Sunday
+		expect(isSupportedCronExpression("0 9 * * 6")).toBe(true); // Saturday
 	});
 
 	it("rejects unsupported cron expressions", () => {
 		expect(isSupportedCronExpression("*/5 * * * *")).toBe(false);
-		expect(isSupportedCronExpression("0 9 * * 1")).toBe(false);
+		expect(isSupportedCronExpression("0 9 1 * *")).toBe(false); // Day of month
+		expect(isSupportedCronExpression("0 9 * 1 *")).toBe(false); // Month
+		expect(isSupportedCronExpression("0 9 * * 7")).toBe(false); // Invalid day of week
 	});
 });
 

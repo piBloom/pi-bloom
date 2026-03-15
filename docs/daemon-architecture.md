@@ -79,15 +79,17 @@ Current rules:
 
 ### Cron Expression Support
 
-The scheduler supports a limited subset of cron expressions:
+The scheduler supports a subset of cron expressions:
 
 | Expression | Description |
 |------------|-------------|
 | `@hourly` | Run at the start of every hour |
 | `@daily` | Run at midnight UTC daily |
+| `@weekly` | Run at midnight UTC on Sundays |
 | `MM HH * * *` | Daily at specific minute and hour (UTC) |
+| `MM HH * * D` | Weekly on specific day (0=Sunday, 1=Monday, ..., 6=Saturday) |
 
-**Not supported**: Day-of-month, month, and day-of-week fields must be `*`.
+**Not supported**: Day-of-month and month fields must be `*`. Sub-hour intervals are not supported.
 
 **Valid examples**:
 ```yaml
@@ -99,15 +101,26 @@ cron: "30 14 * * *"
 
 # Every hour (same as @hourly)
 cron: "0 * * * *"
+
+# Sundays at midnight (same as @weekly)
+cron: "0 0 * * 0"
+
+# Mondays at 9:00 AM UTC
+cron: "0 9 * * 1"
+
+# Weekdays at 9:00 AM UTC (configure 5 separate jobs)
+cron: "0 9 * * 1"  # Monday
+cron: "0 9 * * 2"  # Tuesday
+# etc.
 ```
 
 **Invalid examples**:
 ```yaml
-# NOT SUPPORTED: specific day of week
-cron: "0 9 * * 1"  # Mondays at 9 AM
-
 # NOT SUPPORTED: specific day of month
 cron: "0 9 15 * *"  # 15th of every month
+
+# NOT SUPPORTED: specific month
+cron: "0 9 * 1 *"  # January only
 
 # NOT SUPPORTED: sub-hour intervals
 cron: "*/5 * * * *"  # Every 5 minutes

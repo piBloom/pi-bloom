@@ -149,12 +149,14 @@ function normalizeSupportedCronExpression(expression: string): string {
 	const trimmed = expression.trim();
 	if (trimmed === "@daily") return "0 0 * * *";
 	if (trimmed === "@hourly") return "0 * * * *";
+	if (trimmed === "@weekly") return "0 0 * * 0";
 
 	const parts = trimmed.split(/\s+/);
 	if (parts.length !== 5) {
 		throw new Error(`Unsupported cron expression: ${expression}`);
 	}
-	if (parts[2] !== "*" || parts[3] !== "*" || parts[4] !== "*") {
+	// Only support day-of-week scheduling in addition to daily
+	if (parts[2] !== "*" || parts[3] !== "*") {
 		throw new Error(`Unsupported cron expression: ${expression}`);
 	}
 
@@ -166,7 +168,17 @@ function normalizeSupportedCronExpression(expression: string): string {
 	if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
 		throw new Error(`Unsupported cron expression: ${expression}`);
 	}
-	return `${minute} ${hour} * * *`;
+
+	// Validate day of week if specified (0-6, where 0 is Sunday)
+	const dayOfWeek = parts[4];
+	if (dayOfWeek !== "*") {
+		const dow = Number.parseInt(dayOfWeek ?? "", 10);
+		if (!Number.isInteger(dow) || dow < 0 || dow > 6) {
+			throw new Error(`Unsupported cron expression: ${expression}`);
+		}
+	}
+
+	return `${minute} ${hour} * * ${dayOfWeek}`;
 }
 
 function computeNextCronRunAt(expression: string, now: number): number {
@@ -177,15 +189,32 @@ function computeNextCronRunAt(expression: string, now: number): number {
 		return next.getTime();
 	}
 
-	const [minutePart, hourPart] = expression.split(" ", 2);
-	const minute = Number.parseInt(minutePart ?? "", 10);
-	const hour = Number.parseInt(hourPart ?? "", 10);
+	const parts = expression.split(" ");
+	const minute = Number.parseInt(parts[0] ?? "", 10);
+	const hour = Number.parseInt(parts[1] ?? "", 10);
+	const dayOfWeek = parts[4];
 	const next = new Date(now);
 	next.setUTCSeconds(0, 0);
 	next.setUTCMinutes(minute);
 	next.setUTCHours(hour);
-	if (next.getTime() <= now) {
+
+	if (dayOfWeek !== "*") {
+		// Day of week is specified (0-6, where 0 is Sunday)
+		const targetDow = Number.parseInt(dayOfWeek, 10);
+		const currentDow = next.getUTCDay();
+		let daysUntilTarget = targetDow - currentDow;
+		if (daysUntilTarget < 0) {
+			daysUntilTarget += 7;
+		}
+		if (daysUntilTarget === 0 && next.getTime() <= now) {
+			// Target is today but time has passed, schedule for next week
+			daysUntilTarget = 7;
+		}
+		next.setUTCDate(next.getUTCDate() + daysUntilTarget);
+	} else if (next.getTime() <= now) {
+		// Daily schedule - move to tomorrow
 		next.setUTCDate(next.getUTCDate() + 1);
 	}
+
 	return next.getTime();
 }

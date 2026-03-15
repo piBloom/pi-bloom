@@ -1,5 +1,6 @@
 import { ClientEvent, type MatrixClient, type MatrixEvent, MemoryStore, SyncState, createClient } from "matrix-js-sdk";
 import type { MatrixBridge, MatrixIdentity, MatrixTextEvent } from "../contracts/matrix.js";
+import { emitMatrixConnected, emitMatrixDisconnected, emitMatrixError } from "../metrics.js";
 import { enforceMapLimit, pruneExpiredEntries } from "../ordered-cache.js";
 
 interface ClientEntry {
@@ -52,7 +53,9 @@ export class MatrixJsSdkBridge implements MatrixBridge {
 			this.attachEventHandlers(identity, client);
 			try {
 				await this.startClient(client);
+				emitMatrixConnected(identity.id);
 			} catch (error) {
+				emitMatrixError(identity.id, String(error));
 				this.clients.delete(identity.id);
 				client.stopClient();
 				throw error;
@@ -62,6 +65,7 @@ export class MatrixJsSdkBridge implements MatrixBridge {
 
 	stop(): void {
 		for (const entry of this.clients.values()) {
+			emitMatrixDisconnected(entry.identity.id);
 			entry.client.stopClient();
 		}
 		this.clients.clear();

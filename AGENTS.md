@@ -292,10 +292,11 @@ proactive:
 
 Notes:
 
-- `cron` currently supports `@hourly`, `@daily`, and fixed `minute hour * * *` (daily only)
+- `cron` supports `@hourly`, `@daily`, `@weekly`, and `minute hour * * day-of-week`
 - Cron expressions use UTC time
-- Day-of-month, month, and day-of-week fields must be `*`
-- Examples: `0 9 * * *` (9 AM UTC), `30 14 * * *` (2:30 PM UTC)
+- Day-of-month and month fields must be `*`
+- Day-of-week: 0=Sunday, 1=Monday, ..., 6=Saturday
+- Examples: `0 9 * * *` (daily 9 AM), `0 9 * * 1` (Mondays 9 AM)
 - See [docs/daemon-architecture.md](docs/daemon-architecture.md) for full cron documentation
 - duplicate proactive job ids are rejected within the same room for a single agent overlay
 - heartbeat failures back off by the configured interval instead of immediately looping
