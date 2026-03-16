@@ -45,7 +45,7 @@ npm run test
 Tool calls:
 
 ```text
-bloom_repo(action="configure", repo_url="https://github.com/pibloom/pi-bloom.git")
+bloom_repo(action="configure", repo_url="https://github.com/alexradunet/piBloom.git")
 bloom_repo(action="status")
 bloom_repo(action="sync", branch="main")
 bloom_repo_submit_pr(title="docs: ...")

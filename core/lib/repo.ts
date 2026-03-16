@@ -23,12 +23,12 @@ export async function inferRepoUrl(repoDir: string, signal?: AbortSignal): Promi
 			const imageRef = status?.status?.booted?.image?.image?.image ?? "";
 			const match = imageRef.match(/^ghcr\.io\/([^/]+)\/bloom-os(?:[:@].+)?$/);
 			if (match?.[1]) {
-				return `https://github.com/${match[1]}/pi-bloom.git`;
+				return `https://github.com/${match[1]}/piBloom.git`;
 			}
 		} catch {
 			// fall through
 		}
 	}
 
-	return "https://github.com/pibloom/pi-bloom.git";
+	return "https://github.com/alexradunet/piBloom.git";
 }

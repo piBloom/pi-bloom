@@ -1,5 +1,5 @@
 version: 1
-source_repo: https://github.com/pibloom/pi-bloom
+source_repo: https://github.com/alexradunet/piBloom
 services:
   fluffychat:
     version: "0.1.0"

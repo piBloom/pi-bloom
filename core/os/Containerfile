@@ -77,5 +77,5 @@ RUN printf '' > /etc/motd
 LABEL containers.bootc="1"
 LABEL org.opencontainers.image.title="Bloom OS"
 LABEL org.opencontainers.image.description="Pi-native AI companion OS on Fedora bootc"
-LABEL org.opencontainers.image.source="https://github.com/alexradunet/pi-bloom"
+LABEL org.opencontainers.image.source="https://github.com/alexradunet/piBloom"
 LABEL org.opencontainers.image.version="0.1.0"
