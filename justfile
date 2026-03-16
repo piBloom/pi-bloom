@@ -61,6 +61,7 @@ test-iso:
 		echo "Error: No ISO found. Run 'just iso' first."
 		exit 1
 	fi
+	rm -f "$disk" "$vars"
 	qemu-img create -f qcow2 "$disk" 40G
 	cp "{{ ovmf_vars }}" "$vars"
 	echo "Starting ISO installation test..."
@@ -90,6 +91,7 @@ test-iso-gui:
 		echo "Error: No ISO found. Run 'just iso' first."
 		exit 1
 	fi
+	rm -f "$disk" "$vars"
 	qemu-img create -f qcow2 "$disk" 40G
 	cp "{{ ovmf_vars }}" "$vars"
 	echo "Starting ISO installation test (GUI)..."
