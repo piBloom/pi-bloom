@@ -2,7 +2,7 @@
 # Copy this file to bib-config.toml and customize as needed.
 # NEVER commit bib-config.toml — it is gitignored.
 #
-# Anaconda will prompt for: password, disk selection, timezone.
+# The bootc installer will write the OS image directly to disk.
 # The 'pi' user is created automatically (Bloom convention).
 #
 # WiFi — to pre-configure WiFi for headless first-boot, pass build args:

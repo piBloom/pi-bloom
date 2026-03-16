@@ -2,7 +2,7 @@
 
 image := env("BLOOM_IMAGE", "localhost/bloom-os:latest")
 output := "core/os/output"
-bib := "quay.io/centos-bootc/bootc-image-builder:latest"
+bib := "quay.io/centos-bootc/bootc-image-builder:latest"  # official osbuild BIB image (built on Fedora, centos-bootc is just the org name)
 bib_config := "core/os/disk_config/bib-config.toml"
 podman := env("BLOOM_PODMAN", "sudo podman")
 storage := env("BLOOM_STORAGE", "/var/lib/containers/storage")
@@ -27,8 +27,8 @@ qcow2: build _require-bib-config
 		--type qcow2 --local {{ image }}
 	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
-# Generate installer ISO via bootc-image-builder (uses bootc native installer, pulls from registry)
-iso: _require-bib-config
+# Generate raw disk image for offline/direct flashing (dd to target disk, no installer needed)
+raw: build _require-bib-config
 	mkdir -p {{ output }}
 	{{ podman }} run --rm -it --privileged --pull=newer \
 		--security-opt label=type:unconfined_t \
@@ -36,11 +36,11 @@ iso: _require-bib-config
 		-v ./{{ output }}:/output \
 		-v {{ storage }}:/var/lib/containers/storage \
 		{{ bib }} \
-		--type bootc-installer --installer-payload-ref {{ remote_image }}
+		--type raw --local {{ image }}
 	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
-# Generate production ISO from registry image
-iso-production: build _require-bib-config
+# Generate installer ISO via bootc-image-builder (offline, self-contained)
+iso: build _require-bib-config
 	mkdir -p {{ output }}
 	{{ podman }} run --rm -it --privileged --pull=newer \
 		--security-opt label=type:unconfined_t \
@@ -48,7 +48,7 @@ iso-production: build _require-bib-config
 		-v ./{{ output }}:/output \
 		-v {{ storage }}:/var/lib/containers/storage \
 		{{ bib }} \
-		--type bootc-installer {{ image }}
+		--type bootc-installer --installer-payload-ref {{ image }} {{ image }}
 	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
 # Test ISO installation in QEMU (creates a temporary disk, boots ISO installer)

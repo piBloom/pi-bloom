@@ -5,6 +5,5 @@ coverage/
 .omc/
 core/os/output/
 .worktrees/
-os/disk_config/bib-config.toml  # contains plaintext password — never commit
+core/os/disk_config/bib-config.toml  # contains plaintext password — never commit
 cosign.key
-core/os/disk_config/bib-config-iso.toml
