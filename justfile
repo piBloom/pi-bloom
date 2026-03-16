@@ -3,6 +3,25 @@
 image := env("BLOOM_IMAGE", "localhost/bloom-os:latest")
 output := "core/os/output"
 bib := "quay.io/centos-bootc/bootc-image-builder:latest"  # official osbuild BIB image (built on Fedora, centos-bootc is just the org name)
+# WORKAROUND: bib_patched and build-bib exist because bootc-installer is broken in the official BIB
+# image — python3-mako is missing from the lorax buildroot (getBuildPackages returns nil for the
+# bootc container path). Track: https://github.com/osbuild/images/blob/main/pkg/manifest/anaconda_installer.go
+# To remove when upstream ships the fix:
+#   1. Delete core/os/bib.Containerfile
+#   2. Delete this variable and the build-bib recipe
+#   3. Revert iso recipe to exactly:
+#        iso: build _require-bib-config
+#            mkdir -p {{ output }}
+#            {{ podman }} run --rm -it --privileged --pull=newer \
+#                --security-opt label=type:unconfined_t \
+#                -v ./{{ bib_config }}:/config.toml:ro \
+#                -v ./{{ output }}:/output \
+#                -v {{ storage }}:/var/lib/containers/storage \
+#                {{ bib }} \
+#                --type bootc-installer --installer-payload-ref {{ image }} {{ image }}
+#            sudo chown -R $(id -u):$(id -g) {{ output }} || true
+# To force a rebuild of the patched image: {{ podman }} rmi localhost/bib-patched:latest && just build-bib
+bib_patched := "localhost/bib-patched:latest"
 bib_config := "core/os/disk_config/bib-config.toml"
 podman := env("BLOOM_PODMAN", "sudo podman")
 storage := env("BLOOM_STORAGE", "/var/lib/containers/storage")
@@ -39,15 +58,26 @@ raw: build _require-bib-config
 		--type raw --local {{ image }}
 	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
+# WORKAROUND: builds patched BIB image — see bib_patched comment above
+build-bib:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	if {{ podman }} image exists {{ bib_patched }}; then
+		echo "Patched BIB image already present, skipping build"
+	else
+		{{ podman }} build -f core/os/bib.Containerfile -t {{ bib_patched }} .
+	fi
+
 # Generate installer ISO via bootc-image-builder (offline, self-contained)
-iso: build _require-bib-config
+# WORKAROUND: depends on build-bib and uses bib_patched instead of bib — see bib_patched comment above
+iso: build _require-bib-config build-bib
 	mkdir -p {{ output }}
-	{{ podman }} run --rm -it --privileged --pull=newer \
+	{{ podman }} run --rm -it --privileged --pull=never \
 		--security-opt label=type:unconfined_t \
 		-v ./{{ bib_config }}:/config.toml:ro \
 		-v ./{{ output }}:/output \
 		-v {{ storage }}:/var/lib/containers/storage \
-		{{ bib }} \
+		{{ bib_patched }} \
 		--type bootc-installer --installer-payload-ref {{ image }} {{ image }}
 	sudo chown -R $(id -u):$(id -g) {{ output }} || true
 
