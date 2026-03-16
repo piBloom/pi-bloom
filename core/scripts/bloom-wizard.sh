@@ -680,31 +680,16 @@ step_welcome() {
 
 step_password() {
 	echo "--- Password Setup ---"
-	# Check if user has no password set (empty password field in /etc/shadow)
-	# or if password is locked (! or * at start of hash)
-	local has_no_password=false
-	local shadow_entry
-	shadow_entry=$(grep "^$(whoami):" /etc/shadow 2>/dev/null | cut -d: -f2)
-	if [[ -z "$shadow_entry" ]] || [[ "$shadow_entry" == "!"* ]] || [[ "$shadow_entry" == "*"* ]]; then
-		has_no_password=true
-	fi
-	
-	if [[ "$has_no_password" == true ]]; then
-		echo "Welcome! Let's set up a password for your account."
+	echo "Welcome! Let's set up a password for your account."
+	echo ""
+	# Always use sudo to bypass current password check on first boot.
+	# The pi user has no initial password, but 'passwd' alone may still
+	# prompt for one depending on PAM configuration. Using sudo allows
+	# root to set the password directly.
+	while ! sudo passwd "$(whoami)"; do
 		echo ""
-		# Use sudo to set password directly without prompting for old one
-		while ! sudo passwd "$(whoami)"; do
-			echo ""
-			echo "Password setup failed. Please try again."
-		done
-	else
-		echo "Let's change your password."
-		echo ""
-		while ! passwd; do
-			echo ""
-			echo "Password change failed. Please try again."
-		done
-	fi
+		echo "Password setup failed. Please try again."
+	done
 	mark_done password
 }
 
