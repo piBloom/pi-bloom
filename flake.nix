@@ -31,21 +31,21 @@
         qcow2 = nixos-generators.nixosGenerate {
           inherit system;
           format = "qcow";
-          modules = [ disko.nixosModules.disko ./core/os/hosts/x86_64.nix ];
+          modules = [ ./core/os/hosts/x86_64.nix ];
           specialArgs = { inherit piAgent bloomApp; };
         };
 
         raw = nixos-generators.nixosGenerate {
           inherit system;
           format = "raw";
-          modules = [ disko.nixosModules.disko ./core/os/hosts/x86_64.nix ];
+          modules = [ ./core/os/hosts/x86_64.nix ];
           specialArgs = { inherit piAgent bloomApp; };
         };
 
         iso = nixos-generators.nixosGenerate {
           inherit system;
           format = "install-iso";
-          modules = [ disko.nixosModules.disko ./core/os/hosts/x86_64.nix ];
+          modules = [ ./core/os/hosts/x86_64.nix ];
           specialArgs = { inherit piAgent bloomApp; };
         };
       };
@@ -55,6 +55,7 @@
         modules = [
           disko.nixosModules.disko
           ./core/os/hosts/x86_64.nix
+          ./core/os/hosts/x86_64-disk.nix
         ];
         specialArgs = { inherit piAgent bloomApp; };
       };

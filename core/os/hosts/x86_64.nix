@@ -16,8 +16,6 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  disko.devices = import ../disk/x86_64-disk.nix;
-
   nixpkgs.config.allowUnfree = true;
 
   time.timeZone   = "UTC";
