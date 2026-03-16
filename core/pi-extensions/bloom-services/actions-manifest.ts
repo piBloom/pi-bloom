@@ -3,7 +3,6 @@
  */
 import os from "node:os";
 import { join } from "node:path";
-import { run } from "../../lib/exec.js";
 import { writeServiceHomeRuntime } from "../../lib/service-home.js";
 import { type Manifest, loadManifest, saveManifest } from "../../lib/services-manifest.js";
 import { validateServiceName } from "../../lib/services-validation.js";
@@ -81,17 +80,8 @@ export async function handleManifestSync(
 	};
 }
 
-async function detectBootedImage(currentImage: string | undefined, signal: AbortSignal | undefined) {
-	const bootcResult = await run("bootc", ["status", "--format=json"], signal);
-	if (bootcResult.exitCode !== 0) return currentImage;
-	try {
-		const status = JSON.parse(bootcResult.stdout) as {
-			status?: { booted?: { image?: { image?: { image?: string } } } };
-		};
-		return status?.status?.booted?.image?.image?.image ?? currentImage;
-	} catch {
-		return currentImage;
-	}
+async function detectBootedImage(currentImage: string | undefined, _signal: AbortSignal | undefined) {
+	return currentImage;
 }
 
 function collectManifestDrifts(
