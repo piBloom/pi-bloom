@@ -680,12 +680,20 @@ step_welcome() {
 
 step_password() {
 	echo "--- Password Setup ---"
-	# Check if user has no password (NP = No Password)
-	if passwd -S 2>/dev/null | grep -q ' NP '; then
+	# Check if user has no password set (empty password field in /etc/shadow)
+	# or if password is locked (! or * at start of hash)
+	local has_no_password=false
+	local shadow_entry
+	shadow_entry=$(grep "^$(whoami):" /etc/shadow 2>/dev/null | cut -d: -f2)
+	if [[ -z "$shadow_entry" ]] || [[ "$shadow_entry" == "!"* ]] || [[ "$shadow_entry" == "*"* ]]; then
+		has_no_password=true
+	fi
+	
+	if [[ "$has_no_password" == true ]]; then
 		echo "Welcome! Let's set up a password for your account."
 		echo ""
 		# Use sudo to set password directly without prompting for old one
-		while ! sudo passwd "$(whoami)" 2>/dev/null; do
+		while ! sudo passwd "$(whoami)"; do
 			echo ""
 			echo "Password setup failed. Please try again."
 		done
