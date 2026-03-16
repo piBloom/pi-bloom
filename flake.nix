@@ -56,6 +56,10 @@
               
               # Enable growpart for auto-resize on first boot
               boot.growPartition = true;
+              
+              # Add virtio drivers for VM disk/network
+              boot.initrd.availableKernelModules = [ "virtio_net" "virtio_pci" "virtio_blk" "virtio_scsi" "9p" "9pnet_virtio" ];
+              boot.kernelModules = [ "kvm-intel" "kvm-amd" ];
             })
           ];
         }).config.system.build.image;
@@ -85,6 +89,10 @@
               };
               
               boot.growPartition = true;
+              
+              # Add virtio drivers for VM disk/network
+              boot.initrd.availableKernelModules = [ "virtio_net" "virtio_pci" "virtio_blk" "virtio_scsi" "9p" "9pnet_virtio" ];
+              boot.kernelModules = [ "kvm-intel" "kvm-amd" ];
             })
           ];
         }).config.system.build.image;
