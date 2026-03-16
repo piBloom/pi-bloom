@@ -22,6 +22,8 @@
     networking.firewall.trustedInterfaces = [ "wt0" ];
     networking.networkmanager.enable = true;
 
+    # TODO: PSK is stored in the Nix store in plaintext when set. Use sops-nix or
+    # agenix for production deployments. WiFi is disabled by default (ssid = "").
     environment.etc."NetworkManager/system-connections/wifi.nmconnection" =
       lib.mkIf (config.bloom.wifi.ssid != "") {
         mode = "0600";

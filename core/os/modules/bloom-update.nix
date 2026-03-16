@@ -17,7 +17,7 @@
     serviceConfig = {
       Type            = "oneshot";
       # nixos-rebuild lives at /run/current-system/sw/bin/nixos-rebuild (not in nixpkgs).
-      # path attribute only accepts derivations, so set PATH via Environment instead.
+      # serviceConfig.path only accepts derivations, so set PATH via Environment instead.
       Environment     = "PATH=/run/current-system/sw/bin:${lib.makeBinPath (with pkgs; [ nix git jq ])}";
       ExecStart       = pkgs.writeShellScript "bloom-update" (builtins.readFile ../../../core/scripts/bloom-update.sh);
       RemainAfterExit = false;

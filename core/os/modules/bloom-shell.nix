@@ -46,7 +46,7 @@ in
     }
   ];
 
-  services.getty.autologinUser = "pi";
+  services.getty.autologinUser = lib.mkForce "pi";
 
   systemd.services."serial-getty@ttyS0" = {
     overrideStrategy = "asDropin";
