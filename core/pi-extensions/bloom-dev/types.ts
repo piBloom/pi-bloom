@@ -7,13 +7,13 @@ export interface DevStatus {
 	codeServerRunning: boolean;
 	localBuildAvailable: boolean;
 	repoPath?: string;
-	localImageTag?: string;
+	nixResultPath?: string;
 }
 
-/** Result of a local container image build. */
+/** Result of a nix build invocation. */
 export interface DevBuildResult {
 	success: boolean;
-	imageTag: string;
+	imageTag?: string;
 	duration: number;
 	size?: string;
 	error?: string;

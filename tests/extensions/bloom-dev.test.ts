@@ -51,7 +51,7 @@ describe("bloom-dev types", () => {
 		expect(status.enabled).toBe(false);
 		expect(status.repoConfigured).toBe(true);
 		expect(status.repoPath).toBeUndefined();
-		expect(status.localImageTag).toBeUndefined();
+		expect(status.nixResultPath).toBeUndefined();
 
 		const full: DevStatus = {
 			enabled: true,
@@ -59,16 +59,15 @@ describe("bloom-dev types", () => {
 			codeServerRunning: true,
 			localBuildAvailable: true,
 			repoPath: "/home/pi/.bloom/pi-bloom",
-			localImageTag: "localhost/bloom:dev",
+			nixResultPath: "/home/pi/.bloom/pi-bloom/result",
 		};
 		expect(full.repoPath).toBe("/home/pi/.bloom/pi-bloom");
-		expect(full.localImageTag).toBe("localhost/bloom:dev");
+		expect(full.nixResultPath).toBe("/home/pi/.bloom/pi-bloom/result");
 	});
 
 	it("DevBuildResult has required and optional fields", () => {
 		const result: DevBuildResult = {
 			success: true,
-			imageTag: "localhost/bloom:dev",
 			duration: 120,
 		};
 		expect(result.success).toBe(true);
@@ -77,7 +76,6 @@ describe("bloom-dev types", () => {
 
 		const failed: DevBuildResult = {
 			success: false,
-			imageTag: "localhost/bloom:dev",
 			duration: 5,
 			error: "build failed",
 		};
@@ -245,7 +243,7 @@ describe("handleDevBuild", () => {
 		const missing = join(temp.gardenDir, "nonexistent");
 		const result = await handleDevBuild(missing);
 		expect("isError" in result && result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Containerfile not found");
+		expect(result.content[0].text).toContain("Repo directory not found");
 	});
 });
 
@@ -271,11 +269,11 @@ describe("handleDevLoop", () => {
 		expect(result.content[0].text).toContain("Repo directory not configured");
 	});
 
-	it("returns error when repo dir has no Containerfile", async () => {
+	it("returns error when repo dir does not exist", async () => {
 		const missing = join(temp.gardenDir, "nonexistent-repo");
 		const result = await handleDevLoop({}, undefined, undefined, missing);
 		expect("isError" in result && result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Containerfile not found");
+		expect(result.content[0].text).toContain("Repo directory not found");
 	});
 });
 
@@ -341,16 +339,12 @@ describe("isImmutableGlobalNpmError", () => {
 // Error-path tests for validation and missing resources
 // ---------------------------------------------------------------------------
 describe("handleDevSwitch validation", () => {
-	it("rejects image ref starting with '-'", async () => {
-		const result = await handleDevSwitch("--malicious-flag", undefined, {} as never);
-		expect("isError" in result && result.isError).toBe(true);
-		expect(result.content[0].text).toContain("must not start with '-'");
-	});
-
-	it("rejects image ref starting with '--'", async () => {
-		const result = await handleDevSwitch("--rm", undefined, {} as never);
-		expect("isError" in result && result.isError).toBe(true);
-		expect(result.content[0].text).toContain("must not start with '-'");
+	it("does not crash when called without UI context", async () => {
+		const result = await handleDevSwitch(undefined, undefined, {} as never);
+		// Without a real UI context, requireConfirmation should return an error string (no crash)
+		expect(result).toBeDefined();
+		expect(result.content).toBeDefined();
+		expect(result.content.length).toBeGreaterThan(0);
 	});
 });
 

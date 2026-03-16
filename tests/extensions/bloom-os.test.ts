@@ -6,7 +6,7 @@ let temp: TempGarden;
 let api: MockExtensionAPI;
 
 const EXPECTED_TOOL_NAMES = [
-	"bootc",
+	"nixos_update",
 	"container",
 	"systemd_control",
 	"update_status",

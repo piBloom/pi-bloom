@@ -1,5 +1,5 @@
 /**
- * Build and deploy handlers: container image build, OS switch, rollback, and the dev loop.
+ * Build and deploy handlers: nix build, NixOS switch, rollback, and the dev loop.
  *
  * @module actions-build
  */
@@ -10,23 +10,22 @@ import { run } from "../../lib/exec.js";
 import { errorResult, requireConfirmation, truncate } from "../../lib/shared.js";
 import type { DevBuildResult } from "./types.js";
 
-const DEV_IMAGE_TAG = "localhost/bloom:dev";
+const NIX_BIN = "/nix/var/nix/profiles/default/bin/nix";
 
-/** Build a local container image from the repo. */
+/** Build the bloom-app derivation using nix build. */
 export async function handleDevBuild(repoDir: string, signal?: AbortSignal, tag?: string) {
-	const imageTag = tag ?? DEV_IMAGE_TAG;
-	const containerfile = join(repoDir, "os", "Containerfile");
+	const flakeDir = repoDir;
 
-	if (!existsSync(containerfile)) {
-		return errorResult(`Containerfile not found at ${containerfile}. Is the repo cloned?`);
+	if (!existsSync(flakeDir)) {
+		return errorResult(`Repo directory not found at ${flakeDir}. Is the repo cloned?`);
 	}
 
 	const start = Date.now();
-	const result = await run("podman", ["build", "-f", containerfile, "-t", imageTag, repoDir], signal);
+	const result = await run(NIX_BIN, ["build", ".#bloom-app"], signal, flakeDir);
 	const duration = Math.round((Date.now() - start) / 1000);
 
 	if (result.exitCode !== 0) {
-		const buildResult: DevBuildResult = { success: false, imageTag, duration, error: result.stderr };
+		const buildResult: DevBuildResult = { success: false, imageTag: tag, duration, error: result.stderr };
 		return {
 			content: [{ type: "text" as const, text: `Build failed after ${duration}s:\n${truncate(result.stderr)}` }],
 			details: buildResult,
@@ -34,69 +33,55 @@ export async function handleDevBuild(repoDir: string, signal?: AbortSignal, tag?
 		};
 	}
 
-	const inspect = await run("podman", ["image", "inspect", imageTag, "--format", "{{.Size}}"], signal);
-	const size = inspect.exitCode === 0 ? inspect.stdout.trim() : undefined;
-
-	const buildResult: DevBuildResult = { success: true, imageTag, duration, size };
+	const buildResult: DevBuildResult = { success: true, imageTag: tag, duration };
 	return {
 		content: [
 			{
 				type: "text" as const,
-				text: `Build succeeded in ${duration}s. Image: ${imageTag}${size ? ` (${size} bytes)` : ""}`,
+				text: `Build succeeded in ${duration}s. Result symlink created at ${join(flakeDir, "result")}`,
 			},
 		],
 		details: buildResult,
 	};
 }
 
-/** Switch the running OS to a local or remote image. */
+/** Switch the running NixOS system to the local flake configuration. */
 export async function handleDevSwitch(
 	imageRef: string | undefined,
 	signal: AbortSignal | undefined,
 	ctx: ExtensionContext,
 ) {
-	const tag = imageRef ?? DEV_IMAGE_TAG;
-
-	if (tag.startsWith("-")) {
-		return errorResult("Invalid image reference: must not start with '-'");
-	}
-
-	const exists = await run("podman", ["image", "exists", tag], signal);
-	if (exists.exitCode !== 0) {
-		return errorResult(`Image ${tag} not found. Run dev_build first.`);
-	}
-
-	const denied = await requireConfirmation(ctx, `Switch OS to image ${tag}`);
+	const denied = await requireConfirmation(ctx, "Switch NixOS to local flake configuration");
 	if (denied) return errorResult(denied);
 
-	const result = await run("sudo", ["bootc", "switch", "--transport", "containers-storage", tag], signal);
+	const result = await run("sudo", ["nixos-rebuild", "switch", "--flake", "."], signal);
 	if (result.exitCode !== 0) {
-		return errorResult(`bootc switch failed: ${result.stderr}`);
+		return errorResult(`nixos-rebuild switch failed: ${result.stderr}`);
 	}
 
 	return {
-		content: [{ type: "text" as const, text: `Switched to ${tag}. Reboot to apply.` }],
-		details: { imageRef: tag, switched: true },
+		content: [{ type: "text" as const, text: "Switched to local NixOS configuration. Changes are active." }],
+		details: { switched: true },
 	};
 }
 
-/** Rollback to the previous OS deployment. */
+/** Rollback to the previous NixOS generation. */
 export async function handleDevRollback(signal: AbortSignal | undefined, ctx: ExtensionContext) {
-	const denied = await requireConfirmation(ctx, "Rollback OS to previous deployment");
+	const denied = await requireConfirmation(ctx, "Rollback NixOS to previous generation");
 	if (denied) return errorResult(denied);
 
-	const result = await run("sudo", ["bootc", "rollback"], signal);
+	const result = await run("sudo", ["nixos-rebuild", "switch", "--rollback"], signal);
 	if (result.exitCode !== 0) {
-		return errorResult(`bootc rollback failed: ${result.stderr}`);
+		return errorResult(`nixos-rebuild rollback failed: ${result.stderr}`);
 	}
 
 	return {
-		content: [{ type: "text" as const, text: "Rollback staged. Reboot to apply." }],
+		content: [{ type: "text" as const, text: "Rolled back to previous NixOS generation. Changes are active." }],
 		details: { rolledBack: true },
 	};
 }
 
-/** Run the edit-build-switch development loop: build -> switch -> reboot. */
+/** Run the edit-build-switch development loop: nix build -> nixos-rebuild switch. */
 export async function handleDevLoop(
 	params: { tag?: string; skip_reboot?: boolean },
 	signal?: AbortSignal,
@@ -107,12 +92,12 @@ export async function handleDevLoop(
 
 	const steps: string[] = [];
 
-	// Step 1: Build
+	// Step 1: nix build .#bloom-app
 	const buildResult = await handleDevBuild(repoDir, signal, params.tag);
 	if ("isError" in buildResult && buildResult.isError) return buildResult;
 	steps.push(`Build: ${buildResult.content[0].text}`);
 
-	// Step 2: Switch (if ctx is undefined, skip confirmation inside handleDevSwitch)
+	// Step 2: nixos-rebuild switch --flake .
 	if (!ctx) {
 		return errorResult("Cannot perform dev loop without an extension context for confirmation.");
 	}

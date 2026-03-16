@@ -108,7 +108,7 @@ describe("bloom-os registration", () => {
 		const api = createMockExtensionAPI();
 		mod.default(api as never);
 
-		expect(toolNames(api)).toEqual(expect.arrayContaining(["bootc", "container", "systemd_control"]));
+		expect(toolNames(api)).toEqual(expect.arrayContaining(["nixos_update", "container", "systemd_control"]));
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["before_agent_start"]));
 	});
 });

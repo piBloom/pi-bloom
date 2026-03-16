@@ -15,9 +15,8 @@ describe("getRemoteUrl", () => {
 });
 
 describe("inferRepoUrl", () => {
-	it("falls back to the default URL when no upstream remote or bootc", async () => {
+	it("falls back to the default URL when no upstream remote is found", async () => {
 		// Using a path that is not a git repo, so getRemoteUrl returns null
-		// and bootc is not available in test environment
 		const result = await inferRepoUrl("/tmp/__bloom_no_such_repo__");
 		expect(result).toBe("https://github.com/alexradunet/piBloom.git");
 	});

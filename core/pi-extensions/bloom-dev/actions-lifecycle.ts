@@ -54,7 +54,8 @@ export async function handleDevStatus(bloomRuntime: string, signal?: AbortSignal
 	const csCheck = await run("systemctl", ["--user", "is-active", "bloom-code-server.service"], signal);
 	const codeServerRunning = csCheck.exitCode === 0 && csCheck.stdout.trim() === "active";
 
-	const imgCheck = await run("podman", ["image", "exists", "localhost/bloom:dev"], signal);
+	const resultLink = join(repoDir, "result");
+	const imgCheck = await run("ls", [resultLink], signal);
 	const localBuildAvailable = imgCheck.exitCode === 0;
 
 	const lines: string[] = [
@@ -65,7 +66,7 @@ export async function handleDevStatus(bloomRuntime: string, signal?: AbortSignal
 	];
 
 	if (repoConfigured) lines.push(`Repo path: ${repoDir}`);
-	if (localBuildAvailable) lines.push("Image tag: localhost/bloom:dev");
+	if (localBuildAvailable) lines.push(`Nix result: ${resultLink}`);
 
 	return {
 		content: [{ type: "text" as const, text: lines.join("\n") }],
@@ -75,7 +76,7 @@ export async function handleDevStatus(bloomRuntime: string, signal?: AbortSignal
 			codeServerRunning,
 			localBuildAvailable,
 			repoPath: repoConfigured ? repoDir : undefined,
-			localImageTag: localBuildAvailable ? "localhost/bloom:dev" : undefined,
+			nixResultPath: localBuildAvailable ? resultLink : undefined,
 		},
 	};
 }
