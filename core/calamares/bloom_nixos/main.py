@@ -51,11 +51,13 @@ def _run():
 
     # ── Step 2: Write host-config.nix ────────────────────────────────────────
     # Calamares stores these as plain strings, not dicts.
-    timezone  = gs.value("timezoneName")          or "UTC"
-    lang      = gs.value("locale")                or "en_US.UTF-8"
-    kb_layout = gs.value("keyboardLayout")        or "us"
-    kb_variant = gs.value("keyboardVariant")      or ""
-    vconsole  = gs.value("keyboardVConsoleKeymap") or kb_layout
+    # timezone key is "timezone" in Calamares GS (not "timezoneName").
+    timezone  = gs.value("timezone")         or gs.value("timezoneName") or "UTC"
+    lang      = gs.value("locale")           or "en_US.UTF-8"
+    kb_layout = gs.value("keyboardLayout")   or "us"
+    kb_variant = gs.value("keyboardVariant") or ""
+    # vconsole keymap may not always be set; fall back to the X layout.
+    vconsole  = gs.value("keyboardVConsoleKeymap") or gs.value("keyboardLayout") or "us"
 
     # Bloom OS requires UEFI. Return an error if EFI partition is not detected.
     efi_partition = gs.value("efiSystemPartition")
@@ -141,12 +143,13 @@ def _run():
             "--no-root-passwd",
             "--flake", root + "/etc/nixos#bloom",
         ],
-        capture_output=False,
+        capture_output=True,
+        text=True,
     )
+    libcalamares.utils.debug("bloom_nixos: nixos-install stdout: " + result.stdout[-2000:])
+    libcalamares.utils.debug("bloom_nixos: nixos-install stderr: " + result.stderr[-2000:])
     if result.returncode != 0:
-        return (
-            "nixos-install failed",
-            "Check the installation log for details. You can retry from the summary page.",
-        )
+        detail = (result.stderr or result.stdout or "no output captured")[-3000:]
+        return ("nixos-install failed", detail)
 
     return None
