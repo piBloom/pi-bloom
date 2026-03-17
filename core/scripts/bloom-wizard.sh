@@ -1184,4 +1184,5 @@ main() {
 	finalize
 }
 
-main
+# Allow sourcing for function reuse without executing main
+[[ -z "${BLOOM_FIRSTBOOT_SOURCING:-}" ]] && main
