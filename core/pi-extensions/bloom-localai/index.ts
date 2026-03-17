@@ -9,23 +9,23 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
-  pi.registerProvider("localai", {
-    baseUrl: "http://localhost:11435/v1",
-    api: "openai-completions",
-    models: [
-      {
-        id: "omnicoder-9b-q4_k_m",
-        name: "OmniCoder 9B",
-        reasoning: false,
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 8192,
-        maxTokens: 4096,
-        compat: {
-          supportsDeveloperRole: false,
-          maxTokensField: "max_tokens",
-        },
-      },
-    ],
-  });
+	pi.registerProvider("localai", {
+		baseUrl: "http://localhost:11435/v1",
+		api: "openai-completions",
+		models: [
+			{
+				id: "omnicoder-9b-q4_k_m",
+				name: "OmniCoder 9B",
+				reasoning: false,
+				input: ["text"],
+				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+				contextWindow: 8192,
+				maxTokens: 4096,
+				compat: {
+					supportsDeveloperRole: false,
+					maxTokensField: "max_tokens",
+				},
+			},
+		],
+	});
 }
