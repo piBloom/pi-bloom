@@ -24,12 +24,18 @@ def run():
     root = gs.value("rootMountPoint") or "/mnt"
 
     # ── Step 1: Generate hardware-configuration.nix ──────────────────────────
+    # Calamares exec modules run as root — no pkexec needed.
     # Precondition: root is already mounted (exec-phase mount job ran before us).
     libcalamares.utils.debug("bloom_nixos: generating hardware config")
-    subprocess.check_output(
-        ["pkexec", "nixos-generate-config", "--root", root],
-        stderr=subprocess.STDOUT,
+    result = subprocess.run(
+        ["nixos-generate-config", "--root", root],
+        capture_output=True, text=True,
     )
+    if result.returncode != 0:
+        return (
+            "Hardware detection failed",
+            result.stderr or "nixos-generate-config exited with an error.",
+        )
 
     # ── Step 2: Write host-config.nix ────────────────────────────────────────
     locale_data   = gs.value("locale") or {}
@@ -119,7 +125,7 @@ def run():
     libcalamares.utils.debug("bloom_nixos: running nixos-install")
     result = subprocess.run(
         [
-            "pkexec", "nixos-install",
+            "nixos-install",
             "--root", root,
             "--no-root-passwd",
             "--flake", root + "/etc/nixos#bloom",
