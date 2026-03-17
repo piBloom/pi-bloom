@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type MockExtensionAPI, createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 
 let api: MockExtensionAPI;
 
 beforeEach(async () => {
+  vi.resetModules();
   api = createMockExtensionAPI();
   const mod = await import("../../core/pi-extensions/bloom-localai/index.js");
   mod.default(api as never);

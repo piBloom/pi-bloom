@@ -38,16 +38,14 @@ curl http://localhost:11435/v1/chat/completions \
   }'
 ```
 
-## Adding More Models
+## Changing the Model
 
-Drop any GGUF file into `/var/lib/localai/models/` and restart the service:
+llama-server loads a single model at startup specified via `--model` in the systemd service. The default is `omnicoder-9b-q4_k_m.gguf`.
 
-```bash
-sudo cp mymodel.gguf /var/lib/localai/models/
-sudo systemctl restart localai
-```
-
-Note: restart is needed because llama-server loads a single model at startup via `--model`.
+To switch models, update `core/os/modules/bloom-llm.nix` in the Bloom repo:
+- Change `modelFileName` to the new GGUF filename
+- Update the `pkgs.fetchurl` URL and SHA256
+- Rebuild the OS: `sudo nixos-rebuild switch --flake <flake>`
 
 ## When to Use Local vs Cloud
 
