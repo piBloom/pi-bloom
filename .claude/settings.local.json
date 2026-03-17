@@ -36,7 +36,23 @@
       "Bash(nix flake:*)",
       "Read(//home/alex/.nix-profile/bin/**)",
       "Read(//etc/**)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(/nix/store/pf4vr57aicchmz34p7qgd71p8xypv6qc-matrix-continuwuity-0.5.6/bin/conduwuit --help 2>&1 | head -30)",
+      "Bash(nix eval:*)",
+      "Skill(commit-commands:commit-push-pr)",
+      "Bash(sshpass:*)",
+      "Bash(systemctl --user status pi-daemon.service)",
+      "Bash(systemctl status:*)",
+      "Bash(ssh:*)",
+      "Read(//home/alex/.ssh/**)",
+      "Bash(ip neigh:*)",
+      "Bash(avahi-resolve-host-name bloom.local)",
+      "Bash(nmap -sn 192.168.1.0/24)",
+      "Bash(cat /home/alex/pi-bloom/core/pi-skills/first-boot/*.ts)",
+      "Bash(xargs cat:*)",
+      "Bash(node:*)",
+      "WebFetch(domain:search.nixos.org)",
+      "WebFetch(domain:www.freedesktop.org)"
     ]
   }
 }

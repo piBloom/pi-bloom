@@ -9,7 +9,8 @@
 	},
 	"keywords": ["pi-package"],
 	"pi": {
-		"extensions": ["./core/pi-extensions"]
+		"extensions": ["./core/pi-extensions"],
+		"skills": ["./core/pi-skills"]
 	},
 	"peerDependencies": {
 		"@mariozechner/pi-ai": "*",

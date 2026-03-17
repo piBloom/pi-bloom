@@ -15,6 +15,20 @@ PI_DIR="$HOME/.pi"
 MATRIX_HOMESERVER="http://localhost:6167"
 MATRIX_STATE_DIR="$WIZARD_STATE/matrix-state"
 
+# --- Prefill (for VM/dev use) ---
+# Create ~/.bloom/prefill.env on your host to skip manual prompts.
+# When running in a VM via `just vm`, this file is shared into the VM automatically.
+# Supported vars: PREFILL_NETBIRD_KEY, PREFILL_NAME, PREFILL_EMAIL, PREFILL_USERNAME
+PREFILL_FILE="$HOME/.bloom/prefill.env"
+# Fall back to host-shared mount (9p virtfs, available when running via `just vm`)
+if [[ ! -f "$PREFILL_FILE" && -f "/mnt/host-bloom/prefill.env" ]]; then
+	PREFILL_FILE="/mnt/host-bloom/prefill.env"
+fi
+if [[ -f "$PREFILL_FILE" ]]; then
+	# shellcheck source=/dev/null
+	source "$PREFILL_FILE"
+fi
+
 # --- Checkpoint helpers ---
 
 step_done() { [[ -f "$WIZARD_STATE/$1" ]]; }
@@ -717,14 +731,19 @@ step_password() {
 	echo "--- Password Setup ---"
 	echo "Welcome! Let's set up a password for your account."
 	echo ""
-	# Always use sudo to bypass current password check on first boot.
-	# The pi user has no initial password, but 'passwd' alone may still
-	# prompt for one depending on PAM configuration. Using sudo allows
-	# root to set the password directly.
-	while ! sudo passwd "$(whoami)"; do
-		echo ""
-		echo "Password setup failed. Please try again."
-	done
+	if [[ -n "${PREFILL_PI_PASSWORD:-}" ]]; then
+		echo "$(whoami):${PREFILL_PI_PASSWORD}" | sudo chpasswd
+		echo "Password set."
+	else
+		# Always use sudo to bypass current password check on first boot.
+		# The pi user has no initial password, but 'passwd' alone may still
+		# prompt for one depending on PAM configuration. Using sudo allows
+		# root to set the password directly.
+		while ! sudo passwd "$(whoami)"; do
+			echo ""
+			echo "Password setup failed. Please try again."
+		done
+	fi
 	mark_done password
 }
 
@@ -777,7 +796,12 @@ step_netbird() {
 	done
 
 	while true; do
-		read -rp "Setup key: " setup_key
+		if [[ -n "${PREFILL_NETBIRD_KEY:-}" ]]; then
+			setup_key="$PREFILL_NETBIRD_KEY"
+			echo "Setup key: [prefilled]"
+		else
+			read -rp "Setup key: " setup_key
+		fi
 		if [[ -z "$setup_key" ]]; then
 			echo "Setup key cannot be empty."
 			continue
@@ -841,19 +865,25 @@ step_matrix() {
 	local username
 	username=$(matrix_state_get username)
 	if [[ -z "$username" ]]; then
-		while true; do
-			read -rp "Choose a username for your Matrix account (cannot be changed later): " username
-			if [[ -z "$username" ]]; then
-				echo "Username cannot be empty."
-				continue
-			fi
-			if [[ ! "$username" =~ ^[a-z][a-z0-9._-]*$ ]]; then
-				echo "Username must start with a lowercase letter and contain only a-z, 0-9, '.', '_', '-'."
-				continue
-			fi
+		if [[ -n "${PREFILL_USERNAME:-}" ]]; then
+			username="$PREFILL_USERNAME"
+			echo "Username: [prefilled as ${username}]"
 			matrix_state_set username "$username"
-			break
-		done
+		else
+			while true; do
+				read -rp "Choose a username for your Matrix account (cannot be changed later): " username
+				if [[ -z "$username" ]]; then
+					echo "Username cannot be empty."
+					continue
+				fi
+				if [[ ! "$username" =~ ^[a-z][a-z0-9._-]*$ ]]; then
+					echo "Username must start with a lowercase letter and contain only a-z, 0-9, '.', '_', '-'."
+					continue
+				fi
+				matrix_state_set username "$username"
+				break
+			done
+		fi
 	else
 		echo "Resuming Matrix setup for @${username}:bloom"
 	fi
@@ -899,7 +929,11 @@ step_matrix() {
 	user_token=$(matrix_state_get user_token)
 	user_user_id=$(matrix_state_get user_user_id)
 	if [[ -z "$user_password" ]]; then
-		user_password=$(generate_password)
+		if [[ -n "${PREFILL_MATRIX_PASSWORD:-}" ]]; then
+			user_password="$PREFILL_MATRIX_PASSWORD"
+		else
+			user_password=$(generate_password)
+		fi
 		matrix_state_set user_password "$user_password"
 	fi
 	if [[ -z "$user_token" || -z "$user_user_id" ]]; then
@@ -959,8 +993,18 @@ step_matrix() {
 step_git() {
 	echo ""
 	echo "--- Git Identity ---"
-	read -rp "Your name: " git_name
-	read -rp "Email: " git_email
+	if [[ -n "${PREFILL_NAME:-}" ]]; then
+		git_name="$PREFILL_NAME"
+		echo "Your name: [prefilled]"
+	else
+		read -rp "Your name: " git_name
+	fi
+	if [[ -n "${PREFILL_EMAIL:-}" ]]; then
+		git_email="$PREFILL_EMAIL"
+		echo "Email: [prefilled]"
+	else
+		read -rp "Email: " git_email
+	fi
 
 	[[ -n "$git_name" ]] && git config --global user.name "$git_name"
 	[[ -n "$git_email" ]] && git config --global user.email "$git_email"

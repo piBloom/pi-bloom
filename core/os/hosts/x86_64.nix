@@ -17,6 +17,14 @@
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelParams = [ "console=tty0" "console=ttyS0,115200" ];
 
+  # VM dev share: mount host's ~/.bloom into /mnt/host-bloom via 9p virtfs.
+  # Requires QEMU -virtfs flag (see justfile). nofail means this is ignored on real hardware.
+  fileSystems."/mnt/host-bloom" = {
+    device = "host-bloom";
+    fsType = "9p";
+    options = [ "trans=virtio" "ro" "nofail" ];
+  };
+
   nixpkgs.config.allowUnfree = true;
 
   time.timeZone   = "UTC";

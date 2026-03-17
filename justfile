@@ -68,6 +68,7 @@ vm: qcow2
         -drive file="$disk",format=qcow2,if=virtio,cache=writeback \
         -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081,hostfwd=tcp::8888-:80 \
         -device virtio-net-pci,netdev=net0 \
+        -virtfs local,path="$HOME/.bloom",mount_tag=host-bloom,security_model=none,readonly=on \
         -nographic \
         -serial mon:stdio
     echo ""
@@ -105,6 +106,7 @@ vm-gui: qcow2
         -drive file="$disk",format=qcow2,if=virtio,cache=writeback \
         -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081 \
         -device virtio-net-pci,netdev=net0 \
+        -virtfs local,path="$HOME/.bloom",mount_tag=host-bloom,security_model=none,readonly=on \
         -vga virtio \
         -display gtk
 
@@ -131,6 +133,7 @@ vm-run:
         -drive file="$disk",format=qcow2,if=virtio \
         -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081,hostfwd=tcp::8888-:80 \
         -device virtio-net-pci,netdev=net0 \
+        -virtfs local,path="$HOME/.bloom",mount_tag=host-bloom,security_model=none,readonly=on \
         -nographic \
         -serial mon:stdio
 
@@ -207,6 +210,7 @@ vm-daemon: qcow2
         -drive file="$disk",format=qcow2,if=virtio,cache=writeback \
         -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000,hostfwd=tcp::8080-:8080,hostfwd=tcp::8081-:8081,hostfwd=tcp::8888-:80 \
         -device virtio-net-pci,netdev=net0 \
+        -virtfs local,path="$HOME/.bloom",mount_tag=host-bloom,security_model=none,readonly=on \
         -nographic \
         -serial file:/tmp/bloom-vm.log \
         > /dev/null 2>&1 &
