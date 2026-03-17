@@ -41,15 +41,15 @@ in
   ];
 
   # Override: Use LXQt instead of GNOME
-  services.xserver.desktopManager.gnome.enable = lib.mkForce false;
-  services.xserver.displayManager.gdm.enable = lib.mkForce false;
+  services.desktopManager.gnome.enable = lib.mkForce false;
+  services.displayManager.gdm.enable = lib.mkForce false;
 
   # Ensure we have LightDM for LXQt
   services.xserver.displayManager.lightdm.enable = lib.mkDefault true;
 
   # ISO-specific settings
   isoImage.volumeID = lib.mkDefault "BLOOM_INSTALLER";
-  isoImage.isoName = lib.mkDefault "bloom-os-installer.iso";
+  image.fileName = lib.mkDefault "bloom-os-installer.iso";
 
   # Boot configuration for live environment
   boot.kernelParams = [
@@ -99,7 +99,7 @@ in
   networking.hostName = lib.mkDefault "bloom-installer";
 
   # Disable some NixOS installer defaults we don't need
-  services.xserver.libinput.enable = true;  # Touchpad support
+  services.libinput.enable = true;  # Touchpad support
 
   # Ensure NetworkManager is enabled for WiFi GUI
   networking.networkmanager.enable = true;

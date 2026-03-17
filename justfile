@@ -197,22 +197,18 @@ test-iso:
 
 # Test graphical ISO installation in QEMU with GUI display
 # This allows testing the Calamares GUI installer
-# Note: Uses SPICE for better GUI performance
-# Requires: spicy (SPICE client) - install with: sudo dnf install spice-gtk-tools
 test-iso-gui:
     #!/usr/bin/env bash
     set -euo pipefail
     disk="/tmp/bloom-test-disk-gui.qcow2"
     vars="/tmp/bloom-ovmf-vars-gui.fd"
-    ISO="{{ output }}/iso/bloom-os-installer.iso"
     
-    # Check if ISO exists, fallback to any ISO in result
-    if [ ! -f "$ISO" ]; then
-        ISO=$(find {{ output }} -name "*.iso" | head -1)
-        if [ -z "$ISO" ]; then
-            echo "Error: No ISO found. Run 'just iso-gui' first."
-            exit 1
-        fi
+    # Find any ISO in result directory
+    ISO=$(find {{ output }} -name "*.iso" 2>/dev/null | head -1)
+    if [ -z "$ISO" ]; then
+        echo "Error: No ISO found in {{ output }}/"
+        echo "Run 'just iso-gui' first to build the graphical installer."
+        exit 1
     fi
     
     echo "Found ISO: $ISO"
