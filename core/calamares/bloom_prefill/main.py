@@ -27,14 +27,20 @@ def pretty_name():
 
 
 def _makedirs_owned(path):
-    """Create directory tree with pi ownership."""
+    """Create directory tree with pi ownership on all newly created components."""
+    parts = []
+    current = path
+    while not os.path.exists(current):
+        parts.append(current)
+        current = os.path.dirname(current)
     os.makedirs(path, exist_ok=True)
-    os.chown(path, PI_UID, PI_GID)
+    for part in reversed(parts):
+        os.chown(part, PI_UID, PI_GID)
 
 
 def _write_owned(path, content, mode=0o600):
     """Write file with pi ownership and restricted permissions."""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    _makedirs_owned(os.path.dirname(path))
     with open(path, "w") as f:
         f.write(content)
     os.chmod(path, mode)
@@ -57,12 +63,16 @@ def run():
     prefill_path = os.path.join(prefill_dir, "prefill.env")
     _makedirs_owned(prefill_dir)
 
+    def _shell_quote(value: str) -> str:
+        """Wrap value in single quotes for safe shell sourcing; escape embedded single quotes."""
+        return "'" + value.replace("'", "'\\''") + "'"
+
     prefill_content = (
-        f"PREFILL_NETBIRD_KEY={netbird_key}\n"
-        f"PREFILL_USERNAME={matrix_user}\n"
-        f"PREFILL_NAME={git_name}\n"
-        f"PREFILL_EMAIL={git_email}\n"
-        f"PREFILL_SERVICES={services}\n"
+        f"PREFILL_NETBIRD_KEY={_shell_quote(netbird_key)}\n"
+        f"PREFILL_USERNAME={_shell_quote(matrix_user)}\n"
+        f"PREFILL_NAME={_shell_quote(git_name)}\n"
+        f"PREFILL_EMAIL={_shell_quote(git_email)}\n"
+        f"PREFILL_SERVICES={_shell_quote(services)}\n"
     )
     _write_owned(prefill_path, prefill_content, mode=0o600)
     libcalamares.utils.debug(f"bloom_prefill: wrote {prefill_path}")
@@ -71,7 +81,6 @@ def run():
     settings_dir  = os.path.join(pi_home, ".pi", "agent")
     settings_path = os.path.join(settings_dir, "settings.json")
     _makedirs_owned(settings_dir)
-    os.chown(os.path.join(pi_home, ".pi"), PI_UID, PI_GID)
 
     settings = {
         "packages": ["/usr/local/share/bloom"],
