@@ -15,6 +15,7 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.kernelParams = [ "console=tty0" "console=ttyS0,115200" ];
 
   nixpkgs.config.allowUnfree = true;
 

@@ -732,7 +732,7 @@ step_netbird() {
 		sudo systemctl start netbird.service 2>/dev/null || true
 	fi
 	local wait_count=0
-	while [[ ! -S /var/run/netbird.sock ]]; do
+	while [[ ! -S /var/run/netbird/sock ]]; do
 		wait_count=$((wait_count + 1))
 		if [[ $wait_count -ge 20 ]]; then
 			echo "ERROR: NetBird daemon did not start. Run 'sudo systemctl status netbird' to debug."

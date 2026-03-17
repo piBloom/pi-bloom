@@ -35,7 +35,8 @@
       "Bash(cp:*)",
       "Bash(nix flake:*)",
       "Read(//home/alex/.nix-profile/bin/**)",
-      "Read(//etc/**)"
+      "Read(//etc/**)",
+      "Bash(python3:*)"
     ]
   }
 }
