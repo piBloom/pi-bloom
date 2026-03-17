@@ -58,6 +58,9 @@ buildNpmPackage {
     mkdir -p $out/share/bloom/.pi/agent
     echo '{"packages": ["/usr/local/share/bloom"]}' > $out/share/bloom/.pi/agent/settings.json
 
+    # extensions symlink — package.json references ./core/pi-extensions but compiled JS lands in dist/
+    ln -sf $out/share/bloom/dist/core/pi-extensions $out/share/bloom/core/pi-extensions
+
     # persona and skills symlinks — use absolute paths so they resolve correctly at runtime
     ln -sf $out/share/bloom/core/pi-persona $out/share/bloom/persona
     ln -sf $out/share/bloom/core/pi-skills  $out/share/bloom/skills
