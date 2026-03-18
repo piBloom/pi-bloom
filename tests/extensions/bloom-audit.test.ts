@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { formatEntries, handleAuditReview } from "../../core/pi-extensions/bloom-audit/actions.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { formatEntries, handleAuditReview, readEntries } from "../../core/pi-extensions/bloom-audit/actions.js";
 import type { AuditEntry } from "../../core/pi-extensions/bloom-audit/types.js";
+import { type MockExtensionAPI, createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { type TempGarden, createTempGarden } from "../helpers/temp-garden.js";
 
 let temp: TempGarden;
@@ -115,6 +116,81 @@ describe("bash audit entries", () => {
 	it("formats a bash_result entry with status 'ok' when exitCode is 0", () => {
 		const output = formatEntries([bashResultEntry], false);
 		expect(output).toContain("[ok]");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// bash operations wrapper (user_bash hook)
+// ---------------------------------------------------------------------------
+describe("bash operations wrapper", () => {
+	let bashApi: MockExtensionAPI;
+	let mockBashRun: ReturnType<typeof vi.fn>;
+
+	beforeEach(async () => {
+		temp = createTempGarden();
+		bashApi = createMockExtensionAPI();
+
+		// Provide a fake local bash runner so tests don't need a real shell
+		mockBashRun = vi.fn().mockResolvedValue({ exitCode: 0 });
+		vi.doMock("@mariozechner/pi-coding-agent", async (importOriginal) => {
+			const actual = await importOriginal<typeof import("@mariozechner/pi-coding-agent")>();
+			return {
+				...actual,
+				createLocalBashOperations: () => ({ exec: mockBashRun }),
+			};
+		});
+
+		vi.resetModules();
+		const mod = await import("../../core/pi-extensions/bloom-audit/index.js");
+		mod.default(bashApi as never);
+	});
+
+	afterEach(() => {
+		temp.cleanup();
+		vi.doUnmock("@mariozechner/pi-coding-agent");
+		vi.resetModules();
+	});
+
+	it("registers a user_bash event handler on init", () => {
+		expect(bashApi._eventHandlers.has("user_bash")).toBe(true);
+	});
+
+	it("user_bash handler returns operations object with a run function", async () => {
+		const result = (await bashApi.fireUserBash("ls -la")) as { operations?: { exec: unknown } };
+		expect(result?.operations).toBeDefined();
+		expect(typeof result?.operations?.exec).toBe("function");
+	});
+
+	it("logs bash_invoke entry before running the command", async () => {
+		const handlerResult = (await bashApi.fireUserBash("echo hello")) as { operations?: { exec: (...a: unknown[]) => Promise<unknown> } };
+		await handlerResult!.operations!.exec("echo hello", "/tmp", { onData: () => {} });
+
+		const entries = readEntries(1);
+		const invokeEntry = entries.find((e) => e.event === "bash_invoke");
+		expect(invokeEntry).toBeDefined();
+		expect(invokeEntry?.tool).toBe("bash");
+		expect((invokeEntry?.input as { cmd?: string })?.cmd).toBe("echo hello");
+	});
+
+	it("logs bash_result entry after the command completes", async () => {
+		const handlerResult = (await bashApi.fireUserBash("echo hello")) as { operations?: { exec: (...a: unknown[]) => Promise<unknown> } };
+		await handlerResult!.operations!.exec("echo hello", "/tmp", { onData: () => {} });
+
+		const entries = readEntries(1);
+		const resultEntry = entries.find((e) => e.event === "bash_result");
+		expect(resultEntry).toBeDefined();
+		expect(resultEntry?.tool).toBe("bash");
+		expect(resultEntry?.exitCode).toBe(0);
+	});
+
+	it("bash_invoke and bash_result share the same toolCallId", async () => {
+		const handlerResult = (await bashApi.fireUserBash("echo hello")) as { operations?: { exec: (...a: unknown[]) => Promise<unknown> } };
+		await handlerResult!.operations!.exec("echo hello", "/tmp", { onData: () => {} });
+
+		const entries = readEntries(1);
+		const invokeEntry = entries.find((e) => e.event === "bash_invoke");
+		const resultEntry = entries.find((e) => e.event === "bash_result");
+		expect(invokeEntry?.toolCallId).toBe(resultEntry?.toolCallId);
 	});
 });
 

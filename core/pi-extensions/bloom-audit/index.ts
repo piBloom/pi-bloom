@@ -2,10 +2,11 @@
  * bloom-audit — Tool-call audit trail with 30-day retention.
  *
  * @tools audit_review
- * @hooks session_start, tool_call, tool_result
+ * @hooks session_start, tool_call, tool_result, user_bash
  * @see {@link ../../AGENTS.md#bloom-audit} Extension reference
  */
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { BashOperations, ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { createLocalBashOperations } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 import { sanitize } from "../../lib/audit.js";
 import { type RegisteredExtensionTool, defineTool, registerTools } from "../../lib/extension-tools.js";
@@ -13,8 +14,41 @@ import { appendAudit, ensureAuditDir, handleAuditReview, rotateAudit } from "./a
 
 type AuditReviewParams = Parameters<typeof handleAuditReview>[0];
 
+/** Wrap a BashOperations backend to emit bash_invoke/bash_result audit entries. */
+function wrapBashOps(inner: BashOperations): BashOperations {
+	const run = inner.exec.bind(inner);
+	return {
+		exec: async (command, cwd, options) => {
+			const toolCallId = `bash-${Date.now()}`;
+			appendAudit({
+				ts: new Date().toISOString(),
+				event: "bash_invoke",
+				tool: "bash",
+				toolCallId,
+				input: { cmd: command },
+			});
+			const result = await run(command, cwd, options);
+			appendAudit({
+				ts: new Date().toISOString(),
+				event: "bash_result",
+				tool: "bash",
+				toolCallId,
+				exitCode: result.exitCode,
+			});
+			return result;
+		},
+	};
+}
+
 export default function (pi: ExtensionAPI) {
 	let rotated = false;
+
+	// Wrap pi's built-in bash backend to log every user_bash command.
+	const localBash = createLocalBashOperations();
+	const auditedBash = wrapBashOps(localBash);
+	pi.on("user_bash", (_event) => {
+		return { operations: auditedBash };
+	});
 
 	pi.on("session_start", (_event, ctx) => {
 		if (!rotated) {

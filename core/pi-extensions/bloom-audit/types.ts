@@ -8,5 +8,5 @@ export interface AuditEntry {
 	toolCallId: string;
 	input?: unknown;
 	isError?: boolean;
-	exitCode?: number;
+	exitCode?: number | null;
 }

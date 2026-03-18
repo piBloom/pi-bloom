@@ -31,6 +31,7 @@ export interface MockExtensionAPI {
 	registerProvider: ReturnType<typeof vi.fn>;
 	setSessionName: ReturnType<typeof vi.fn>;
 	fireEvent: (name: string, ...args: unknown[]) => Promise<unknown>;
+	fireUserBash: (command: string, cwd?: string) => Promise<unknown>;
 }
 
 export function createMockExtensionAPI(): MockExtensionAPI {
@@ -93,6 +94,15 @@ export function createMockExtensionAPI(): MockExtensionAPI {
 			let result: unknown;
 			for (const handler of eventHandlers) {
 				result = await handler(...args);
+			}
+			return result;
+		},
+
+		async fireUserBash(command: string, cwd = "/tmp") {
+			const eventHandlers = handlers.get("user_bash") ?? [];
+			let result: unknown;
+			for (const handler of eventHandlers) {
+				result = await handler({ type: "user_bash", command, cwd, excludeFromContext: false });
 			}
 			return result;
 		},
