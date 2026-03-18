@@ -22,18 +22,17 @@ if [[ -f "$PREFILL_FILE" ]]; then
     source "$PREFILL_FILE"
 fi
 
-# Re-use all helper functions from bloom-wizard.sh to avoid duplication.
-# When running from the Nix store (via bloom-firstboot.service), dirname "$0" is a store
-# path without bloom-wizard.sh. Fall back to the system PATH install location.
-# shellcheck source=bloom-wizard.sh
-WIZARD_SCRIPT="$(dirname "$0")/bloom-wizard.sh"
-if [[ ! -f "$WIZARD_SCRIPT" ]]; then
-    WIZARD_SCRIPT="/run/current-system/sw/bin/bloom-wizard.sh"
+# Load shared function library.
+# bloom-firstboot.sh is run directly from the Nix source tree (not via bloom-app),
+# so $(dirname "$0") points into the source store, not bloom-app's $out/bin/.
+# The dirname probe is kept for pattern consistency but will always fall through
+# to the /run/current-system/sw/bin fallback at runtime.
+BLOOM_LIB="$(dirname "$0")/bloom-lib.sh"
+if [[ ! -f "$BLOOM_LIB" ]]; then
+    BLOOM_LIB="/run/current-system/sw/bin/bloom-lib.sh"
 fi
-# Source only the function definitions (skip main() execution) by setting a guard.
-BLOOM_FIRSTBOOT_SOURCING=1
-source "$WIZARD_SCRIPT"
-unset BLOOM_FIRSTBOOT_SOURCING
+# shellcheck source=bloom-lib.sh
+source "$BLOOM_LIB"
 
 step_done() { [[ -f "$WIZARD_STATE/$1" ]]; }
 
