@@ -161,35 +161,32 @@ def _run():
     with open(os.path.join(nixos_dir, "flake.nix"), "w") as f:
         f.write(flake_nix)
 
-    # ── Step 4: Build system closure directly onto the target disk ───────────
-    # Two problems to avoid:
-    # 1. narHash assertion crash: nixos-install --flake --store <target> uses
-    #    a non-standard store URL, making computeStorePath() return a different
-    #    hash than what was recorded → Nix assertion fails.
-    # 2. RAM space exhaustion: building on the host/live store (tmpfs) runs out
-    #    of space for large closures (bloom-app + Rust toolchain etc.).
+    # ── Step 4: Build system closure on the HOST nix store ───────────────────
+    # Problem with --store "local?real-root=<target>": Nix must substitute ALL
+    # dependencies (including build-time deps) to the target disk.  piAgent is
+    # not in cache.nixos.org, so Nix builds it from source, pulling the full
+    # Rust toolchain + npm tooling onto the 40 GB install disk → "No space".
     #
-    # Fix: use --store "local?real-root=<target>&store=/nix/store"
-    # • real-root=<target> → packages land on the target disk (40 GB, not RAM)
-    # • store=/nix/store   → store path format stays standard, narHash passes
+    # Fix: build on the HOST store instead (the live ISO already has bloom-app,
+    # piAgent, Chromium, etc. in /nix/store — no re-download needed).  Then
+    # use `nix copy` to transfer ONLY the runtime closure to the target disk,
+    # skipping build-time deps (Rust compiler etc.) entirely.
+    #
+    # narHash is not an issue because both host and target use /nix/store as
+    # the store path prefix, so the path hashes match.
     store_uri = f"local?real-root={root}&store=/nix/store"
     flake_attr = (
         root + "/etc/nixos#nixosConfigurations.bloom.config.system.build.toplevel"
     )
-    libcalamares.utils.debug(f"bloom_nixos: building system closure to {store_uri}")
+    libcalamares.utils.debug("bloom_nixos: building system closure on host store")
     build = subprocess.run(
         [
             "/run/current-system/sw/bin/nix", "build",
             "--no-link", "--print-out-paths",
-            "--store", store_uri,
             "--extra-experimental-features", "nix-command flakes",
-            # Disable the build sandbox so Nix doesn't create .drv.chroot
-            # directories in the live ISO's tmpfs (/nix/store on the host).
-            # The sandbox dirs fill RAM faster than the actual packages,
-            # causing "No space left on device" before the build completes.
-            # All derivations here come from cache.nixos.org or are tiny
-            # text-generation steps, so sandboxing provides no real benefit.
             "--option", "sandbox", "false",
+            # Don't write a lock file back to /mnt/etc/nixos.
+            "--no-write-lock-file",
             flake_attr,
         ],
         capture_output=True, text=True,
@@ -202,6 +199,27 @@ def _run():
 
     system = build.stdout.strip().splitlines()[0]
     libcalamares.utils.debug(f"bloom_nixos: system closure: {system}")
+
+    # ── Step 4b: Copy runtime closure to target nix store ────────────────────
+    # nix copy transfers the referenced closure (runtime deps only) from the
+    # host /nix/store to the target disk.  Build-time artefacts (Rust toolchain
+    # etc.) are NOT in the runtime closure and therefore never touch the disk.
+    libcalamares.utils.debug(f"bloom_nixos: copying closure to {store_uri}")
+    copy = subprocess.run(
+        [
+            "/run/current-system/sw/bin/nix", "copy",
+            "--to", store_uri,
+            "--no-check-sigs",
+            "--extra-experimental-features", "nix-command",
+            system,
+        ],
+        capture_output=True, text=True,
+    )
+    libcalamares.utils.debug("bloom_nixos: nix copy stdout: " + copy.stdout[-2000:])
+    libcalamares.utils.debug("bloom_nixos: nix copy stderr: " + copy.stderr[-2000:])
+    if copy.returncode != 0:
+        detail = (copy.stderr or copy.stdout or "no output")[-3000:]
+        return ("Copying system closure to target failed", detail)
 
     # ── Step 5: Set up bootloader via nixos-install --system ─────────────────
     # The closure is already on the target store; nixos-install --system

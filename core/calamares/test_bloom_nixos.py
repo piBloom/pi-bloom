@@ -5,8 +5,8 @@ Run from the repo root:
     python3 core/calamares/test_bloom_nixos.py
 
 Mocks libcalamares so the config-generation logic (steps 1-3) can be
-validated without a QEMU VM.  Steps 4-5 (nix build / nixos-install) are
-skipped; they still require a real NixOS live environment.
+validated without a QEMU VM.  Steps 4-5 (nix build / nix copy /
+nixos-install) are skipped; they still require a real NixOS live environment.
 
 The generated files are written to /tmp/bloom-test-nixos/ and then
 validated with `nix eval` if nix is available.
@@ -131,7 +131,7 @@ def run_case(name, gs_data):
 
     skip_cmds = {
         mod.NIXOS_GENERATE_CONFIG: _fake_gen_config(root),
-        "/run/current-system/sw/bin/nix": _fake_nix_build(root),
+        "/run/current-system/sw/bin/nix": _fake_nix_cmd(root),
         mod.NIXOS_INSTALL:                _fake_nixos_install(),
     }
 
@@ -206,8 +206,8 @@ def _fake_gen_config(root):
         return result
     return _stub
 
-def _fake_nix_build(root):
-    """Stub for nix build: return a plausible store path."""
+def _fake_nix_cmd(root):
+    """Stub for `nix build` and `nix copy`: return a plausible store path for build."""
     def _stub(cmd):
         path = f"{root}/nix/store/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-nixos-system-bloom-test"
         result = types.SimpleNamespace(returncode=0, stdout=path + "\n", stderr="")
