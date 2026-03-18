@@ -26,19 +26,6 @@ services:
     access_path: /
     preflight:
       commands: [systemctl]
-  code-server:
-    version: "0.1.0"
-    category: development
-    optional: true
-    home_visible: true
-    port: 8443
-    title: Code Server
-    description: Browser-based code editor running on the Bloom node
-    icon_text: VS
-    access_path: /
-    preflight:
-      commands: [systemctl]
-
 bridges:
   whatsapp:
     image: dock.mau.dev/mautrix/whatsapp:v26.02@sha256:07fca07f8746c09e6d5f486d002e638da014d0a134e053e2ed7af9875053104d

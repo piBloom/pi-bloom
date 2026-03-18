@@ -56,10 +56,10 @@
       ripgrep fd bat htop jq curl wget unzip openssl
       just shellcheck biome typescript
       qemu OVMF
-      vscode chromium
+      chromium
       netbird
       # optional services (installed on demand by the wizard)
-      dufs code-server nginx
+      dufs nginx
     ];
   };
 }
