@@ -5,6 +5,7 @@
 #
 # Writes to target:
 #   ~pi/.bloom/prefill.env      — first-boot automation config
+#   ~pi/.bloom/pi-bloom/        — cloned repo for easy nixos-rebuild
 #   ~pi/.pi/agent/settings.json — AI provider config for pi-daemon
 #   ~pi/.gitconfig              — git name from Calamares fullName (no email at install time)
 #   /etc/NetworkManager/system-connections/*.nmconnection — WiFi credentials
@@ -149,6 +150,39 @@ def run():
             libcalamares.utils.debug(f"bloom_prefill: set {username} password")
     else:
         libcalamares.utils.warning(f"bloom_prefill: no password in globalstorage — {username} will have no password")
+
+    # ── Clone pi-bloom repo ─────────────────────────────────────────────────
+    # Clone the repo so users can easily rebuild without re-downloading
+    bloom_repo_dir = os.path.join(user_home, ".bloom", "pi-bloom")
+    try:
+        _makedirs_owned(os.path.dirname(bloom_repo_dir))
+        clone_cmd = [
+            "git", "clone", "--depth", "1",
+            "https://github.com/alexradunet/piBloom.git",
+            bloom_repo_dir
+        ]
+        clone_result = subprocess.run(
+            clone_cmd,
+            capture_output=True,
+            text=True,
+            cwd=os.path.dirname(bloom_repo_dir)
+        )
+        if clone_result.returncode == 0:
+            # Fix ownership of cloned repo (git clone creates as root in chroot)
+            for dirpath, dirnames, filenames in os.walk(bloom_repo_dir):
+                os.chown(dirpath, PI_UID, PI_GID)
+                for f in filenames:
+                    fp = os.path.join(dirpath, f)
+                    if os.path.exists(fp):
+                        os.chown(fp, PI_UID, PI_GID)
+            libcalamares.utils.debug(f"bloom_prefill: cloned repo to {bloom_repo_dir}")
+        else:
+            libcalamares.utils.warning(
+                f"bloom_prefill: git clone failed: {clone_result.stderr.strip()}"
+            )
+    except Exception as e:
+        # Non-fatal: user can clone manually later
+        libcalamares.utils.warning(f"bloom_prefill: repo clone failed: {e}")
 
     # ── NetworkManager WiFi connections (best-effort) ────────────────────────
     src_nm = "/etc/NetworkManager/system-connections"
