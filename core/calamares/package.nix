@@ -30,5 +30,6 @@ upstreamCalamares.overrideAttrs (old: {
     # Module-specific configs belong in config/modules/ (→ etc/calamares/modules/)
     cp ${./config/bloom-nixos.conf}    $out/config/modules/bloom-nixos.conf
     cp ${./config/users.conf}          $out/config/modules/users.conf
+    cp ${./config/network.conf}        $out/config/modules/network.conf
   '';
 })
