@@ -19,13 +19,9 @@ qcow2:
 raw:
     nix build {{ flake }}#raw
 
-# Generate minimal installer ISO (CLI only)
+# Generate graphical installer ISO (Calamares + GNOME)
 iso:
     nix build {{ flake }}#iso
-
-# Generate graphical installer ISO (Calamares + LXQt)
-iso-gui:
-    nix build {{ flake }}#iso-gui
     
     @echo ""
     @echo "Graphical installer ISO built: result/iso/"
@@ -34,7 +30,7 @@ iso-gui:
     @echo "  sudo dd if=result/iso/*.iso of=/dev/sdX bs=4M status=progress conv=fsync"
     @echo ""
     @echo "To test in QEMU:"
-    @echo "  just test-iso-gui"
+    @echo "  just test-iso"
 
 # Apply current flake config to the running system (local dev iteration)
 switch:
@@ -165,39 +161,9 @@ vm-run:
         -nographic \
         -serial mon:stdio
 
-# Test ISO installation in QEMU (creates temporary disk, boots ISO installer)
-test-iso:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    disk="/tmp/bloom-test-disk.qcow2"
-    vars="/tmp/bloom-ovmf-vars.fd"
-    if [ ! -f "{{ output }}/iso/nixos.iso" ] && [ ! -f "{{ output }}/iso.iso" ]; then
-        echo "Error: No ISO found. Run 'just iso' first."
-        exit 1
-    fi
-    ISO=$(find {{ output }} -name "*.iso" | head -1)
-    rm -f "$disk" "$vars"
-    qemu-img create -f qcow2 "$disk" 40G
-    cp "{{ ovmf_vars }}" "$vars"
-    echo "Starting ISO installation test... Press Ctrl+A X to exit"
-    qemu-system-x86_64 \
-        -machine q35 \
-        -cpu host \
-        -enable-kvm \
-        -m 8G \
-        -smp 2 \
-        -drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
-        -drive if=pflash,format=raw,file="$vars" \
-        -drive file="$disk",format=qcow2,if=virtio \
-        -cdrom "$ISO" \
-        -netdev user,id=net0,hostfwd=tcp::2222-:22 \
-        -device virtio-net-pci,netdev=net0 \
-        -nographic \
-        -serial mon:stdio
-
 # Test graphical ISO installation in QEMU with GUI display
 # This allows testing the Calamares GUI installer
-test-iso-gui:
+test-iso:
     #!/usr/bin/env bash
     set -euo pipefail
     disk="/tmp/bloom-test-disk-gui.qcow2"
@@ -207,7 +173,7 @@ test-iso-gui:
     ISO=$(find -L {{ output }} -name "*.iso" -type f 2>/dev/null | head -1)
     if [ -z "$ISO" ]; then
         echo "Error: No ISO found in {{ output }}/"
-        echo "Run 'just iso-gui' first to build the graphical installer."
+        echo "Run 'just iso' first to build the graphical installer."
         exit 1
     fi
     

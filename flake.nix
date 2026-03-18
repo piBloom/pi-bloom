@@ -102,18 +102,8 @@
           ];
         }).config.system.build.image;
 
-        # Minimal installer ISO (CLI only, for headless installs)
+        # Graphical installer ISO (Calamares + GNOME)
         iso = (nixpkgs.lib.nixosSystem {
-          inherit system specialArgs;
-          modules = [
-            ./core/os/hosts/x86_64.nix
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-          ];
-        }).config.system.build.isoImage;
-
-        # Graphical installer ISO (Calamares + LXQt desktop)
-        # Provides GUI installation with point-and-click disk partitioning
-        iso-gui = (nixpkgs.lib.nixosSystem {
           inherit system;
           # specialArgs includes bloomApp and piAgent (for system packages) plus
           # the raw flake inputs so x86_64-installer.nix can embed their source
