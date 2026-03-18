@@ -88,9 +88,11 @@ export function readEntries(days: number): AuditEntry[] {
 function isAuditEntry(value: unknown): value is AuditEntry {
 	if (!value || typeof value !== "object") return false;
 	const entry = value as Record<string, unknown>;
+	const validEvents = new Set(["tool_call", "tool_result", "bash_invoke", "bash_result"]);
 	return (
 		typeof entry.ts === "string" &&
-		(entry.event === "tool_call" || entry.event === "tool_result") &&
+		typeof entry.event === "string" &&
+		validEvents.has(entry.event) &&
 		typeof entry.tool === "string" &&
 		typeof entry.toolCallId === "string"
 	);
@@ -131,9 +133,16 @@ export function handleAuditReview(params: { days?: number; limit?: number; tool?
 export function formatEntries(entries: AuditEntry[], includeInputs: boolean): string {
 	const lines: string[] = [];
 	for (const e of entries) {
-		const status = e.event === "tool_result" ? (e.isError ? "error" : "ok") : "call";
+		let status: string;
+		if (e.event === "tool_result") {
+			status = e.isError ? "error" : "ok";
+		} else if (e.event === "bash_result") {
+			status = e.exitCode === 0 ? "ok" : "error";
+		} else {
+			status = "call";
+		}
 		lines.push(`- ${e.ts} ${e.tool} [${status}]`);
-		if (includeInputs && e.event === "tool_call") {
+		if (includeInputs && (e.event === "tool_call" || e.event === "bash_invoke")) {
 			const input = summarizeInput(e.input);
 			if (input) lines.push(`  input: ${input}`);
 		}

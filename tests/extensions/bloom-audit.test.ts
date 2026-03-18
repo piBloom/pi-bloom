@@ -87,6 +87,38 @@ describe("formatEntries", () => {
 });
 
 // ---------------------------------------------------------------------------
+// bash audit entries
+// ---------------------------------------------------------------------------
+describe("bash audit entries", () => {
+	const bashInvokeEntry: AuditEntry = {
+		ts: "2026-01-01T00:00:03.000Z",
+		event: "bash_invoke",
+		tool: "bash",
+		toolCallId: "bash-1",
+		input: { cmd: "ls -la" },
+	};
+
+	const bashResultEntry: AuditEntry = {
+		ts: "2026-01-01T00:00:04.000Z",
+		event: "bash_result",
+		tool: "bash",
+		toolCallId: "bash-1",
+		exitCode: 0,
+	};
+
+	it("formats a bash_invoke entry with status 'call'", () => {
+		const output = formatEntries([bashInvokeEntry], false);
+		expect(output).toContain("bash");
+		expect(output).toContain("[call]");
+	});
+
+	it("formats a bash_result entry with status 'ok' when exitCode is 0", () => {
+		const output = formatEntries([bashResultEntry], false);
+		expect(output).toContain("[ok]");
+	});
+});
+
+// ---------------------------------------------------------------------------
 // handleAuditReview
 // ---------------------------------------------------------------------------
 describe("handleAuditReview", () => {
