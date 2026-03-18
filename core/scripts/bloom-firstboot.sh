@@ -106,6 +106,32 @@ firstboot_services() {
     mark_done_with services "${installed:-none}"
 }
 
+firstboot_localai() {
+    # localai-download.service starts automatically (localai.service requires it).
+    # This step surfaces the status so it appears in the firstboot log.
+    local state
+    state=$(systemctl is-active localai-download.service 2>/dev/null || true)
+    case "$state" in
+        active)
+            echo "bloom-firstboot: AI model already downloaded"
+            ;;
+        activating)
+            echo "bloom-firstboot: AI model download in progress (background)"
+            echo "bloom-firstboot: track with: sudo journalctl -fu localai-download"
+            ;;
+        failed)
+            echo "bloom-firstboot: AI model download failed — retry with: sudo systemctl restart localai-download" >&2
+            return 1
+            ;;
+        *)
+            echo "bloom-firstboot: starting AI model download in background..."
+            sudo systemctl start --no-block localai-download.service || true
+            echo "bloom-firstboot: track with: sudo journalctl -fu localai-download"
+            ;;
+    esac
+    mark_done_with localai "download-started"
+}
+
 firstboot_finalize() {
     # linger is enabled statically via systemd.tmpfiles.rules in bloom-firstboot.nix
     systemctl --user enable --now pi-daemon.service || \
@@ -116,6 +142,7 @@ firstboot_finalize() {
 
 main() {
     mkdir -p "$WIZARD_STATE"
+    step_done localai  || firstboot_localai  || true
     step_done netbird  || firstboot_netbird  || true
     step_done matrix   || firstboot_matrix   || true
     step_done services || firstboot_services || true
