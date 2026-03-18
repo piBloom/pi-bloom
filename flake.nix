@@ -8,13 +8,9 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    llm-agents-nix = {
-      url = "github:numtide/llm-agents.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = { self, nixpkgs, disko, llm-agents-nix, ... }:
+  outputs = { self, nixpkgs, disko, ... }:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -23,7 +19,7 @@
       # cannot set nixpkgs.config (NixOS assertion).  Using a pkgs already created
       # with allowUnfree = true sidesteps the issue without touching any module.
       pkgsUnfree = import nixpkgs { inherit system; config.allowUnfree = true; };
-      piAgent = llm-agents-nix.packages.${system}.pi;
+      piAgent = pkgs.callPackage ./core/os/pkgs/pi {};
       bloomApp = pkgs.callPackage ./core/os/pkgs/bloom-app { inherit piAgent; };
 
       specialArgs = { inherit piAgent bloomApp; };
@@ -55,6 +51,7 @@
       }).config.system.build.image;
     in {
       packages.${system} = {
+        pi        = piAgent;
         bloom-app = bloomApp;
 
         # Disk images
@@ -68,11 +65,10 @@
           # the raw flake inputs so x86_64-installer.nix can embed their source
           # trees in the squashfs.  With those sources present in the ISO store,
           # nix build during installation finds them by narHash and skips all
-          # GitHub downloads → fully offline installation.
+          # GitHub downloads -> fully offline installation.
           specialArgs = specialArgs // {
-            nixpkgsSrc     = nixpkgs;
-            bloomSrc       = self;
-            llmAgentsSrc   = llm-agents-nix;
+            nixpkgsSrc = nixpkgs;
+            bloomSrc   = self;
           };
           modules = [
             ./core/os/hosts/x86_64-installer.nix
