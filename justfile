@@ -348,6 +348,18 @@ clean:
 deps:
     sudo dnf install -y just qemu-system-x86 edk2-ovmf
 
+# Fast config check: build the installer-generated NixOS closure locally.
+# Catches locale errors, bad module references, and evaluation failures
+# without building an ISO or running QEMU (~10-30 min depending on cache).
+check-config:
+    nix build {{ flake }}#checks.{{ system }}.bloom-config --no-link
+
+# Full VM boot test: boots the installed system in a NixOS test VM.
+# Slower than check-config but verifies runtime behaviour (services, users).
+# Requires KVM. Takes 20-40 min on first run.
+check-boot:
+    nix build {{ flake }}#checks.{{ system }}.bloom-boot --no-link
+
 # Lint Nix files
 lint:
     nix flake check

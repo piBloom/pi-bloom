@@ -176,6 +176,13 @@ def _run():
             "--no-link", "--print-out-paths",
             "--store", store_uri,
             "--extra-experimental-features", "nix-command flakes",
+            # Disable the build sandbox so Nix doesn't create .drv.chroot
+            # directories in the live ISO's tmpfs (/nix/store on the host).
+            # The sandbox dirs fill RAM faster than the actual packages,
+            # causing "No space left on device" before the build completes.
+            # All derivations here come from cache.nixos.org or are tiny
+            # text-generation steps, so sandboxing provides no real benefit.
+            "--option", "sandbox", "false",
             flake_attr,
         ],
         capture_output=True, text=True,

@@ -144,5 +144,78 @@
           ./core/os/hosts/x86_64-disk.nix
         ];
       };
+
+      # NixOS configuration that mirrors exactly what the Calamares installer
+      # generates at install time (bloom + bloom-firstboot + minimal host-config).
+      # Used by checks.bloom-config and checks.bloom-boot below.
+      nixosConfigurations.bloom-installed-test = nixpkgs.lib.nixosSystem {
+        inherit system specialArgs;
+        modules = [
+          self.nixosModules.bloom
+          self.nixosModules.bloom-firstboot
+          {
+            # Minimal host-config.nix equivalent (what Calamares would generate)
+            boot.loader.systemd-boot.enable = true;
+            boot.loader.efi.canTouchEfiVariables = true;
+            networking.hostName = "bloom";
+            time.timeZone = "UTC";
+            i18n.defaultLocale = "en_US.UTF-8";
+            services.xserver.xkb = { layout = "us"; variant = ""; };
+            console.keyMap = "us";
+            networking.networkmanager.enable = true;
+            system.stateVersion = "25.05";
+            # Minimal stub filesystems (not real hardware, just enough to evaluate)
+            fileSystems."/" = { device = "/dev/vda"; fsType = "ext4"; };
+            fileSystems."/boot" = { device = "/dev/vda1"; fsType = "vfat"; };
+          }
+        ];
+      };
+
+      checks.${system} = {
+        # Fast: build the installed system closure locally — catches locale errors,
+        # module conflicts, bad package references, and NixOS evaluation failures
+        # without touching QEMU.  Run with: nix build .#checks.x86_64-linux.bloom-config
+        bloom-config = self.nixosConfigurations.bloom-installed-test.config.system.build.toplevel;
+
+        # Thorough: boot the installed system in a NixOS test VM and verify that
+        # critical services come up.  Run with: nix build .#checks.x86_64-linux.bloom-boot
+        bloom-boot = pkgs.testers.nixosTest {
+          name = "bloom-boot";
+
+          nodes.bloom = { ... }: {
+            imports = [
+              self.nixosModules.bloom
+              self.nixosModules.bloom-firstboot
+            ];
+            _module.args = { inherit piAgent bloomApp; };
+
+            boot.loader.systemd-boot.enable = true;
+            boot.loader.efi.canTouchEfiVariables = true;
+            networking.hostName = "bloom";
+            time.timeZone = "UTC";
+            i18n.defaultLocale = "en_US.UTF-8";
+            networking.networkmanager.enable = true;
+            system.stateVersion = "25.05";
+
+            # Give the VM enough disk for the bloom closure
+            virtualisation.diskSize = 20480;  # 20 GB
+            virtualisation.memorySize = 4096;
+          };
+
+          testScript = ''
+            bloom.start()
+            bloom.wait_for_unit("multi-user.target", timeout=300)
+
+            # Basic sanity: the pi user exists
+            bloom.succeed("id pi")
+
+            # bloom-firstboot was attempted (exit 0 or 1 both accepted by unit)
+            bloom.wait_for_unit("bloom-firstboot.service", timeout=60)
+
+            # NetworkManager is running
+            bloom.succeed("systemctl is-active NetworkManager")
+          '';
+        };
+      };
     };
 }
