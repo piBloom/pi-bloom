@@ -40,7 +40,7 @@ describe("os nixos_update handler", () => {
 		expect(ctx.ui.confirm).toHaveBeenCalled();
 		expect(runMock).toHaveBeenCalledWith(
 			"sudo",
-			["nixos-rebuild", "switch", "--flake", "github:alexradunet/piBloom#workspace-x86_64"],
+			["nixos-rebuild", "switch", "--flake", "github:alexradunet/piBloom#desktop"],
 			undefined,
 		);
 		expect(result.isError).toBe(false);
@@ -56,7 +56,7 @@ describe("os nixos_update handler", () => {
 
 		expect(runMock).toHaveBeenCalledWith(
 			"sudo",
-			["nixos-rebuild", "switch", "--flake", `${repoDir}#workspace-x86_64`],
+			["nixos-rebuild", "switch", "--flake", `${repoDir}#desktop`],
 			undefined,
 		);
 		expect(result.isError).toBe(false);
@@ -72,7 +72,7 @@ describe("os nixos_update handler", () => {
 
 		expect(runMock).not.toHaveBeenCalled();
 		expect(result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Local Workspace repo not found");
+		expect(result.content[0].text).toContain("Local nixPI repo not found");
 	});
 
 	it("returns error result when remote apply exits non-zero", async () => {

@@ -1,11 +1,11 @@
 ---
 name: builtin-services
-description: Reference for Workspace's built-in user-facing services that are always available on every node
+description: Reference for nixPI's built-in user-facing services that are always available on every node
 ---
 
 # Built-In Services
 
-Workspace ships these services as part of the base NixOS system. They are not optional packages and they do not need to be installed from the repo.
+nixPI ships these services as part of the base NixOS system. They are not optional packages and they do not need to be installed from the repo.
 
 ## Always Available
 
@@ -22,10 +22,10 @@ Workspace ships these services as part of the base NixOS system. They are not op
 
 ## Expected Unit Names
 
-- `workspace-home`
-- `workspace-fluffychat`
-- `workspace-dufs`
-- `workspace-code-server`
+- `nixpi-home`
+- `nixpi-chat`
+- `nixpi-files`
+- `nixpi-code`
 
 ## URLs
 

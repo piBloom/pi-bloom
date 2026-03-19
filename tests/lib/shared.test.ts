@@ -524,18 +524,18 @@ describe("requestTextInput", () => {
 // guardServiceName
 // ---------------------------------------------------------------------------
 describe("guardServiceName", () => {
-	it("returns null for workspace- prefixed names", () => {
-		expect(guardServiceName("workspace-os")).toBeNull();
-		expect(guardServiceName("workspace-test")).toBeNull();
+	it("returns null for nixpi- prefixed names", () => {
+		expect(guardServiceName("nixpi-os")).toBeNull();
+		expect(guardServiceName("nixpi-test")).toBeNull();
 	});
 
-	it("returns null for workspace names with numbers", () => {
-		expect(guardServiceName("workspace-svc1")).toBeNull();
-		expect(guardServiceName("workspace-v2-api")).toBeNull();
+	it("returns null for nixpi names with numbers", () => {
+		expect(guardServiceName("nixpi-svc1")).toBeNull();
+		expect(guardServiceName("nixpi-v2-api")).toBeNull();
 	});
 
-	it("returns error for non-workspace names", () => {
-		const result = guardServiceName("not-workspace");
+	it("returns error for non-nixpi names", () => {
+		const result = guardServiceName("not-nixpi");
 		expect(result).toContain("Security error");
 	});
 
@@ -544,30 +544,30 @@ describe("guardServiceName", () => {
 	});
 
 	it("rejects shell metacharacters", () => {
-		expect(guardServiceName("workspace-;rm -rf /")).not.toBeNull();
-		expect(guardServiceName("workspace-$(whoami)")).not.toBeNull();
-		expect(guardServiceName("workspace-`id`")).not.toBeNull();
+		expect(guardServiceName("nixpi-;rm -rf /")).not.toBeNull();
+		expect(guardServiceName("nixpi-$(whoami)")).not.toBeNull();
+		expect(guardServiceName("nixpi-`id`")).not.toBeNull();
 	});
 
 	it("rejects path separators", () => {
-		expect(guardServiceName("workspace-../../etc")).not.toBeNull();
-		expect(guardServiceName("workspace-foo/bar")).not.toBeNull();
+		expect(guardServiceName("nixpi-../../etc")).not.toBeNull();
+		expect(guardServiceName("nixpi-foo/bar")).not.toBeNull();
 	});
 
 	it("rejects spaces", () => {
-		expect(guardServiceName("workspace- evil")).not.toBeNull();
+		expect(guardServiceName("nixpi- evil")).not.toBeNull();
 	});
 
 	it("rejects uppercase letters", () => {
-		expect(guardServiceName("workspace-Foo")).not.toBeNull();
+		expect(guardServiceName("nixpi-Foo")).not.toBeNull();
 	});
 
-	it("rejects workspace- with nothing after it", () => {
-		expect(guardServiceName("workspace-")).not.toBeNull();
+	it("rejects nixpi- with nothing after it", () => {
+		expect(guardServiceName("nixpi-")).not.toBeNull();
 	});
 
-	it("rejects workspace- starting with hyphen", () => {
-		expect(guardServiceName("workspace--double")).not.toBeNull();
+	it("rejects nixpi- starting with hyphen", () => {
+		expect(guardServiceName("nixpi--double")).not.toBeNull();
 	});
 
 	it("accepts alternate prefixes when requested", () => {

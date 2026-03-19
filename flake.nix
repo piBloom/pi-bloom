@@ -1,6 +1,6 @@
 # flake.nix
 {
-  description = "Workspace OS — Pi-native AI companion OS on NixOS";
+  description = "nixPI — Pi-native AI companion OS on NixOS";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -27,9 +27,9 @@
       };
 
       nixosModules = {
-        # Single composable module exporting all Workspace feature modules.
+        # Single composable module exporting all nixPI feature modules.
         # Consuming flake.nix must provide piAgent and appPackage in specialArgs.
-        workspace = { piAgent, appPackage, ... }: {
+        nixpi = { piAgent, appPackage, ... }: {
           imports = [
             ./core/os/modules/options.nix
             ./core/os/modules/app.nix
@@ -46,11 +46,11 @@
           # overrides).  Consuming configurations set allowUnfree themselves.
         };
 
-        # First-boot service module (included separately, not part of portable workspace module).
+        # First-boot service module (included separately, not part of the portable nixPI module).
         firstboot = import ./core/os/modules/firstboot.nix;
       };
 
-      # NixOS configuration for Workspace desktop/workstation install.
+      # NixOS configuration for the nixPI desktop/workstation install.
       # Use this after installing standard NixOS:
       #   sudo nixos-rebuild switch --flake github:alexradunet/piBloom#desktop
       nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
@@ -60,20 +60,20 @@
         ];
       };
 
-      # NixOS configuration that mirrors a default Workspace install
-      # (workspace + firstboot + the standard machine defaults).
+      # NixOS configuration that mirrors a default nixPI install
+      # (nixpi + firstboot + the standard machine defaults).
       # Used by checks.config and checks.boot below.
       nixosConfigurations.installed-test = nixpkgs.lib.nixosSystem {
         inherit system specialArgs;
         modules = [
-          self.nixosModules.workspace
+          self.nixosModules.nixpi
           self.nixosModules.firstboot
           {
             # Default machine settings used by desktop.
             nixpkgs.config.allowUnfree = true;
             boot.loader.systemd-boot.enable = true;
             boot.loader.efi.canTouchEfiVariables = true;
-            networking.hostName = "workspace";
+            networking.hostName = "nixos";
             time.timeZone = "UTC";
             i18n.defaultLocale = "en_US.UTF-8";
             services.xserver.xkb = { layout = "us"; variant = ""; };
@@ -109,20 +109,20 @@
 
             nodes.workspace = { ... }: {
               imports = [
-                self.nixosModules.workspace
+                self.nixosModules.nixpi
                 self.nixosModules.firstboot
               ];
               _module.args = { inherit piAgent appPackage; };
 
               boot.loader.systemd-boot.enable = true;
               boot.loader.efi.canTouchEfiVariables = true;
-              networking.hostName = "workspace";
+              networking.hostName = "nixos";
               time.timeZone = "UTC";
               i18n.defaultLocale = "en_US.UTF-8";
               networking.networkmanager.enable = true;
               system.stateVersion = "25.05";
 
-              # Give the VM enough disk for the workspace closure
+              # Give the VM enough disk for the nixPI closure
               virtualisation.diskSize = 20480;  # 20 GB
               virtualisation.memorySize = 4096;
             };
@@ -134,8 +134,8 @@
               # Basic sanity: the pi user exists
               workspace.succeed("id pi")
 
-              # workspace-firstboot was attempted (exit 0 or 1 both accepted by unit)
-              workspace.wait_for_unit("workspace-firstboot.service", timeout=60)
+              # nixpi-firstboot was attempted (exit 0 or 1 both accepted by unit)
+              workspace.wait_for_unit("nixpi-firstboot.service", timeout=60)
 
               # NetworkManager is running
               workspace.succeed("systemctl is-active NetworkManager")
@@ -162,7 +162,7 @@
         # Note: vitest is not in nixpkgs-unstable — use 'npm install' then 'npx vitest'
 
         shellHook = ''
-          echo "Workspace OS dev shell"
+          echo "nixPI dev shell"
           echo "Run 'npm install' to set up JS dependencies (includes vitest)"
         '';
       };

@@ -1,12 +1,12 @@
-# Workspace Memory Model
+# nixPI Memory Model
 
 > 📖 [Emoji Legend](LEGEND.md)
 
 Audience: maintainers changing memory tools, storage rules, or retrieval behavior.
 
-## 🌱 Why Workspace Uses Markdown Memory
+## 🌱 Why nixPI Uses Markdown Memory
 
-Workspace memory is intentionally file-based.
+nixPI memory is intentionally file-based.
 
 The goal is to keep memory:
 
@@ -17,7 +17,7 @@ The goal is to keep memory:
 
 ## 🗂️ How The Memory Layers Work
 
-Workspace has two persistent layers:
+nixPI has two persistent layers:
 
 - `~/Workspace/Objects/` for durable long-term memory
 - `~/Workspace/Episodes/` for append-only episodic capture

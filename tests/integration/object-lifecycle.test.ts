@@ -4,12 +4,12 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parseFrontmatter } from "../../core/lib/frontmatter.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
 
-let temp: TempGarden;
+let temp: TempWorkspace;
 
 beforeEach(() => {
-	temp = createTempGarden();
+	temp = createTempWorkspace();
 	// Create Objects directory
 	mkdirSync(join(temp.workspaceDir, "Objects"), { recursive: true });
 });

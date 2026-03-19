@@ -10,7 +10,7 @@
   ];
 
   systemd.user.services.pi-daemon = {
-    description = "Workspace Pi Daemon (Matrix room agent)";
+    description = "nixPI Pi Daemon (Matrix room agent)";
     wantedBy = [ "default.target" ];
 
     unitConfig.ConditionPathExists = "%h/.workspace/.setup-complete";

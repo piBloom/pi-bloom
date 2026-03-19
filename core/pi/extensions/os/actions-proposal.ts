@@ -19,7 +19,7 @@ export async function handleNixConfigProposal(
 ) {
 	const repoDir = getWorkspaceRepoDir();
 	if (!existsSync(repoDir)) {
-		return errorResult(`Local Workspace repo not found at ${repoDir}. The proposal workflow expects a cloned repo there.`);
+		return errorResult(`Local nixPI repo not found at ${repoDir}. The proposal workflow expects a cloned repo there.`);
 	}
 
 	if (action === "status") {

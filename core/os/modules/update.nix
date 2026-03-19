@@ -4,8 +4,8 @@
 {
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  systemd.services.workspace-update = {
-    description = "Workspace OS NixOS update";
+  systemd.services.nixpi-update = {
+    description = "nixPI NixOS update";
     after    = [ "network-online.target" ];
     wants    = [ "network-online.target" ];
 
@@ -15,15 +15,15 @@
       # serviceConfig.path only accepts derivations, so set PATH via Environment instead.
       Environment = [
         "PATH=/run/current-system/sw/bin:${lib.makeBinPath (with pkgs; [ nix git jq ])}"
-        "WORKSPACE_USERNAME=${config.workspace.username}"
+        "NIXPI_USERNAME=${config.nixpi.username}"
       ];
-      ExecStart       = pkgs.writeShellScript "workspace-update" (builtins.readFile ../../../core/scripts/system-update.sh);
+      ExecStart       = pkgs.writeShellScript "nixpi-update" (builtins.readFile ../../../core/scripts/system-update.sh);
       RemainAfterExit = false;
     };
   };
 
-  systemd.timers.workspace-update = {
-    description = "Workspace OS update check timer";
+  systemd.timers.nixpi-update = {
+    description = "nixPI update check timer";
     wantedBy    = [ "timers.target" ];
 
     timerConfig = {

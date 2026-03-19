@@ -3,12 +3,12 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
 
-let temp: TempGarden;
+let temp: TempWorkspace;
 
 beforeEach(() => {
-	temp = createTempGarden();
+	temp = createTempWorkspace();
 });
 
 afterEach(() => {

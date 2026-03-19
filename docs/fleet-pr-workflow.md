@@ -2,11 +2,11 @@
 
 > 📖 [Emoji Legend](LEGEND.md)
 
-Audience: maintainers using Workspace to prepare local repo changes for later human review and external publish.
+Audience: maintainers using nixPI to prepare local repo changes for later human review and external publish.
 
 ## 🌱 Why This Flow Exists
 
-Workspace should be able to propose code and configuration changes locally without being able to publish them autonomously.
+nixPI should be able to propose code and configuration changes locally without being able to publish them autonomously.
 
 This keeps the useful part of agentic development:
 
@@ -23,14 +23,14 @@ while forcing the approval boundary to stay with the human and the external cont
 
 ## 🚀 Local Proposal Flow
 
-Workspace assumes the local working clone lives at:
+nixPI assumes the local working clone lives at:
 
 - `~/.workspace/pi-workspace`
 
 Recommended workflow:
 
-1. Ask Workspace to inspect the repo and prepare a local change.
-2. Let Workspace edit files and run local validation such as:
+1. Ask nixPI to inspect the repo and prepare a local change.
+2. Let nixPI edit files and run local validation such as:
    - `npm run build`
    - `npm run test:unit`
    - `npm run test:integration`
@@ -41,14 +41,14 @@ Recommended workflow:
 
 ## 📚 Reference
 
-Workspace's role in this model:
+nixPI's role in this model:
 
 - propose local edits
 - explain what changed and why
 - run local checks
 - prepare code for human review
 
-Workspace does not publish in this model:
+nixPI does not publish in this model:
 
 - no remote push
 - no PR creation

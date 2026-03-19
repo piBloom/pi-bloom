@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # system-update.sh — NixOS OTA update + status-file writer.
-# Runs as root via workspace-update.service. Writes status to the primary Workspace user's
+# Runs as root via nixpi-update.service. Writes status to the primary nixPI user's
 # ~/.workspace/update-status.json path.
 set -euo pipefail
 

@@ -1,7 +1,7 @@
 # tests/nixos/workspace-e2e.nix
 # End-to-end integration test - full Workspace OS stack validation
 
-{ pkgs, lib, bloomModules, bloomModulesNoShell, piAgent, appPackage, mkBloomNode, mkTestFilesystems }:
+{ pkgs, lib, workspaceModules, workspaceModulesNoShell, piAgent, appPackage, mkWorkspaceNode, mkTestFilesystems }:
 
 pkgs.testers.runNixOSTest {
   name = "workspace-e2e";
@@ -12,12 +12,12 @@ pkgs.testers.runNixOSTest {
       username = "workspace";
       homeDir = "/home/${username}";
     in {
-      imports = bloomModulesNoShell ++ [ 
+      imports = workspaceModulesNoShell ++ [ 
         ../../core/os/modules/firstboot.nix
         mkTestFilesystems 
       ];
       _module.args = { inherit piAgent appPackage; };
-      workspace.username = username;
+      nixpi.username = username;
 
       virtualisation.diskSize = 20480;
       virtualisation.memorySize = 4096;
@@ -98,7 +98,7 @@ pkgs.testers.runNixOSTest {
     client.succeed("ping -c 3 workspace")
     
     # E2E Test 2: Matrix homeserver is accessible externally
-    workspace.wait_for_unit("workspace-matrix.service", timeout=60)
+    workspace.wait_for_unit("matrix-synapse.service", timeout=60)
     client.succeed("curl -sf http://workspace:6167/_matrix/client/versions")
     
     # E2E Test 3: Can register a user via external client
@@ -141,11 +141,11 @@ pkgs.testers.runNixOSTest {
     client.succeed('ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 workspace@workspace "echo SSH_OK"')
     
     # E2E Test 6: Firstboot completes successfully
-    workspace.wait_for_unit("workspace-firstboot.service", timeout=120)
+    workspace.wait_for_unit("nixpi-firstboot.service", timeout=120)
     workspace.succeed("test -f " + home + "/.workspace/.setup-complete")
     
     # E2E Test 7: All expected services are running
-    services = ["workspace-matrix", "netbird", "NetworkManager", "sshd"]
+    services = ["matrix-synapse", "netbird", "NetworkManager", "sshd"]
     for svc in services:
         workspace.succeed("systemctl is-active " + svc + ".service")
     

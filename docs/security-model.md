@@ -1,8 +1,8 @@
-# Workspace Security Model
+# nixPI Security Model
 
 > 📖 [Emoji Legend](LEGEND.md)
 
-Audience: operators deploying Workspace and template forkers who need to understand
+Audience: operators deploying nixPI and template forkers who need to understand
 the security perimeter and threat model.
 
 ---
@@ -11,7 +11,7 @@ the security perimeter and threat model.
 
 **NetBird is the load-bearing security boundary.**
 
-Workspace is designed as a NixOS-based personal AI-first OS where the primary
+nixPI is designed as a NixOS-based personal AI-first OS where the primary
 security perimeter is a NetBird WireGuard mesh network. This is explicitly
 codified in the firewall configuration:
 
@@ -20,7 +20,7 @@ networking.firewall.trustedInterfaces = [ "wt0" ];
 ```
 
 The `wt0` interface is the NetBird tunnel interface. Only mesh peers can reach
-Workspace services. Everything behind the mesh is relatively trusted.
+nixPI services. Everything behind the mesh is relatively trusted.
 
 ---
 
@@ -31,7 +31,7 @@ are accessible **only** to peers on the NetBird mesh:
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Workspace Home | 8080 | Landing page with service links |
+| Home | 8080 | Landing page with service links |
 | Matrix | 6167 | Homeserver for messaging |
 | dufs (WebDAV) | 5000 | File server for `~/Public/Workspace` |
 | code-server | 8443 | Browser-based code editor |
@@ -45,7 +45,7 @@ If NetBird is not running or not configured:
 
 1. The `wt0` interface does not exist
 2. The firewall rule `trustedInterfaces = ["wt0"]` provides **no protection**
-3. All Workspace services are exposed to the **local network**
+3. All nixPI services are exposed to the **local network**
 4. Any device on the same network can:
    - Access the Matrix homeserver
    - Interact with Pi in Matrix rooms
@@ -61,13 +61,13 @@ If NetBird is not running or not configured:
 The security model addresses the following threats:
 
 1. **Compromised device on the NetBird mesh** — A peer that has been compromised
-can attempt to interact with Workspace services or brute-force SSH.
+can attempt to interact with nixPI services or brute-force SSH.
 
 2. **Compromised service container** — A container running on the host (inside
 the mesh) that has been compromised can attempt to pivot to the host or
-manipulate Workspace state.
+manipulate nixPI state.
 
-3. **Template forker without NetBird** — A user who deploys Workspace without
+3. **Template forker without NetBird** — A user who deploys nixPI without
 configuring NetBird or with it misconfigured has no security perimeter and
 is fully exposed to the local network.
 
@@ -95,7 +95,7 @@ chmod 600 ~/.ssh/authorized_keys
 
 ## 📋 Pre-Deployment Checklist
 
-Before exposing a Workspace host to any network:
+Before exposing a nixPI host to any network:
 
 - [ ] NetBird is enrolled and connected (`netbird status` shows "Connected")
 - [ ] The `wt0` interface exists (`ip link show wt0`)
@@ -106,7 +106,7 @@ Before exposing a Workspace host to any network:
 
 ## 🔗 Related
 
-- [pibloom-setup.md](pibloom-setup.md) — First-boot setup guide
+- [first-boot-setup.md](first-boot-setup.md) — First-boot setup guide
 - [quick_deploy.md](quick_deploy.md) — Build and deployment guide
 - [supply-chain.md](supply-chain.md) — Image trust policy
 - [../AGENTS.md](../AGENTS.md) — Reference for sensitive paths

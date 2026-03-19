@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
 
 vi.mock("../../core/lib/exec.js", () => ({
 	run: vi.fn(),
@@ -15,7 +15,7 @@ import {
 } from "../../core/pi/extensions/os/actions.js";
 import { handleSystemHealth } from "../../core/pi/extensions/os/actions-health.js";
 
-let temp: TempGarden;
+let temp: TempWorkspace;
 let api: MockExtensionAPI;
 
 const EXPECTED_TOOL_NAMES = [
@@ -28,7 +28,7 @@ const EXPECTED_TOOL_NAMES = [
 ];
 
 beforeEach(async () => {
-	temp = createTempGarden();
+	temp = createTempWorkspace();
 	api = createMockExtensionAPI();
 	const mod = await import("../../core/pi/extensions/os/index.js");
 	mod.default(api as never);
@@ -139,21 +139,21 @@ describe("handleNixosUpdate — apply local (missing repo)", () => {
 			process.env.WORKSPACE_REPO_DIR = prev;
 		}
 		expect(result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Local Workspace repo not found");
+		expect(result.content[0].text).toContain("Local nixPI repo not found");
 	});
 });
 
 describe("handleSystemdControl", () => {
-	it("rejects non-workspace services", async () => {
+	it("rejects non-nixpi services", async () => {
 		const ctx = createMockExtensionContext();
 		const result = await handleSystemdControl("sshd", "status", undefined, ctx as never);
 		expect(result.isError).toBe(true);
 	});
 
-	it("runs systemctl for workspace-dufs status", async () => {
+	it("runs systemctl for nixpi-files status", async () => {
 		mockRun.mockResolvedValueOnce({ stdout: "active", stderr: "", exitCode: 0 });
 		const ctx = createMockExtensionContext();
-		const result = await handleSystemdControl("workspace-dufs", "status", undefined, ctx as never);
+		const result = await handleSystemdControl("nixpi-files", "status", undefined, ctx as never);
 		expect(result.content[0].text).toContain("active");
 	});
 });
@@ -190,7 +190,7 @@ describe("handleSystemHealth", () => {
 		mockRun
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }) // nixos-rebuild fails
 			.mockResolvedValueOnce({
-				stdout: JSON.stringify([{ Names: ["workspace-dufs"], Status: "Up 1 hour" }]),
+				stdout: JSON.stringify([{ Names: ["nixpi-files"], Status: "Up 1 hour" }]),
 				stderr: "",
 				exitCode: 0,
 			}) // podman ps
@@ -199,7 +199,7 @@ describe("handleSystemHealth", () => {
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }) // free
 			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }); // uptime
 		const result = await handleSystemHealth(undefined);
-		expect(result.content[0].text).toContain("workspace-dufs");
+		expect(result.content[0].text).toContain("nixpi-files");
 		expect(result.content[0].text).toContain("Up 1 hour");
 	});
 

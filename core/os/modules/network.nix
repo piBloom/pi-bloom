@@ -2,8 +2,8 @@
 { pkgs, lib, config, ... }:
 
 let
-  u = config.workspace.username;
-  bloomHomeBootstrap = pkgs.writeShellScript "workspace-home-bootstrap" ''
+  u = config.nixpi.username;
+  bloomHomeBootstrap = pkgs.writeShellScript "nixpi-home-bootstrap" ''
     set -eu
     mkdir -p "$HOME/.config/workspace/home" "$HOME/.config/workspace/home/tmp"
     if [ ! -f "$HOME/.config/workspace/home/index.html" ]; then
@@ -24,7 +24,7 @@ HTML
     fi
     cat > "$HOME/.config/workspace/home/nginx.conf" <<'NGINX'
 daemon off;
-pid /run/user/1000/workspace-home-nginx.pid;
+pid /run/user/1000/nixpi-home-nginx.pid;
 error_log stderr;
 events { worker_connections 64; }
 http {
@@ -40,7 +40,7 @@ http {
 }
 NGINX
   '';
-  fluffychatBootstrap = pkgs.writeShellScript "workspace-fluffychat-bootstrap" ''
+  fluffychatBootstrap = pkgs.writeShellScript "nixpi-chat-bootstrap" ''
     set -eu
     mkdir -p "$HOME/.config/workspace/fluffychat" "$HOME/.config/workspace/fluffychat/tmp"
     cat > "$HOME/.config/workspace/fluffychat/config.json" <<'CONFIG'
@@ -51,7 +51,7 @@ NGINX
 CONFIG
     cat > "$HOME/.config/workspace/fluffychat/nginx.conf" <<'NGINX'
 daemon off;
-pid /run/user/1000/workspace-fluffychat-nginx.pid;
+pid /run/user/1000/nixpi-chat-nginx.pid;
 error_log stderr;
 events { worker_connections 64; }
 http {
@@ -65,7 +65,7 @@ http {
             alias /home/${u}/.config/workspace/fluffychat/config.json;
         }
         location / {
-            root /etc/workspace/fluffychat-web;
+            root /etc/nixpi/fluffychat-web;
             try_files $uri $uri/ /index.html;
         }
     }
@@ -94,7 +94,7 @@ in
     networking.firewall.trustedInterfaces = [ "wt0" ];
     networking.networkmanager.enable = true;
 
-    environment.etc."workspace/fluffychat-web".source = pkgs.fluffychat-web;
+    environment.etc."nixpi/fluffychat-web".source = pkgs.fluffychat-web;
 
     environment.systemPackages = with pkgs; [
       git git-lfs gh
@@ -106,8 +106,8 @@ in
       dufs nginx code-server
     ];
 
-    systemd.user.services.workspace-home = {
-      description = "Workspace Home landing page";
+    systemd.user.services.nixpi-home = {
+      description = "nixPI Home landing page";
       wantedBy = [ "default.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
@@ -119,8 +119,8 @@ in
       };
     };
 
-    systemd.user.services.workspace-fluffychat = {
-      description = "Workspace FluffyChat web client";
+    systemd.user.services.nixpi-chat = {
+      description = "nixPI web chat client";
       wantedBy = [ "default.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
@@ -132,8 +132,8 @@ in
       };
     };
 
-    systemd.user.services.workspace-dufs = {
-      description = "Workspace Files WebDAV";
+    systemd.user.services.nixpi-files = {
+      description = "nixPI Files WebDAV";
       wantedBy = [ "default.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
@@ -145,8 +145,8 @@ in
       };
     };
 
-    systemd.user.services.workspace-code-server = {
-      description = "Workspace code-server";
+    systemd.user.services.nixpi-code = {
+      description = "nixPI code-server";
       wantedBy = [ "default.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
@@ -165,7 +165,7 @@ in
       "d /home/${u}/Public/Workspace 0755 ${u} ${u} -"
     ];
 
-    system.activationScripts.workspace-builtins = lib.stringAfter [ "users" ] ''
+    system.activationScripts.nixpi-builtins = lib.stringAfter [ "users" ] ''
       install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/home
       install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/home/tmp
       install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/workspace/fluffychat
@@ -190,7 +190,7 @@ HTML
 
       cat > /home/${u}/.config/workspace/home/nginx.conf <<'NGINX'
 daemon off;
-pid /run/user/1000/workspace-home-nginx.pid;
+pid /run/user/1000/nixpi-home-nginx.pid;
 error_log stderr;
 events { worker_connections 64; }
 http {
@@ -215,7 +215,7 @@ CONFIG
 
       cat > /home/${u}/.config/workspace/fluffychat/nginx.conf <<'NGINX'
 daemon off;
-pid /run/user/1000/workspace-fluffychat-nginx.pid;
+pid /run/user/1000/nixpi-chat-nginx.pid;
 error_log stderr;
 events { worker_connections 64; }
 http {
@@ -229,7 +229,7 @@ http {
             alias /home/${u}/.config/workspace/fluffychat/config.json;
         }
         location / {
-            root /etc/workspace/fluffychat-web;
+            root /etc/nixpi/fluffychat-web;
             try_files $uri $uri/ /index.html;
         }
     }

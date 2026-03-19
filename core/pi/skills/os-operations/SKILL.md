@@ -1,6 +1,6 @@
 ---
 name: os-operations
-description: Inspect, manage, and remediate the Workspace OS system — NixOS updates, local proposal validation, services, and timers
+description: Inspect, manage, and remediate the nixPI system — NixOS updates, local proposal validation, services, and timers
 ---
 
 # OS Operations Skill
@@ -39,7 +39,7 @@ Prefer Workspace extension tools over raw shell commands:
 
 ### Healthy
 
-- `workspace-*` services active/running
+- `nixpi-*` services active/running
 - `nixos_update(action="status")` shows current generation is booted
 
 ### Unhealthy
@@ -50,6 +50,6 @@ Prefer Workspace extension tools over raw shell commands:
 ## Safety Rules
 
 - mutation operations require explicit user confirmation
-- only manage `workspace-*` services
+- only manage `nixpi-*` services
 - prefer user-scope service management (`systemctl --user`)
 - re-check health after every mutation

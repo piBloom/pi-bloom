@@ -19,7 +19,7 @@ function containersSection(result: Awaited<ReturnType<typeof run>>): string | nu
 			Status?: string;
 			State?: string;
 		}>;
-		if (containers.length === 0) return "## Containers\nNo workspace-* containers running.";
+		if (containers.length === 0) return "## Containers\nNo nixpi-* containers running.";
 		const lines = containers.map((c) => {
 			const name = (c.Names ?? []).join(", ") || "unknown";
 			return `- ${name}: ${c.Status ?? c.State ?? "unknown"}`;
@@ -58,7 +58,7 @@ function systemSection(
 export async function handleSystemHealth(signal: AbortSignal | undefined) {
 	const [nixos, ps, df, loadavg, meminfo, uptime] = await Promise.all([
 		run("nixos-rebuild", ["list-generations"], signal),
-		run("podman", ["ps", "--format", "json", "--filter", "name=workspace-"], signal),
+		run("podman", ["ps", "--format", "json", "--filter", "name=nixpi-"], signal),
 		run("df", ["-h", "/", "/var", "/home"], signal),
 		run("cat", ["/proc/loadavg"], signal),
 		run("free", ["-h", "--si"], signal),

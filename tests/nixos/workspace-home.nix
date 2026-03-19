@@ -1,7 +1,7 @@
 # tests/nixos/workspace-home.nix
 # Test that Workspace Home and the built-in user services are provisioned after firstboot
 
-{ pkgs, lib, bloomModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
+{ pkgs, lib, workspaceModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "workspace-home";
@@ -10,12 +10,12 @@ pkgs.testers.runNixOSTest {
     username = "workspace";
     homeDir = "/home/${username}";
   in {
-    imports = bloomModulesNoShell ++ [
+    imports = workspaceModulesNoShell ++ [
       ../../core/os/modules/firstboot.nix
       mkTestFilesystems
     ];
     _module.args = { inherit piAgent appPackage; };
-    workspace.username = username;
+    nixpi.username = username;
 
     virtualisation.diskSize = 20480;
     virtualisation.memorySize = 4096;
@@ -60,7 +60,7 @@ pkgs.testers.runNixOSTest {
 
     workspace.start()
     workspace.wait_for_unit("multi-user.target", timeout=300)
-    workspace.wait_for_unit("workspace-firstboot.service", timeout=120)
+    workspace.wait_for_unit("nixpi-firstboot.service", timeout=120)
     workspace.wait_until_succeeds("test -f " + home + "/.workspace/.setup-complete", timeout=120)
 
     workspace.wait_until_succeeds("test -f " + home + "/.config/workspace/home/index.html", timeout=120)

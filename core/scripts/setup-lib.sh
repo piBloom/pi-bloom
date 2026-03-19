@@ -449,7 +449,7 @@ install_home_infrastructure() {
 
 	cat > "$BLOOM_CONFIG/home/nginx.conf" <<-NGINX
 	daemon off;
-	pid /run/user/${UID}/workspace-home-nginx.pid;
+pid /run/user/${UID}/nixpi-home-nginx.pid;
 	error_log stderr;
 	events { worker_connections 64; }
 	http {
@@ -466,7 +466,7 @@ install_home_infrastructure() {
 	NGINX
 
 	systemctl --user daemon-reload
-	systemctl --user restart workspace-home.service
+	systemctl --user restart nixpi-home.service
 }
 
 write_fluffychat_runtime_config() {
@@ -498,11 +498,11 @@ step_matrix() {
 	# Wait for Matrix homeserver
 	echo "Waiting for Matrix homeserver..."
 	local attempts=0
-	while ! systemctl is-active --quiet workspace-matrix.service; do
+	while ! systemctl is-active --quiet matrix-synapse.service; do
 		attempts=$((attempts + 1))
 		if [[ $attempts -ge 30 ]]; then
-			echo "ERROR: workspace-matrix.service did not start within 30 seconds." >&2
-			echo "Run 'systemctl status workspace-matrix' to debug." >&2
+			echo "ERROR: matrix-synapse.service did not start within 30 seconds." >&2
+			echo "Run 'systemctl status matrix-synapse' to debug." >&2
 			return 1
 		fi
 		sleep 1
@@ -563,7 +563,7 @@ step_matrix() {
 			# blocks the configured registration_token until the first account is created.
 			# Extract that token from the journal and use it for the first registration.
 			local first_boot_token
-			first_boot_token=$(sudo journalctl -u workspace-matrix --no-pager 2>/dev/null | \
+			first_boot_token=$(sudo journalctl -u matrix-synapse --no-pager 2>/dev/null | \
 				sed -n 's/.*registration token \([A-Za-z0-9]*\) .*/\1/p' | head -1 || true)
 			if [[ -n "$first_boot_token" ]]; then
 				bot_result=$(matrix_register "pi" "$bot_password" "$first_boot_token" 2>/dev/null || true)

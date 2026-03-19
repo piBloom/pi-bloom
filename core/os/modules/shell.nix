@@ -2,7 +2,7 @@
 { pkgs, lib, config, ... }:
 
 let
-  u = config.workspace.username;
+  u = config.nixpi.username;
 
   bashrc = pkgs.writeText "workspace-bashrc" ''
     export WORKSPACE_DIR="$HOME/Workspace"
@@ -73,7 +73,7 @@ in
   environment.etc = {
     "skel/.bashrc".source       = bashrc;
     "skel/.bash_profile".source = bashProfile;
-    "issue".text = "Workspace OS\n";
+    "issue".text = "nixPI\n";
     "xdg/sway/config".text = ''
       # Workspace OS Sway Configuration
       set $mod Mod4
@@ -185,5 +185,5 @@ in
 
   boot.kernel.sysctl."kernel.printk" = "4 4 1 7";
 
-  networking.hostName = lib.mkDefault "workspace";
+  networking.hostName = lib.mkDefault "nixos";
 }

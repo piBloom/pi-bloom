@@ -6,11 +6,11 @@ description: Continuwuity Matrix homeserver (native OS service, no federation)
 
 # Matrix Homeserver
 
-Native Continuwuity Matrix server baked into the Workspace OS image.
+Native Continuwuity Matrix server baked into the nixPI image.
 
 ## Overview
 
-Workspace runs its own Matrix homeserver as a native systemd service (`workspace-matrix.service`). Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
+nixPI runs its own Matrix homeserver through the stock `matrix-synapse.service`. Users register with any Matrix client and message Pi directly. No data leaves the device. No federation - fully private.
 
 ## Setup
 
@@ -34,7 +34,7 @@ External messaging platforms (WhatsApp, Telegram, Signal) connect via mautrix br
 
 ## Troubleshooting
 
-- Logs: `journalctl -u workspace-matrix -n 100`
-- Status: `systemctl status workspace-matrix`
-- Restart: `sudo systemctl restart workspace-matrix`
-- Reload (after appservice registration): `sudo systemctl reload workspace-matrix`
+- Logs: `journalctl -u matrix-synapse -n 100`
+- Status: `systemctl status matrix-synapse`
+- Restart: `sudo systemctl restart matrix-synapse`
+- Reload (after appservice registration): `sudo systemctl reload matrix-synapse`

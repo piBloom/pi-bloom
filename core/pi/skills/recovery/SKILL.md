@@ -1,6 +1,6 @@
 ---
 name: recovery
-description: Troubleshooting and recovery procedures for common Workspace system issues
+description: Troubleshooting and recovery procedures for common nixPI system issues
 ---
 
 # Recovery Playbooks
@@ -12,10 +12,10 @@ Use these procedures when diagnosing and recovering from common system issues. A
 **Symptoms**: Messages not delivered, Pi not responding in Matrix rooms.
 
 1. Check system health: `system_health`
-2. Check Matrix service: `systemctl status workspace-matrix`
-3. Check logs: `journalctl -u workspace-matrix -n 100`
+2. Check Matrix service: `systemctl status matrix-synapse`
+3. Check logs: `journalctl -u matrix-synapse -n 100`
 4. Common causes:
-   - Server not running: `sudo systemctl restart workspace-matrix`
+   - Server not running: `sudo systemctl restart matrix-synapse`
    - Database corruption: check `/var/lib/continuwuity/` for issues
    - Port conflict: verify nothing else is on port 6167
 5. If Pi is not responding to messages:
@@ -51,11 +51,11 @@ Use these procedures when diagnosing and recovering from common system issues. A
 
 **Symptoms**: Files not accessible via WebDAV, connection refused on port 5000.
 
-1. Check service state: `systemd_control service=workspace-dufs action=status`
-2. Check logs: `journalctl --user -u workspace-dufs -n 100`
+1. Check service state: `systemd_control service=nixpi-files action=status`
+2. Check logs: `journalctl --user -u nixpi-files -n 100`
 3. Verify port is listening: `curl -s http://localhost:5000/`
 4. Common causes:
-   - Service not running: restart with `systemd_control service=workspace-dufs action=restart`
+   - Service not running: restart with `systemd_control service=nixpi-files action=restart`
    - Port conflict: check for other services on port 5000
    - Quadlet/runtime issue: inspect the installed unit and generated logs
 

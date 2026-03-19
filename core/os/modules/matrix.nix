@@ -1,26 +1,12 @@
 # core/os/modules/matrix.nix
-{ pkgs, lib, ... }:
-
-let
-  # Generate a registration shared secret on first run
-  synapseBootstrap = pkgs.writeShellScript "workspace-synapse-bootstrap" ''
-    set -eu
-    TOKEN_FILE=/var/lib/matrix-synapse/registration_shared_secret
-    if [ ! -f "$TOKEN_FILE" ]; then
-      mkdir -p /var/lib/matrix-synapse
-      openssl rand -hex 32 > "$TOKEN_FILE"
-      chmod 640 "$TOKEN_FILE"
-      chown matrix-synapse:matrix-synapse "$TOKEN_FILE"
-    fi
-  '';
-in
+{ pkgs, config, ... }:
 
 {
   services.matrix-synapse = {
     enable = true;
     
     settings = {
-      server_name = "workspace";
+      server_name = config.networking.hostName;
       public_baseurl = "http://localhost:6167";
       
       listeners = [
@@ -93,19 +79,6 @@ in
         chown matrix-synapse:matrix-synapse /var/lib/matrix-synapse/extra.yaml 2>/dev/null || true
       fi
     '';
-  };
-
-  # Create an alias service for backward compatibility
-  systemd.services.workspace-matrix = {
-    description = "Workspace Matrix Homeserver (Synapse) - alias for matrix-synapse";
-    after = [ "matrix-synapse.service" ];
-    bindsTo = [ "matrix-synapse.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${pkgs.coreutils}/bin/true";
-    };
   };
 
   # Ensure openssl is available for bootstrap

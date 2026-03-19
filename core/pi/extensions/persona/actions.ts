@@ -109,7 +109,7 @@ export function buildRestoredContextBlock(ctx: WorkspaceContext): string {
 	return lines.join("\n");
 }
 
-/** Load the 4-layer persona from Workspace dir or default package persona. */
+/** Load the 4-layer persona from the runtime directory or default package persona. */
 export function loadPersona(): string {
 	const workspaceDir = getWorkspaceDir();
 	const vaultDir = join(workspaceDir, "Persona");
@@ -130,5 +130,5 @@ export function loadPersona(): string {
 			return `### ${title}\n\n${content}`;
 		})
 		.join("\n\n");
-	return `## Workspace Persona\n\n${sections}`;
+	return `## Pi Persona\n\n${sections}`;
 }

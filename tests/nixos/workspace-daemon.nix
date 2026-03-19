@@ -1,7 +1,7 @@
 # tests/nixos/workspace-daemon.nix
 # Test that the Pi Daemon Matrix agent starts and connects to homeserver
 
-{ pkgs, lib, bloomModules, bloomModulesNoShell, piAgent, appPackage, mkBloomNode, mkTestFilesystems }:
+{ pkgs, lib, workspaceModules, workspaceModulesNoShell, piAgent, appPackage, mkWorkspaceNode, mkTestFilesystems }:
 
 pkgs.testers.runNixOSTest {
   name = "workspace-daemon";
@@ -9,7 +9,7 @@ pkgs.testers.runNixOSTest {
   nodes = {
     # Matrix homeserver node
     server = { ... }: {
-      imports = bloomModulesNoShell ++ [ mkTestFilesystems ];
+      imports = workspaceModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
 
       virtualisation.diskSize = 10240;
@@ -31,9 +31,9 @@ pkgs.testers.runNixOSTest {
       username = "workspace";
       homeDir = "/home/${username}";
     in {
-      imports = bloomModulesNoShell ++ [ mkTestFilesystems ];
+      imports = workspaceModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
-      workspace.username = username;
+      nixpi.username = username;
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
@@ -80,7 +80,7 @@ pkgs.testers.runNixOSTest {
     # Start the homeserver first
     server.start()
     server.wait_for_unit("multi-user.target", timeout=300)
-    server.wait_for_unit("workspace-matrix.service", timeout=60)
+    server.wait_for_unit("matrix-synapse.service", timeout=60)
     
     # Wait for Matrix to be fully ready
     server.wait_until_succeeds("curl -sf http://localhost:6167/_matrix/client/versions", timeout=60)

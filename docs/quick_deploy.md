@@ -1,14 +1,14 @@
-# Workspace OS Quick Deploy
+# nixPI Quick Deploy
 
 > 📖 [Emoji Legend](LEGEND.md)
 
-Audience: operators and maintainers installing Workspace on NixOS or running test VMs.
+Audience: operators and maintainers installing nixPI on NixOS or running test VMs.
 
 > 🛡️ **Security Note: NetBird is Mandatory**
 >
-> NetBird is the network security boundary for all Workspace services. The firewall
+> NetBird is the network security boundary for all nixPI services. The firewall
 > trusts only the NetBird interface (`wt0`). Without NetBird running, all services
-> (Matrix, Workspace Home, dufs, code-server) are exposed to the local network.
+> (Matrix, Home, dufs, code-server) are exposed to the local network.
 >
 > **Complete NetBird setup and verify `wt0` is active before exposing this
 > machine to any network.** See [security-model.md](security-model.md) for the
@@ -16,14 +16,14 @@ Audience: operators and maintainers installing Workspace on NixOS or running tes
 
 ## 🌱 Installation Workflow
 
-Workspace is installed on top of a standard NixOS system:
+nixPI is installed on top of a standard NixOS system:
 
 1. **Install NixOS** using the [official NixOS ISO](https://nixos.org/download.html)
    - Choose your preferred desktop environment during installation
    - Set up your user, hostname, and basic system configuration
    - Complete the standard NixOS install process
 
-2. **Switch to Workspace flake** after first boot:
+2. **Switch to the nixPI flake** after first boot:
    ```bash
    sudo nixos-rebuild switch --flake github:alexradunet/piBloom#desktop
    ```
@@ -70,7 +70,7 @@ Default user: `pi` (no initial password; TTY auto-login prompts for password cre
 
 ## 🔄 OTA Updates
 
-The `workspace-update` timer checks for updates every 6 hours automatically. To apply manually:
+The `nixpi-update` timer checks for updates every 6 hours automatically. To apply manually:
 
 ```bash
 just update          # pull from remote flake and switch
@@ -115,5 +115,5 @@ After first login:
 
 ## 🔗 Related
 
-- [pibloom-setup.md](pibloom-setup.md)
+- [first-boot-setup.md](first-boot-setup.md)
 - [live-testing-checklist.md](live-testing-checklist.md)

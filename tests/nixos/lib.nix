@@ -16,7 +16,7 @@
     # Standard Workspace configuration
     boot.loader.systemd-boot.enable = true;
     boot.loader.efi.canTouchEfiVariables = true;
-    networking.hostName = lib.mkDefault "workspace";
+    networking.hostName = lib.mkDefault "nixos";
     time.timeZone = "UTC";
     i18n.defaultLocale = "en_US.UTF-8";
     networking.networkmanager.enable = true;

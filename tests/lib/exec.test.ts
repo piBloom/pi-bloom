@@ -15,7 +15,7 @@ describe("run()", () => {
 	});
 
 	it("returns non-zero exitCode for a nonexistent command", async () => {
-		const result = await run("__bloom_no_such_command__", []);
+		const result = await run("__missing_no_such_command__", []);
 		expect(result.exitCode).not.toBe(0);
 		expect(result.stdout).toBe("");
 	});
@@ -28,7 +28,7 @@ describe("run()", () => {
 	});
 
 	it("captures stderr from a failing command", async () => {
-		const result = await run("ls", ["/__nonexistent_path_bloom_test__"]);
+		const result = await run("ls", ["/__nonexistent_path_missing_test__"]);
 		expect(result.exitCode).not.toBe(0);
 		expect(result.stderr.length).toBeGreaterThan(0);
 	});

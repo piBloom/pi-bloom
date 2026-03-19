@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
 
 const runMock = vi.fn();
 
@@ -11,14 +11,14 @@ vi.mock("../../core/lib/exec.js", () => ({
 	run: (...args: unknown[]) => runMock(...args),
 }));
 
-let temp: TempGarden;
+let temp: TempWorkspace;
 let api: MockExtensionAPI;
 let originalHome: string | undefined;
 
 const EXPECTED_TOOL_NAMES = ["setup_status", "setup_advance", "setup_reset"];
 
 beforeEach(async () => {
-	temp = createTempGarden();
+	temp = createTempWorkspace();
 	api = createMockExtensionAPI();
 	originalHome = process.env.HOME;
 	process.env.HOME = temp.workspaceDir;

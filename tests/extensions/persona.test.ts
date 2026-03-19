@@ -5,13 +5,13 @@ import { stringifyFrontmatter } from "../../core/lib/frontmatter.js";
 import { normalizeCommand } from "../../core/pi/extensions/persona/actions.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
 
-let temp: TempGarden;
+let temp: TempWorkspace;
 let api: MockExtensionAPI;
 
 beforeEach(async () => {
-	temp = createTempGarden();
+	temp = createTempWorkspace();
 	api = createMockExtensionAPI();
 	const mod = await import("../../core/pi/extensions/persona/index.js");
 	mod.default(api as never);
@@ -47,9 +47,9 @@ describe("persona registration", () => {
 // session_start sets session name
 // ---------------------------------------------------------------------------
 describe("persona session_start", () => {
-	it("sets session name to 'Workspace'", async () => {
+	it("sets session name to 'Pi'", async () => {
 		await api.fireEvent("session_start");
-		expect(api._sessionName).toBe("Workspace");
+		expect(api._sessionName).toBe("Pi");
 	});
 
 	it("injects a durable memory digest into the system prompt", async () => {
@@ -76,7 +76,7 @@ describe("persona session_start", () => {
 					type: "procedure",
 					slug: "matrix-recovery",
 					title: "Matrix Recovery",
-					summary: "Restart workspace-matrix.service, then verify recovery.",
+					summary: "Restart matrix-synapse.service, then verify recovery.",
 					status: "active",
 					salience: 0.8,
 				},
@@ -222,7 +222,7 @@ describe("persona session_before_compact", () => {
 		})) as { compaction: { summary: string; firstKeptEntryId: number; tokensBefore: number } };
 
 		expect(result.compaction.summary).toContain("COMPACTION GUIDANCE");
-		expect(result.compaction.summary).toContain("Workspace persona identity");
+		expect(result.compaction.summary).toContain("Pi persona identity");
 		expect(result.compaction.summary).toContain("Tokens before compaction: 15000");
 		expect(result.compaction.firstKeptEntryId).toBe(42);
 		expect(result.compaction.tokensBefore).toBe(15000);

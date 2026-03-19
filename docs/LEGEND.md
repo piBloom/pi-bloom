@@ -1,17 +1,17 @@
 # 📖 Emoji Legend
 
-This document defines the emoji notation used across Workspace documentation for visual scanning and consistent reference.
+This document defines the emoji notation used across nixPI documentation for visual scanning and consistent reference.
 
 ## 🧩 Notation Table
 
 | Emoji | Concept |
 |-------|---------|
-| 🌱 | Workspace / purpose / overview |
+| 🌱 | nixPI / purpose / overview |
 | 🤖 | Pi / agent behavior |
 | 📜 | Skill / written guidance |
 | 🧩 | Extension / integration layer |
 | 📦 | Service / OCI workload |
-| 🌿 | Workspace directory / host layout |
+| 🌿 | nixPI directory / host layout |
 | 🪞 | Persona / identity |
 | 💻 | OS / build / host operations |
 | 📡 | Daemon / messaging / IPC |

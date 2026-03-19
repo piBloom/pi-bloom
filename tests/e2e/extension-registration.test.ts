@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
 
-let temp: TempGarden;
+let temp: TempWorkspace;
 
 beforeEach(() => {
-	temp = createTempGarden();
+	temp = createTempWorkspace();
 });
 
 afterEach(() => {
@@ -101,7 +101,7 @@ describe("objects registration", () => {
 			]),
 		);
 		expect(toolNames(api)).not.toContain("memory_move");
-		expect(toolNames(api)).not.toContain("garden_reindex");
+		expect(toolNames(api)).not.toContain("workspace_reindex");
 		expect(eventNames(api)).toEqual([]);
 	});
 });

@@ -1,14 +1,14 @@
 # tests/nixos/workspace-network.nix
 # Test network connectivity, SSH, and NetBird mesh setup between nodes
 
-{ pkgs, lib, bloomModules, bloomModulesNoShell, piAgent, appPackage, mkBloomNode, mkTestFilesystems }:
+{ pkgs, lib, workspaceModules, workspaceModulesNoShell, piAgent, appPackage, mkWorkspaceNode, mkTestFilesystems }:
 
 pkgs.testers.runNixOSTest {
   name = "workspace-network";
 
   nodes = {
     bloom1 = { ... }: {
-      imports = bloomModules ++ [ mkTestFilesystems ];
+      imports = workspaceModules ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
 
       virtualisation.diskSize = 10240;
@@ -27,7 +27,7 @@ pkgs.testers.runNixOSTest {
     };
 
     bloom2 = { ... }: {
-      imports = bloomModules ++ [ mkTestFilesystems ];
+      imports = workspaceModules ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage; };
 
       virtualisation.diskSize = 10240;

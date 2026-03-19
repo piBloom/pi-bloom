@@ -14,7 +14,7 @@ import {
 } from "../../core/pi/extensions/workspace/actions.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
-import { createTempGarden, type TempGarden } from "../helpers/temp-workspace.js";
+import { createTempWorkspace, type TempWorkspace } from "../helpers/temp-workspace.js";
 
 let workspaceDir: string;
 
@@ -533,11 +533,11 @@ type GardenStatusResult = { content: Array<{ type: string; text: string }>; deta
 type GardenStatusExecute = () => Promise<GardenStatusResult>;
 
 describe("workspace_status tool execute", () => {
-	let temp: TempGarden;
+	let temp: TempWorkspace;
 	let api: ReturnType<typeof createMockExtensionAPI>;
 
 	beforeEach(async () => {
-		temp = createTempGarden();
+		temp = createTempWorkspace();
 		vi.resetModules();
 		api = createMockExtensionAPI();
 		const mod = await import("../../core/pi/extensions/workspace/index.js");
@@ -582,11 +582,11 @@ describe("workspace_status tool execute", () => {
 // /workspace command handler subcommands
 // ---------------------------------------------------------------------------
 describe("/workspace command handler", () => {
-	let temp: TempGarden;
+	let temp: TempWorkspace;
 	let api: ReturnType<typeof createMockExtensionAPI>;
 
 	beforeEach(async () => {
-		temp = createTempGarden();
+		temp = createTempWorkspace();
 		vi.resetModules();
 		api = createMockExtensionAPI();
 		const mod = await import("../../core/pi/extensions/workspace/index.js");

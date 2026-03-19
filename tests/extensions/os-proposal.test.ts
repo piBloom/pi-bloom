@@ -88,7 +88,7 @@ describe("os local Nix proposal handler", () => {
 		const result = await handleNixConfigProposal("status", undefined, createMockExtensionContext() as never);
 
 		expect(result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Local Workspace repo not found");
+		expect(result.content[0].text).toContain("Local nixPI repo not found");
 	});
 
 	it("returns isError when validate fails", async () => {

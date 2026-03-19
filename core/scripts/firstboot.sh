@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# firstboot.sh — Non-interactive first-boot preparation for Workspace OS.
-# Runs before getty via workspace-firstboot.service as the primary Workspace user.
+# firstboot.sh — Non-interactive first-boot preparation for nixPI.
+# Runs before getty via nixpi-firstboot.service as the primary nixPI user.
 # If ~/.workspace/prefill.env is present, first boot completes unattended; otherwise
 # it performs background preparation and leaves the interactive wizard pending.
 # On failure, exits 1 (non-fatal per SuccessExitStatus). User can re-run
@@ -12,7 +12,7 @@ FIRSTBOOT_LOG="$HOME/.workspace/firstboot.log"
 mkdir -p "$(dirname "$FIRSTBOOT_LOG")"
 exec > >(tee -a "$FIRSTBOOT_LOG") 2>&1
 
-echo "=== Workspace Firstboot Started: $(date) ==="
+echo "=== nixPI Firstboot Started: $(date) ==="
 
 WIZARD_STATE="$HOME/.workspace/wizard-state"
 SETUP_COMPLETE="$HOME/.workspace/.setup-complete"
@@ -51,15 +51,15 @@ step_done() { [[ -f "$WIZARD_STATE/$1" ]]; }
 # --- First-boot steps ---
 
 firstboot_netbird() {
-    [[ -z "${PREFILL_NETBIRD_KEY:-}" ]] && { echo "workspace-firstboot: no NetBird key, skipping"; return 0; }
-    echo "workspace-firstboot: connecting to NetBird..."
+    [[ -z "${PREFILL_NETBIRD_KEY:-}" ]] && { echo "nixpi-firstboot: no NetBird key, skipping"; return 0; }
+    echo "nixpi-firstboot: connecting to NetBird..."
     if ! systemctl is-active --quiet netbird.service; then
         sudo systemctl start netbird.service
     fi
     local wait_count=0
     while [[ ! -S /var/run/netbird/sock ]]; do
         wait_count=$((wait_count + 1))
-        [[ $wait_count -ge 20 ]] && { echo "workspace-firstboot: NetBird daemon did not start" >&2; return 1; }
+        [[ $wait_count -ge 20 ]] && { echo "nixpi-firstboot: NetBird daemon did not start" >&2; return 1; }
         sleep 0.5
     done
     if sudo netbird up --setup-key "$PREFILL_NETBIRD_KEY"; then
@@ -67,40 +67,40 @@ firstboot_netbird() {
         local mesh_ip
         mesh_ip=$(netbird status 2>/dev/null | grep -oP 'NetBird IP:\s+\K[\d.]+' || true)
         [[ -n "$mesh_ip" ]] && mark_done_with netbird "$mesh_ip"
-        echo "workspace-firstboot: NetBird connected (${mesh_ip:-unknown IP})"
+        echo "nixpi-firstboot: NetBird connected (${mesh_ip:-unknown IP})"
     else
-        echo "workspace-firstboot: NetBird connection failed" >&2
+        echo "nixpi-firstboot: NetBird connection failed" >&2
         return 1
     fi
 }
 
 firstboot_matrix() {
-    [[ -z "${PREFILL_USERNAME:-}" ]] && { echo "workspace-firstboot: no Matrix username, skipping"; return 0; }
-    echo "workspace-firstboot: setting up Matrix..."
+    [[ -z "${PREFILL_USERNAME:-}" ]] && { echo "nixpi-firstboot: no Matrix username, skipping"; return 0; }
+    echo "nixpi-firstboot: setting up Matrix..."
     # Poll until homeserver accepts connections (up to 60s)
     local attempts=0
     until curl -sf "http://localhost:6167/_matrix/client/versions" >/dev/null 2>&1; do
         attempts=$((attempts + 1))
-        [[ $attempts -ge 60 ]] && { echo "workspace-firstboot: Matrix homeserver not ready after 60s" >&2; return 1; }
+        [[ $attempts -ge 60 ]] && { echo "nixpi-firstboot: Matrix homeserver not ready after 60s" >&2; return 1; }
         sleep 1
     done
-    echo "workspace-firstboot: Matrix homeserver ready"
+    echo "nixpi-firstboot: Matrix homeserver ready"
     # Delegate to wizard's step_matrix (reads PREFILL_USERNAME from env)
     step_matrix
 }
 
 firstboot_services() {
-    echo "workspace-firstboot: provisioning Workspace Home..."
+    echo "nixpi-firstboot: provisioning Home..."
     local mesh_ip mesh_fqdn
     mesh_ip=$(read_checkpoint_data netbird)
     mesh_fqdn=$(netbird_fqdn)
     write_fluffychat_runtime_config
     write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
-    install_home_infrastructure || echo "workspace-firstboot: Workspace Home setup failed (non-fatal)"
-    systemctl --user restart workspace-fluffychat.service || echo "workspace-firstboot: fluffychat restart failed (non-fatal)" >&2
-    systemctl --user restart workspace-dufs.service || echo "workspace-firstboot: dufs restart failed (non-fatal)" >&2
-    systemctl --user restart workspace-code-server.service || echo "workspace-firstboot: code-server restart failed (non-fatal)" >&2
-    mark_done_with services "fluffychat dufs code-server"
+    install_home_infrastructure || echo "nixpi-firstboot: Home setup failed (non-fatal)"
+    systemctl --user restart nixpi-chat.service || echo "nixpi-firstboot: chat restart failed (non-fatal)" >&2
+    systemctl --user restart nixpi-files.service || echo "nixpi-firstboot: files restart failed (non-fatal)" >&2
+    systemctl --user restart nixpi-code.service || echo "nixpi-firstboot: code-server restart failed (non-fatal)" >&2
+    mark_done_with services "chat files code"
 }
 
 firstboot_localai() {
@@ -110,20 +110,20 @@ firstboot_localai() {
     state=$(systemctl is-active localai-download.service 2>/dev/null || true)
     case "$state" in
         active)
-            echo "workspace-firstboot: AI model already downloaded"
+            echo "nixpi-firstboot: AI model already downloaded"
             ;;
         activating)
-            echo "workspace-firstboot: AI model download in progress (background)"
-            echo "workspace-firstboot: track with: sudo journalctl -fu localai-download"
+            echo "nixpi-firstboot: AI model download in progress (background)"
+            echo "nixpi-firstboot: track with: sudo journalctl -fu localai-download"
             ;;
         failed)
-            echo "workspace-firstboot: AI model download failed — retry with: sudo systemctl restart localai-download" >&2
+            echo "nixpi-firstboot: AI model download failed — retry with: sudo systemctl restart localai-download" >&2
             return 1
             ;;
         *)
-            echo "workspace-firstboot: starting AI model download in background..."
+            echo "nixpi-firstboot: starting AI model download in background..."
             sudo systemctl start --no-block localai-download.service || true
-            echo "workspace-firstboot: track with: sudo journalctl -fu localai-download"
+            echo "nixpi-firstboot: track with: sudo journalctl -fu localai-download"
             ;;
     esac
     mark_done_with localai "download-started"
@@ -152,13 +152,13 @@ firstboot_repo_clone() {
     fi
     mkdir -p "$(dirname "$repo_dir")"
     if ! curl -fsI --connect-timeout 5 https://github.com >/dev/null 2>&1; then
-        echo "workspace-firstboot: skipping repo clone until network is available"
+        echo "nixpi-firstboot: skipping repo clone until network is available"
         return 0
     fi
     if timeout 30 git clone --depth 1 https://github.com/alexradunet/piBloom.git "$repo_dir"; then
-        echo "workspace-firstboot: cloned pi-workspace repo"
+        echo "nixpi-firstboot: cloned pi-workspace repo"
     else
-        echo "workspace-firstboot: repo clone failed (non-fatal)" >&2
+        echo "nixpi-firstboot: repo clone failed (non-fatal)" >&2
     fi
 }
 
@@ -178,14 +178,14 @@ firstboot_prepare_local_state() {
 
 firstboot_finalize() {
     if [[ "$NONINTERACTIVE_INSTALL" -ne 1 ]]; then
-        echo "workspace-firstboot: interactive setup remains pending"
+        echo "nixpi-firstboot: interactive setup remains pending"
         return 0
     fi
-    # linger is enabled statically via systemd.tmpfiles.rules in workspace-firstboot.nix
+    # linger is enabled statically via systemd.tmpfiles.rules in the firstboot module
     systemctl --user enable --now pi-daemon.service || \
-        echo "workspace-firstboot: pi-daemon enable failed (non-fatal)" >&2
+        echo "nixpi-firstboot: pi-daemon enable failed (non-fatal)" >&2
     touch "$SETUP_COMPLETE"
-    echo "workspace-firstboot: setup complete"
+    echo "nixpi-firstboot: setup complete"
 }
 
 main() {

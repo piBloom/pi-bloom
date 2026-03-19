@@ -23,7 +23,7 @@ export default function (pi: ExtensionAPI) {
 	let memoryDigest: string | undefined;
 
 	pi.on("session_start", () => {
-		pi.setSessionName("Workspace");
+		pi.setSessionName("Pi");
 		memoryDigest = undefined;
 	});
 
@@ -83,7 +83,7 @@ export default function (pi: ExtensionAPI) {
 
 		const summary = [
 			"COMPACTION GUIDANCE — preserve the following across summarization:",
-			"1. Workspace persona identity: values, voice, growth stage, and boundaries.",
+			"1. Pi persona identity: values, voice, growth stage, and boundaries.",
 			"2. Human context: name, preferences, recurring topics, and active projects.",
 			"3. Task state: in-progress tasks, open threads, and decisions pending.",
 			`Tokens before compaction: ${tokensBefore}.`,

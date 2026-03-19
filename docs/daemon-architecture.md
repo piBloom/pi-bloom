@@ -6,7 +6,7 @@ Audience: maintainers changing daemon behavior or diagnosing room-runtime issues
 
 ## 🌱 Why The Daemon Exists
 
-`pi-daemon.service` is Workspace's always-on room runtime.
+`pi-daemon.service` is nixPI's always-on room runtime.
 
 It exists to:
 
@@ -17,7 +17,7 @@ It exists to:
 
 ## 📡 How The Daemon Works
 
-Workspace runs through one supervisor/runtime path:
+nixPI runs through one supervisor/runtime path:
 
 - if valid agent overlays exist, it uses those Matrix identities
 - if no valid overlays exist, it synthesizes a default host agent from the primary Pi account
@@ -25,7 +25,7 @@ Workspace runs through one supervisor/runtime path:
 
 At startup:
 
-1. Workspace loads `~/Workspace/Agents/*/AGENTS.md`
+1. nixPI loads `~/Workspace/Agents/*/AGENTS.md`
 2. if no valid overlays exist, the daemon synthesizes a default host agent from the primary Pi credentials
 3. malformed overlays are skipped with warnings instead of aborting startup
 

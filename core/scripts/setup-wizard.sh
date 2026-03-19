@@ -338,9 +338,9 @@ step_services() {
 	else
 		echo "  Workspace Home setup failed."
 	fi
-	systemctl --user restart workspace-fluffychat.service || echo "  FluffyChat restart failed."
-	systemctl --user restart workspace-dufs.service || echo "  dufs restart failed."
-	systemctl --user restart workspace-code-server.service || echo "  code-server restart failed."
+	systemctl --user restart nixpi-chat.service || echo "  chat restart failed."
+	systemctl --user restart nixpi-files.service || echo "  files restart failed."
+	systemctl --user restart nixpi-code.service || echo "  code-server restart failed."
 	write_service_home_runtime "$mesh_ip" "$mesh_fqdn"
 	mark_done_with services "fluffychat dufs code-server"
 }
@@ -349,7 +349,7 @@ step_bootc_switch() {
 	echo ""
 	echo "--- System Updates ---"
 	echo "Workspace OS uses NixOS with automatic OTA updates."
-	echo "The workspace-update timer checks for updates every 6 hours."
+	echo "The nixpi-update timer checks for updates every 6 hours."
 	echo ""
 	echo "To update manually at any time: sudo nixos-rebuild switch --flake github:alexradunet/piBloom#workspace-x86_64"
 	echo "To roll back:                   sudo nixos-rebuild switch --rollback"

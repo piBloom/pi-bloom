@@ -1,7 +1,7 @@
 # tests/nixos/workspace-firstboot.nix
 # Test that the Workspace first-boot wizard runs correctly
 
-{ pkgs, lib, bloomModules, bloomModulesNoShell, piAgent, appPackage, mkBloomNode, mkTestFilesystems }:
+{ pkgs, lib, workspaceModules, workspaceModulesNoShell, piAgent, appPackage, mkWorkspaceNode, mkTestFilesystems }:
 
 pkgs.testers.runNixOSTest {
   name = "workspace-firstboot";
@@ -10,12 +10,12 @@ pkgs.testers.runNixOSTest {
     username = "workspace";
     homeDir = "/home/${username}";
   in {
-    imports = bloomModulesNoShell ++ [ 
+    imports = workspaceModulesNoShell ++ [ 
       ../../core/os/modules/firstboot.nix
       mkTestFilesystems 
     ];
     _module.args = { inherit piAgent appPackage; };
-    workspace.username = username;
+    nixpi.username = username;
 
     # VM configuration
     virtualisation.diskSize = 20480;
@@ -75,13 +75,13 @@ pkgs.testers.runNixOSTest {
     workspace.wait_for_unit("network-online.target", timeout=60)
     
     # Wait for Matrix to be ready (firstboot depends on it)
-    workspace.wait_for_unit("workspace-matrix.service", timeout=60)
+    workspace.wait_for_unit("matrix-synapse.service", timeout=60)
     
     # Wait for netbird to be ready
     workspace.wait_for_unit("netbird.service", timeout=60)
     
     # Test 1: Firstboot service runs and completes (exit 0 or 1 both accepted by unit)
-    workspace.wait_for_unit("workspace-firstboot.service", timeout=120)
+    workspace.wait_for_unit("nixpi-firstboot.service", timeout=120)
     
     # Test 2: .setup-complete marker file was created (unattended mode)
     workspace.succeed("test -f " + home + "/.workspace/.setup-complete")
