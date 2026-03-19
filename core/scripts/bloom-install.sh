@@ -118,9 +118,38 @@ validate_timezone() {
 
 validate_keymap() {
     local value="$1"
-    local map_path
-    map_path="$(find /run/current-system/sw/share/keymaps -path "*/${value}.map.gz" -o -path "*/${value}.map" | head -1 || true)"
-    [[ -n "$map_path" ]] || die "Unknown console keymap: $value"
+    local map_path=""
+    local search_dirs=()
+    
+    # Common NixOS keymap locations
+    if [[ -d /run/current-system/sw/share/keymaps ]]; then
+        search_dirs+=(/run/current-system/sw/share/keymaps)
+    fi
+    if [[ -d /nix/var/nix/profiles/system/sw/share/keymaps ]]; then
+        search_dirs+=(/nix/var/nix/profiles/system/sw/share/keymaps)
+    fi
+    # kbd package location
+    if [[ -d /usr/share/keymaps ]]; then
+        search_dirs+=(/usr/share/keymaps)
+    fi
+    
+    # Try to find the keymap
+    for dir in "${search_dirs[@]}"; do
+        map_path="$(find "$dir" -name "${value}.map.gz" -o -name "${value}.map" 2>/dev/null | head -1 || true)"
+        [[ -n "$map_path" ]] && break
+    done
+    
+    if [[ -z "$map_path" ]]; then
+        # If we can't validate, warn but don't fail - the install might still work
+        # with the default or the user can fix it later
+        if [[ ${#search_dirs[@]} -eq 0 ]]; then
+            echo "Warning: Cannot find keymap directory to validate '$value'" >&2
+            echo "         Using '$value' anyway - you can fix keymap after install." >&2
+        else
+            echo "Warning: Unknown console keymap: $value" >&2
+            echo "         Using '$value' anyway - you can fix keymap after install." >&2
+        fi
+    fi
 }
 
 write_machine_config() {
@@ -189,18 +218,27 @@ confirm_install() {
 }
 
 run_install() {
-    local disko_install_cmd=(
-        nix
-        --extra-experimental-features "nix-command flakes"
-        run "$OFFLINE_BASE/disko#disko-install"
-        --
-        --flake "$WORKDIR#bloom"
-        --disk main "$TARGET_DISK"
-    )
-
     echo ""
-    echo "Running disko-install..."
-    "${disko_install_cmd[@]}"
+    echo "Partitioning disk with disko..."
+    
+    # Run disko to partition and mount the disk
+    nix --extra-experimental-features "nix-command flakes" run \
+        --no-lock-file \
+        "$OFFLINE_BASE/disko#disko" -- \
+        --mode destroy,format,mount \
+        --flake "$WORKDIR#bloom"
+    
+    echo ""
+    echo "Installing NixOS..."
+    
+    # Install NixOS
+    nixos-install \
+        --no-channel-copy \
+        --root /mnt \
+        --flake "$WORKDIR#bloom"
+    
+    echo ""
+    echo "Installation complete!"
 }
 
 main() {

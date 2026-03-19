@@ -31,11 +31,11 @@ iso:
     @echo ""
     @echo "To install on the target machine:"
     @echo "  1. Boot from the USB stick"
-    @echo "  2. Log in as root"
-    @echo "  3. Run: bloom-install"
+    @echo "  2. Log in as nixos (no password)"
+    @echo "  3. Run: sudo bloom-install"
     @echo ""
     @echo "To test the USB workflow in QEMU:"
-    @echo "  just test-iso"
+    @echo "  just test-iso    (opens GUI window)"
 
 # Apply current flake config to the running system (local dev iteration)
 switch:
@@ -61,14 +61,14 @@ vm-gui: qcow2
 vm-run:
     core/scripts/run-qemu.sh --mode headless --skip-setup
 
-# Test the minimal USB installer ISO in QEMU
+# Test the USB installer ISO in QEMU (opens GUI window)
 test-iso:
     #!/usr/bin/env bash
     set -euo pipefail
     disk="/tmp/bloom-test-disk-installer.qcow2"
     vars="/tmp/bloom-ovmf-vars-installer.fd"
     
-    # Find the actual ISO file (result is a symlink to a store directory containing iso/)
+    # Find the actual ISO file
     ISO=$(find -L {{ output }} -name "*.iso" -type f 2>/dev/null | head -1)
     if [ -z "$ISO" ]; then
         echo "Error: No ISO found in {{ output }}/"
@@ -87,8 +87,9 @@ test-iso:
     echo "  - Disk: $disk (40GB)"
     echo "  - RAM: 6GB"
     echo ""
-    echo "Log in as root, run 'bloom-install', then reboot when complete."
-    echo "Press Ctrl+A X to exit QEMU."
+    echo "A window will open. At the boot menu, select the NixOS Installer option."
+    echo "Once booted, log in as 'nixos' (no password), then run: sudo bloom-install"
+    echo "Close the window or press Ctrl+Alt+2 then type 'quit' to exit."
     echo ""
     
     qemu-system-x86_64 \
@@ -97,14 +98,14 @@ test-iso:
         -enable-kvm \
         -m 6144 \
         -smp 2 \
+        -vga std \
+        -display gtk,grab-on-hover=on \
         -drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
         -drive if=pflash,format=raw,file="$vars" \
         -drive file="$disk",format=qcow2,if=virtio \
         -cdrom "$ISO" \
         -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5900-:5900 \
-        -device virtio-net-pci,netdev=net0 \
-        -nographic \
-        -serial mon:stdio
+        -device virtio-net-pci,netdev=net0
 
 # Run VM in background daemon mode (detached, no terminal attached)
 # Use this when you want to run the VM and still use your shell
