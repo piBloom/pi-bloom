@@ -9,7 +9,7 @@ import os from "node:os";
 import { join } from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { type Static, Type } from "@sinclair/typebox";
 import { defineTool, type RegisteredExtensionTool, registerTools } from "../../lib/extension-tools.js";
 import { STEP_ORDER } from "../../lib/setup.js";
 import {
@@ -19,6 +19,24 @@ import {
 	handleSetupStatus,
 	isSetupDone,
 } from "./actions.js";
+
+const SetupAdvanceParams = Type.Object({
+	step: StringEnum([...STEP_ORDER], {
+		description: "The setup step to advance",
+	}),
+	result: StringEnum(["completed", "skipped"] as const, {
+		description: "Whether the step was completed or skipped",
+	}),
+	reason: Type.Optional(Type.String({ description: "Reason for skipping (required when result is 'skipped')" })),
+});
+
+const SetupResetParams = Type.Object({
+	step: Type.Optional(
+		StringEnum([...STEP_ORDER], {
+			description: "Step to reset (omit for full reset)",
+		}),
+	),
+});
 
 export default function (pi: ExtensionAPI) {
 	const tools: RegisteredExtensionTool[] = [
@@ -36,19 +54,9 @@ export default function (pi: ExtensionAPI) {
 			name: "setup_advance",
 			label: "Advance Setup Step",
 			description: "Mark a setup step as completed or skipped, persist state, and return guidance for the next step.",
-			parameters: Type.Object({
-				step: StringEnum([...STEP_ORDER], {
-					description: "The setup step to advance",
-				}),
-				result: StringEnum(["completed", "skipped"] as const, {
-					description: "Whether the step was completed or skipped",
-				}),
-				reason: Type.Optional(Type.String({ description: "Reason for skipping (required when result is 'skipped')" })),
-			}),
+			parameters: SetupAdvanceParams,
 			async execute(_toolCallId, params) {
-				return await handleSetupAdvance(
-					params as { step: (typeof STEP_ORDER)[number]; result: "completed" | "skipped"; reason?: string },
-				);
+				return await handleSetupAdvance(params as Static<typeof SetupAdvanceParams>);
 			},
 		}),
 		defineTool({
@@ -56,15 +64,9 @@ export default function (pi: ExtensionAPI) {
 			label: "Reset Setup Step",
 			description:
 				"Reset a specific setup step to pending, or reset the entire setup. Useful if the user wants to redo a step.",
-			parameters: Type.Object({
-				step: Type.Optional(
-					StringEnum([...STEP_ORDER], {
-						description: "Step to reset (omit for full reset)",
-					}),
-				),
-			}),
+			parameters: SetupResetParams,
 			async execute(_toolCallId, params) {
-				return handleSetupReset(params as { step?: (typeof STEP_ORDER)[number] });
+				return handleSetupReset(params as Static<typeof SetupResetParams>);
 			},
 		}),
 	];
