@@ -14,6 +14,7 @@ import {
 } from "../../core/pi-extensions/bloom-garden/actions.js";
 import { createMockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
+import { createTempGarden, type TempGarden } from "../helpers/temp-garden.js";
 
 let bloomDir: string;
 
@@ -521,5 +522,130 @@ description: Planning assistant
 
 		expect(result.content[0].text).toContain("Unknown agent: anyone");
 		expect(result.content[0].text).toContain("(none)");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// garden_status tool execute (via registered extension)
+// ---------------------------------------------------------------------------
+
+type GardenStatusResult = { content: Array<{ type: string; text: string }>; details: unknown };
+type GardenStatusExecute = () => Promise<GardenStatusResult>;
+
+describe("garden_status tool execute", () => {
+	let temp: TempGarden;
+	let api: ReturnType<typeof createMockExtensionAPI>;
+
+	beforeEach(async () => {
+		temp = createTempGarden();
+		vi.resetModules();
+		api = createMockExtensionAPI();
+		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
+		mod.default(api as never);
+	});
+
+	afterEach(() => {
+		temp.cleanup();
+	});
+
+	function getGardenStatusExecute(): GardenStatusExecute {
+		const tool = api._registeredTools.find((t) => t.name === "garden_status");
+		if (!tool) throw new Error("garden_status tool not found");
+		return tool.execute as GardenStatusExecute;
+	}
+
+	it("returns a result with content array containing a text item", async () => {
+		expect(api._registeredTools.find((t) => t.name === "garden_status")).toBeDefined();
+		const result = await getGardenStatusExecute()();
+		expect(result).toHaveProperty("content");
+		expect(Array.isArray(result.content)).toBe(true);
+		expect(result.content[0]).toHaveProperty("type", "text");
+	});
+
+	it("includes the bloom dir path in the status text", async () => {
+		const result = await getGardenStatusExecute()();
+		expect(result.content[0].text).toContain(temp.gardenDir);
+	});
+
+	it("includes package version line in the status text", async () => {
+		const result = await getGardenStatusExecute()();
+		expect(result.content[0].text).toContain("Package version:");
+	});
+
+	it("includes seeded blueprints count in the status text", async () => {
+		const result = await getGardenStatusExecute()();
+		expect(result.content[0].text).toContain("Seeded blueprints:");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// /bloom command handler subcommands
+// ---------------------------------------------------------------------------
+describe("/bloom command handler", () => {
+	let temp: TempGarden;
+	let api: ReturnType<typeof createMockExtensionAPI>;
+
+	beforeEach(async () => {
+		temp = createTempGarden();
+		vi.resetModules();
+		api = createMockExtensionAPI();
+		const mod = await import("../../core/pi-extensions/bloom-garden/index.js");
+		mod.default(api as never);
+	});
+
+	afterEach(() => {
+		temp.cleanup();
+	});
+
+	function getCommandHandler() {
+		const entry = api._registeredCommands.find((c) => c.name === "bloom");
+		if (!entry) throw new Error("bloom command not registered");
+		return entry.handler as (args: string, ctx: ReturnType<typeof createMockExtensionContext>) => Promise<void>;
+	}
+
+	it("registers the /bloom command", () => {
+		const entry = api._registeredCommands.find((c) => c.name === "bloom");
+		expect(entry).toBeDefined();
+	});
+
+	it("status subcommand sends a user message via pi.sendUserMessage", async () => {
+		const handler = getCommandHandler();
+		const ctx = createMockExtensionContext({ hasUI: true });
+		await handler("status", ctx);
+		expect(api._sentMessages).toHaveLength(1);
+		expect(api._sentMessages[0].message).toContain("garden_status");
+	});
+
+	it("init subcommand notifies with Bloom initialized", async () => {
+		const handler = getCommandHandler();
+		const ctx = createMockExtensionContext({ hasUI: true });
+		await handler("init", ctx);
+		expect(ctx.ui.notify).toHaveBeenCalledWith("Bloom initialized", "info");
+	});
+
+	it("init subcommand creates bloom subdirectories", async () => {
+		const handler = getCommandHandler();
+		const ctx = createMockExtensionContext({ hasUI: true });
+		await handler("init", ctx);
+		for (const dir of ["Persona", "Skills", "Evolutions", "audit"]) {
+			expect(fs.existsSync(path.join(temp.gardenDir, dir))).toBe(true);
+		}
+	});
+
+	it("update-blueprints subcommand notifies when blueprints are up to date", async () => {
+		const handler = getCommandHandler();
+		const ctx = createMockExtensionContext({ hasUI: true });
+		await handler("update-blueprints", ctx);
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			expect.stringMatching(/All blueprints are up to date|Updated \d+ blueprint/),
+			"info",
+		);
+	});
+
+	it("unknown subcommand shows usage hint", async () => {
+		const handler = getCommandHandler();
+		const ctx = createMockExtensionContext({ hasUI: true });
+		await handler("unknown-cmd", ctx);
+		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /bloom init | status | update-blueprints", "info");
 	});
 });
