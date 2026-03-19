@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # bloom-firstboot.sh — Non-interactive first-boot automation for Bloom OS.
-# Runs once before getty via bloom-firstboot.service (User=pi).
+# Runs once before getty via bloom-firstboot.service as the primary Bloom user.
 # Reads ~/.bloom/prefill.env written by the Calamares bloom_prefill module.
 # On failure, exits 1 (non-fatal per SuccessExitStatus). User can re-run
 # bloom-wizard.sh on next login to resume from the last incomplete checkpoint.

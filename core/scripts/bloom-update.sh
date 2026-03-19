@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 # bloom-update.sh — NixOS OTA update + status-file writer.
-# Runs as root via bloom-update.service. Writes status to /home/pi/.bloom/update-status.json.
+# Runs as root via bloom-update.service. Writes status to the primary Bloom user's
+# ~/.bloom/update-status.json path.
 set -euo pipefail
 
 FLAKE_REF="github:alexradunet/piBloom"
 HOST="bloom-x86_64"
 FLAKE="${FLAKE_REF}#${HOST}"
-STATUS_DIR="/home/pi/.bloom"
+BLOOM_USERNAME="${BLOOM_USERNAME:-pi}"
+STATUS_DIR="/home/${BLOOM_USERNAME}/.bloom"
 STATUS_FILE="$STATUS_DIR/update-status.json"
 CHECKED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 mkdir -p "$STATUS_DIR"
-chown pi:pi "$STATUS_DIR" 2>/dev/null || true
+chown "${BLOOM_USERNAME}:${BLOOM_USERNAME}" "$STATUS_DIR" 2>/dev/null || true
 
 # Current generation number
 CURRENT_GEN=$(nix-env --list-generations -p /nix/var/nix/profiles/system 2>/dev/null | grep current | awk '{print $1}' || echo "0")
@@ -41,7 +43,7 @@ jq -n \
   --argjson notified "$NOTIFIED" \
   '{"checked": $checked, "available": $available, "generation": $generation, "notified": $notified}' \
   > "$STATUS_FILE"
-chown pi:pi "$STATUS_FILE"
+chown "${BLOOM_USERNAME}:${BLOOM_USERNAME}" "$STATUS_FILE"
 
 # Apply if available
 if [[ "$AVAILABLE" = "true" ]]; then
@@ -52,6 +54,6 @@ if [[ "$AVAILABLE" = "true" ]]; then
       --arg generation "$NEW_GEN" \
       '{"checked": $checked, "available": false, "generation": $generation, "notified": false}' \
       > "$STATUS_FILE"
-    chown pi:pi "$STATUS_FILE"
+    chown "${BLOOM_USERNAME}:${BLOOM_USERNAME}" "$STATUS_FILE"
   fi
 fi

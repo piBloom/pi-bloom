@@ -8,12 +8,16 @@ pkgs.testers.runNixOSTest {
 
   nodes = {
     # Main Bloom OS server
-    bloom = { ... }: {
+    bloom = { ... }: let
+      username = "bloom";
+      homeDir = "/home/${username}";
+    in {
       imports = bloomModulesNoShell ++ [ 
         ../../core/os/modules/bloom-firstboot.nix
         mkTestFilesystems 
       ];
       _module.args = { inherit piAgent bloomApp; };
+      bloom.username = username;
 
       virtualisation.diskSize = 20480;
       virtualisation.memorySize = 4096;
@@ -28,26 +32,26 @@ pkgs.testers.runNixOSTest {
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
 
-      # Ensure pi user exists
-      users.users.pi = {
+      # Ensure the primary Bloom user exists
+      users.users.${username} = {
         isNormalUser = true;
-        group = "pi";
+        group = username;
         extraGroups = [ "wheel" "networkmanager" ];
-        home = "/home/pi";
+        home = homeDir;
         shell = pkgs.bash;
       };
-      users.groups.pi = {};
+      users.groups.${username} = {};
 
       # Pre-create prefill.env for automated setup
       system.activationScripts.bloom-e2e-prefill = lib.stringAfter [ "users" ] ''
-        mkdir -p /home/pi/.bloom
-        cat > /home/pi/.bloom/prefill.env << 'EOF'
+        mkdir -p ${homeDir}/.bloom
+        cat > ${homeDir}/.bloom/prefill.env << 'EOF'
     PREFILL_USERNAME=e2etest
     PREFILL_PASSWORD=e2etestpass123
     EOF
-        chown -R pi:pi /home/pi/.bloom
-        chmod 755 /home/pi/.bloom
-        chmod 644 /home/pi/.bloom/prefill.env
+        chown -R ${username}:${username} ${homeDir}/.bloom
+        chmod 755 ${homeDir}/.bloom
+        chmod 644 ${homeDir}/.bloom/prefill.env
       '';
     };
 
@@ -78,6 +82,8 @@ pkgs.testers.runNixOSTest {
 
   testScript = { nodes, ... }: ''
     import time
+    username = "bloom"
+    home = "/home/bloom"
     
     # Start the Bloom server
     bloom.start()
@@ -127,16 +133,16 @@ pkgs.testers.runNixOSTest {
     client.succeed("ssh-keygen -t ed25519 -N '''' -f /root/.ssh/id_ed25519")
     pub_key = client.succeed("cat /root/.ssh/id_ed25519.pub").strip()
     
-    bloom.succeed("mkdir -p /home/pi/.ssh")
-    bloom.succeed("echo '" + pub_key + "' > /home/pi/.ssh/authorized_keys")
-    bloom.succeed("chown -R pi:pi /home/pi/.ssh && chmod 700 /home/pi/.ssh && chmod 600 /home/pi/.ssh/authorized_keys")
+    bloom.succeed("mkdir -p " + home + "/.ssh")
+    bloom.succeed("echo '" + pub_key + "' > " + home + "/.ssh/authorized_keys")
+    bloom.succeed("chown -R " + username + ":" + username + " " + home + "/.ssh && chmod 700 " + home + "/.ssh && chmod 600 " + home + "/.ssh/authorized_keys")
     
     # Test SSH connection (may need password auth initially)
-    client.succeed('ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 pi@bloom "echo SSH_OK"')
+    client.succeed('ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 bloom@bloom "echo SSH_OK"')
     
     # E2E Test 6: Firstboot completes successfully
     bloom.wait_for_unit("bloom-firstboot.service", timeout=120)
-    bloom.succeed("test -f /home/pi/.bloom/.setup-complete")
+    bloom.succeed("test -f " + home + "/.bloom/.setup-complete")
     
     # E2E Test 7: All expected services are running
     services = ["bloom-matrix", "netbird", "NetworkManager", "sshd"]
@@ -149,13 +155,13 @@ pkgs.testers.runNixOSTest {
     assert localai_status in ["active", "activating", ""], "LocalAI download in unexpected state: " + localai_status
     
     # E2E Test 9: Bloom directories are correctly set up
-    bloom.succeed("test -d /home/pi/Bloom")
-    bloom.succeed("test -d /home/pi/.bloom")
-    bloom.succeed("test -d /home/pi/.pi")
+    bloom.succeed("test -d " + home + "/Bloom")
+    bloom.succeed("test -d " + home + "/.bloom")
+    bloom.succeed("test -d " + home + "/.pi")
     bloom.succeed("test -d /usr/local/share/bloom")
     
     # E2E Test 10: User has correct groups
-    groups = bloom.succeed("groups pi").strip()
+    groups = bloom.succeed("groups " + username).strip()
     assert "wheel" in groups, "User not in wheel group: " + groups
     assert "networkmanager" in groups, "User not in networkmanager group: " + groups
     
@@ -170,8 +176,8 @@ pkgs.testers.runNixOSTest {
     client.succeed("nc -z bloom 6167")
     client.succeed("nc -z bloom 22")
     
-    # E2E Test 13: Pi user can run sudo commands
-    bloom.succeed("su - pi -c 'sudo -n whoami' | grep -q root")
+    # E2E Test 13: Primary Bloom user can run sudo commands
+    bloom.succeed("su - " + username + " -c 'sudo -n whoami' | grep -q root")
     
     # E2E Test 14: Required system packages are available
     packages = ["git", "curl", "jq", "htop", "netbird", "chromium"]

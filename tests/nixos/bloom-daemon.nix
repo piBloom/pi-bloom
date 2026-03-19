@@ -27,9 +27,13 @@ pkgs.testers.runNixOSTest {
     };
 
     # Agent node running pi-daemon
-    agent = { ... }: {
+    agent = { ... }: let
+      username = "bloom";
+      homeDir = "/home/${username}";
+    in {
       imports = bloomModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent bloomApp; };
+      bloom.username = username;
 
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
@@ -44,32 +48,35 @@ pkgs.testers.runNixOSTest {
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
 
-      # Ensure pi user exists with proper setup
-      users.users.pi = {
+      # Ensure the primary Bloom user exists with proper setup
+      users.users.${username} = {
         isNormalUser = true;
-        group = "pi";
+        group = username;
         extraGroups = [ "wheel" "networkmanager" ];
-        home = "/home/pi";
+        home = homeDir;
         shell = pkgs.bash;
       };
-      users.groups.pi = {};
+      users.groups.${username} = {};
 
       # Pre-create setup-complete to skip wizard
       systemd.tmpfiles.rules = [
-        "d /home/pi/.bloom 0755 pi pi -"
-        "f /home/pi/.bloom/.setup-complete 0644 pi pi -"
+        "d ${homeDir}/.bloom 0755 ${username} ${username} -"
+        "f ${homeDir}/.bloom/.setup-complete 0644 ${username} ${username} -"
       ];
 
       # Create Matrix credentials file for daemon
       system.activationScripts.bloom-daemon-creds = lib.stringAfter [ "users" ] ''
-        mkdir -p /home/pi/.pi
+        mkdir -p ${homeDir}/.pi
         # Credentials will be created after we know the server is ready
-        chown -R pi:pi /home/pi/.pi
+        chown -R ${username}:${username} ${homeDir}/.pi
       '';
     };
   };
 
   testScript = { nodes, ... }: ''
+    username = "bloom"
+    home = "/home/bloom"
+
     # Start the homeserver first
     server.start()
     server.wait_for_unit("multi-user.target", timeout=300)
@@ -120,9 +127,9 @@ pkgs.testers.runNixOSTest {
     agent.wait_for_unit("multi-user.target", timeout=300)
     
     # Create Matrix credentials for the agent
-    agent.succeed("mkdir -p /home/pi/.pi")
+    agent.succeed("mkdir -p " + home + "/.pi")
     agent.succeed(f"""
-      cat > /home/pi/.pi/matrix-credentials.json << 'CREDS'
+      cat > {home}/.pi/matrix-credentials.json << 'CREDS'
 {{
   "homeserver": "http://server:6167",
   "userId": "{user_id}",
@@ -131,20 +138,20 @@ pkgs.testers.runNixOSTest {
 }}
 CREDS
     """)
-    agent.succeed("chown -R pi:pi /home/pi/.pi")
+    agent.succeed("chown -R " + username + ":" + username + " " + home + "/.pi")
     
-    # Enable linger for pi user so user services can run
-    agent.succeed("mkdir -p /var/lib/systemd/linger && touch /var/lib/systemd/linger/pi")
+    # Enable linger for the primary Bloom user so user services can run
+    agent.succeed("mkdir -p /var/lib/systemd/linger && touch /var/lib/systemd/linger/" + username)
     
     # Ensure setup-complete marker exists
-    agent.succeed("touch /home/pi/.bloom/.setup-complete && chown pi:pi /home/pi/.bloom/.setup-complete")
+    agent.succeed("touch " + home + "/.bloom/.setup-complete && chown " + username + ":" + username + " " + home + "/.bloom/.setup-complete")
     
     # Create Bloom directory
-    agent.succeed("mkdir -p /home/pi/Bloom && chown -R pi:pi /home/pi/Bloom")
+    agent.succeed("mkdir -p " + home + "/Bloom && chown -R " + username + ":" + username + " " + home + "/Bloom")
     
     # Start the user service
-    agent.succeed("systemctl --user -M pi@ daemon-reload || true")
-    agent.succeed("systemctl --user -M pi@ start pi-daemon.service || true")
+    agent.succeed("systemctl --user -M " + username + "@ daemon-reload || true")
+    agent.succeed("systemctl --user -M " + username + "@ start pi-daemon.service || true")
     
     # Test 1: pi-daemon service is enabled (in unit files)
     agent.succeed("test -f /etc/systemd/user/pi-daemon.service")
@@ -159,7 +166,7 @@ CREDS
     time.sleep(5)
     
     # Check that the service was attempted (may fail due to test environment limits)
-    journal = agent.succeed("journalctl --user -M pi@ -u pi-daemon -n 20 --no-pager || true")
+    journal = agent.succeed("journalctl --user -M " + username + "@ -u pi-daemon -n 20 --no-pager || true")
     print(f"Pi-daemon journal: {journal}")
     
     # Test 4: Verify node is available in service PATH
@@ -171,13 +178,13 @@ CREDS
     agent.succeed("ls -la /usr/local/share/bloom/")
     
     # Test 6: Verify environment variables are set correctly in service
-    service_env = agent.succeed("systemctl --user -M pi@ show-environment || true")
+    service_env = agent.succeed("systemctl --user -M " + username + "@ show-environment || true")
     assert "BLOOM_DIR" in service_env or "HOME" in service_env, \
         f"Expected environment variables not found: {service_env}"
     
     # Test 7: Test that the daemon can parse its credentials
-    agent.succeed("test -f /home/pi/.pi/matrix-credentials.json")
-    creds = agent.succeed("cat /home/pi/.pi/matrix-credentials.json")
+    agent.succeed("test -f " + home + "/.pi/matrix-credentials.json")
+    creds = agent.succeed("cat " + home + "/.pi/matrix-credentials.json")
     assert "homeserver" in creds, "Credentials missing homeserver"
     assert "accessToken" in creds, "Credentials missing accessToken"
     

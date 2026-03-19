@@ -1,5 +1,5 @@
 # core/os/modules/bloom-update.nix
-{ pkgs, lib, ... }:
+{ pkgs, lib, config, ... }:
 
 {
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
@@ -18,7 +18,10 @@
       Type            = "oneshot";
       # nixos-rebuild lives at /run/current-system/sw/bin/nixos-rebuild (not in nixpkgs).
       # serviceConfig.path only accepts derivations, so set PATH via Environment instead.
-      Environment     = "PATH=/run/current-system/sw/bin:${lib.makeBinPath (with pkgs; [ nix git jq ])}";
+      Environment = [
+        "PATH=/run/current-system/sw/bin:${lib.makeBinPath (with pkgs; [ nix git jq ])}"
+        "BLOOM_USERNAME=${config.bloom.username}"
+      ];
       ExecStart       = pkgs.writeShellScript "bloom-update" (builtins.readFile ../../../core/scripts/bloom-update.sh);
       RemainAfterExit = false;
     };

@@ -61,7 +61,7 @@ When writing new NixOS tests:
 
 3. **Escape `${` in test scripts** - Nix interprets `${` as antiquotation. Escape it as `''${` inside indented strings.
 
-4. **Use `bloomModulesNoShell` when defining your own user** - The `bloom-shell.nix` module defines `users.users.pi`, so tests that define their own should use `bloomModulesNoShell` instead of `bloomModules`.
+4. **Use `bloomModulesNoShell` when defining your own user** - The `bloom-shell.nix` module defines the primary Bloom user from `bloom.username`, so tests that define their own should use `bloomModulesNoShell` instead of `bloomModules`.
 
 Example:
 ```nix
@@ -74,8 +74,8 @@ pkgs.testers.runNixOSTest {
     imports = bloomModulesNoShell ++ [ mkTestFilesystems ];
     _module.args = { inherit piAgent bloomApp; };
     
-    # Define your own user (bloom-shell not imported)
-    users.users.pi = { ... };
+    bloom.username = "bloom";
+    users.users.bloom = { ... };
   };
   
   testScript = ''
