@@ -96,10 +96,6 @@ export function seedBlueprints(bloomDir: string, packageDir: string): void {
 	const personaDir = fs.existsSync(path.join(packageDir, "core", "pi-persona"))
 		? path.join(packageDir, "core", "pi-persona")
 		: path.join(packageDir, "persona");
-	const _skillsDir = fs.existsSync(path.join(packageDir, "core", "pi-skills"))
-		? path.join(packageDir, "core", "pi-skills")
-		: path.join(packageDir, "skills");
-
 	for (const file of PERSONA_FILES) {
 		const key = `persona/${file}`;
 		const src = path.join(personaDir, file);
