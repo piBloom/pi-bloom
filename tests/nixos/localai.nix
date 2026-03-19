@@ -6,7 +6,7 @@
 
 let
   # Tiny test model for CI/tests (SmolLM 135M - ~270MB)
-  # This is much faster to download than the 5GB OmniCoder model
+  # This is much faster to download than the full default production model
   testModelUrl = "https://huggingface.co/HuggingFaceTB/SmolLM-135M-GGUF/resolve/main/smollm-135m.q4_k_m.gguf";
   testModelName = "smollm-135m.q4_k_m.gguf";
 in

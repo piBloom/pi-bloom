@@ -318,8 +318,8 @@ step_ai() {
 	echo ""
 	echo "--- AI Provider ---"
 	echo "Configuring Pi to use local AI (llama-server on port 11435)..."
-	write_pi_settings_defaults "localai" "omnicoder-9b-q4_k_m"
-	echo "  Local AI configured. Pi will use OmniCoder 9B by default."
+	write_pi_settings_defaults "localai" "Qwen3.5-4B-Q4_K_M"
+	echo "  Local AI configured. Pi will use Qwen 3.5 4B by default."
 	mark_done_with ai "localai"
 }
 

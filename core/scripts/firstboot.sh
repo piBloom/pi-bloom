@@ -153,7 +153,7 @@ firstboot_ai_defaults() {
     "/usr/local/share/nixpi"
   ],
   "defaultProvider": "localai",
-  "defaultModel": "omnicoder-9b-q4_k_m",
+  "defaultModel": "Qwen3.5-4B-Q4_K_M",
   "defaultThinkingLevel": "medium"
 }
 EOF

@@ -1,6 +1,6 @@
 ---
 name: local-llm
-description: Use local LLM inference (llama-server) — OpenAI-compatible LLM API with OmniCoder 9B
+description: Use local LLM inference (llama-server) with the bundled Qwen 3.5 4B GGUF model
 ---
 
 # Local LLM (llama-server)

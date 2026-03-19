@@ -11,6 +11,8 @@ OUTPUT="result"
 RUNNER="${OUTPUT}/bin/run-nixos-vm"
 LOG_FILE="/tmp/nixpi-vm.log"
 DISK_SIZE="${NIXPI_VM_DISK_SIZE:-24G}"
+MEMORY_MB="${NIXPI_VM_MEMORY_MB:-16384}"
+VM_CPUS="${NIXPI_VM_CPUS:-4}"
 MIN_DISK_BYTES=$((8 * 1024 * 1024 * 1024))
 
 mode=""
@@ -78,7 +80,7 @@ if [[ -f "core/scripts/prefill.env" ]]; then
 fi
 
 export NIX_DISK_IMAGE="$DISK"
-export QEMU_OPTS='-m 4096 -smp 2'
+export QEMU_OPTS="-m ${MEMORY_MB} -smp ${VM_CPUS}"
 
 forward_specs=(
     "2222:22:required"

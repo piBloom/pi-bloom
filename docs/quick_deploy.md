@@ -58,13 +58,21 @@ just vm-ssh     # SSH into running VM
 just vm-stop    # Stop the VM
 ```
 
-Forwarded ports in `just vm`:
+Default forwarded ports in `just vm`:
 
 - `2222` -> guest SSH
-- `5000` -> `dufs`
-- `8080` -> guest port `8080`
-- `8081` -> `fluffychat`
-- `8888` -> guest port `80`
+
+Default local VM sizing:
+
+- `16 GiB` RAM
+- `4` vCPUs
+- `24 GiB` qcow2 disk
+
+Override if needed:
+
+```bash
+NIXPI_VM_MEMORY_MB=8192 NIXPI_VM_CPUS=2 just vm-daemon
+```
 
 Default user: `pi` (no initial password; TTY auto-login prompts for password creation on first boot).
 
