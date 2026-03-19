@@ -71,83 +71,81 @@ Stop it:
 just vm-kill
 ```
 
-## 💿 Installer ISO Options
+## 💿 Installer Media
 
-Bloom provides two installer ISO variants:
+Bloom ships two supported install paths that converge on the same first-boot flow:
 
-| Variant | Desktop | Size | Best For |
-|---------|---------|------|----------|
-| **Graphical** (`iso-gui`) | LXQt + Calamares | ~2GB | Mini PCs, GUI installation, disk partitioning |
-| **Minimal** (`iso`) | None (CLI) | ~500MB | Headless servers, advanced users, automation |
+| Path | Artifact | Best For |
+|------|----------|----------|
+| **USB installer** | `just iso` | Mini PCs, bare-metal installs, guided local setup |
+| **Raw image** | `just raw` | Appliance-style installs and direct disk flashing |
 
-### Graphical Installer (Recommended for Mini PCs)
+### USB Installer (Recommended for Mini PCs)
 
-The graphical installer provides a point-and-click installation experience with:
-- **Calamares** GUI installer (partitioning, user creation, locale/timezone selection)
-- **LXQt** lightweight desktop (~400MB RAM)
-- **Firefox** for documentation
-- **GParted** for disk management
+The USB installer boots to a minimal console environment and provides the `bloom-install` helper.
 
-#### Build Graphical ISO
-
-```bash
-just iso-gui
-```
-
-#### Flash to USB
-
-```bash
-sudo dd if=result/iso/bloom-os-installer.iso of=/dev/sdX bs=4M status=progress conv=fsync
-```
-
-Replace `/dev/sdX` with your USB device (check with `lsblk`).
-
-#### Installation Steps
-
-1. **Boot from USB** on your mini PC
-2. **LXQt desktop loads** (auto-login as `nixos`)
-3. **Double-click "Install NixOS"** on the desktop
-4. **Complete Calamares wizard:**
-   - Welcome → Location → Keyboard → Partitions → Users → Summary
-   - Choose "Erase disk" for automatic partitioning or manual setup
-   - Set your username, password, hostname
-5. **Reboot** when installation completes
-6. **Convert to Bloom OS:**
-   - Login to the installed system
-   - Open a terminal
-   - Run: `bloom-convert`
-   - This switches the system to Bloom configuration and reboots
-7. **Complete Bloom setup:**
-   - After reboot, `bloom-wizard.sh` runs automatically
-   - Set password, WiFi, NetBird, Matrix, AI provider
-8. **Done!** Pi agent starts
-
-#### Test in QEMU (with GUI)
-
-```bash
-just test-iso-gui
-```
-
-This opens a QEMU window with the graphical installer for testing.
-
-### Minimal Installer (Headless/CLI)
-
-The minimal installer is a command-line only ISO for advanced users or headless installations.
-
-#### Build Minimal ISO
+#### Build USB Installer ISO
 
 ```bash
 just iso
 ```
 
-#### Bare-Metal Install (disko)
-
-Boot from the installer ISO, then:
+#### Flash to USB
 
 ```bash
-sudo nix run github:nix-community/disko -- --mode disko /path/to/x86_64-disk.nix
-sudo nixos-install --flake github:alexradunet/piBloom#bloom-x86_64
+sudo dd if=result/iso/*.iso of=/dev/sdX bs=4M status=progress conv=fsync
 ```
+
+Replace `/dev/sdX` with your USB device (check with `lsblk`).
+
+#### Install on the Mini PC
+
+Boot from the installer USB, then:
+
+```bash
+sudo bloom-install
+```
+
+`bloom-install` prompts for:
+
+- target disk
+- hostname
+- timezone
+- locale
+- keyboard layout
+
+It then runs `disko-install` fully offline using the sources bundled into the ISO.
+
+After installation:
+
+1. reboot
+2. remove the USB stick
+3. log into the installed system
+4. complete `bloom-wizard.sh` on first boot
+
+#### Test the USB Workflow in QEMU
+
+```bash
+just test-iso
+```
+
+This boots the minimal installer in a serial console.
+
+### Raw Image Path
+
+Build the raw image:
+
+```bash
+just raw
+```
+
+Write it to the target disk:
+
+```bash
+sudo dd if=result/*raw* of=/dev/sdX bs=4M status=progress conv=fsync
+```
+
+On first boot, complete `bloom-wizard.sh` the same way as the USB-installed system.
 
 ## 🔄 OTA Updates
 
@@ -165,8 +163,7 @@ Important outputs (all via `result` symlink):
 | Output | Path | Description |
 |--------|------|-------------|
 | qcow2 | `result/nixos.qcow2` | VM disk image |
-| ISO (GUI) | `result/iso/bloom-os-installer.iso` | Graphical installer |
-| ISO (minimal) | `result/iso/nixos.iso` | CLI-only installer |
+| ISO | `result/iso/bloom-os-installer.iso` | USB installer |
 | Raw disk | `result/` | Raw disk image for `dd` |
 
 Related `just` commands:
@@ -178,10 +175,8 @@ just lint            # Run nix flake check
 just fmt             # Format Nix files
 
 # ISO commands
-just iso             # Build minimal CLI ISO
-just iso-gui         # Build graphical ISO
-just test-iso        # Test CLI ISO in QEMU (headless)
-just test-iso-gui    # Test graphical ISO in QEMU (with GUI)
+just iso             # Build USB installer ISO
+just test-iso        # Test USB installer ISO in QEMU
 
 # VM commands
 just qcow2           # Build qcow2 image

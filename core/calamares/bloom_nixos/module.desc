@@ -1,6 +1,0 @@
-# Calamares module descriptor for bloom-nixos
-# Replaces the standard nixos module with Bloom-specific flake generation.
-type:       "job"
-name:       "bloom-nixos"
-interface:  "python"
-script:     "main.py"

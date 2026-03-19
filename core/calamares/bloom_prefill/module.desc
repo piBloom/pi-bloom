@@ -1,6 +1,0 @@
-# Calamares module descriptor for bloom-prefill
-# Writes prefill.env, settings.json, .gitconfig, and NM connections to target.
-type:       "job"
-name:       "bloom-prefill"
-interface:  "python"
-script:     "main.py"

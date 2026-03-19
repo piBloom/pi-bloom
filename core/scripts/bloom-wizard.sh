@@ -24,8 +24,8 @@ MATRIX_STATE_DIR="$WIZARD_STATE/matrix-state"
 # --- Prefill (for VM/dev use) ---
 # Create ~/.bloom/prefill.env on your host to skip manual prompts.
 # When running in a VM via `just vm`, this file is shared into the VM automatically.
-# Supported vars: PREFILL_NETBIRD_KEY, PREFILL_NAME, PREFILL_EMAIL, PREFILL_USERNAME,
-#                 PREFILL_MATRIX_PASSWORD (uses OS password if set by Calamares)
+# Supported vars: PREFILL_NETBIRD_KEY, PREFILL_NAME, PREFILL_EMAIL,
+#                 PREFILL_USERNAME, PREFILL_MATRIX_PASSWORD
 PREFILL_FILE="$HOME/.bloom/prefill.env"
 # Fall back to host-shared mount (9p virtfs, available when running via `just vm`)
 if [[ ! -f "$PREFILL_FILE" && -f "/mnt/host-bloom/prefill.env" ]]; then

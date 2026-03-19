@@ -59,17 +59,17 @@
         qcow2 = mkDiskImage "qcow2";
         raw   = mkDiskImage "raw";
 
-        # Graphical installer ISO (Calamares + GNOME)
+        # Minimal USB installer ISO (offline sources + bloom-install)
         iso = (nixpkgs.lib.nixosSystem {
           inherit system;
           # specialArgs includes bloomApp and piAgent (for system packages) plus
           # the raw flake inputs so x86_64-installer.nix can embed their source
-          # trees in the squashfs.  With those sources present in the ISO store,
-          # nix build during installation finds them by narHash and skips all
-          # GitHub downloads -> fully offline installation.
+          # trees in the squashfs. The bloom-install script then uses those
+          # local sources to drive disko-install fully offline from the USB ISO.
           specialArgs = specialArgs // {
             nixpkgsSrc = nixpkgs;
             bloomSrc   = self;
+            diskoSrc   = disko;
           };
           modules = [
             ./core/os/hosts/x86_64-installer.nix
@@ -95,8 +95,7 @@
           # pkgs.testers.nixosTest (the test framework injects an externally
           # created pkgs, making the NixOS module system reject nixpkgs.config
           # overrides).  Consuming configurations set allowUnfree themselves
-          # (x86_64.nix, bloom-installed-test, and the installer-generated
-          # host-config.nix all set nixpkgs.config.allowUnfree = true).
+          # (x86_64.nix and bloom-installed-test set nixpkgs.config.allowUnfree = true).
         };
 
         # First-boot service module (included separately, not part of portable bloom module).
@@ -113,8 +112,8 @@
         ];
       };
 
-      # NixOS configuration that mirrors exactly what the Calamares installer
-      # generates at install time (bloom + bloom-firstboot + minimal host-config).
+      # NixOS configuration that mirrors a default Bloom install
+      # (bloom + bloom-firstboot + the standard machine defaults).
       # Used by checks.bloom-config and checks.bloom-boot below.
       nixosConfigurations.bloom-installed-test = nixpkgs.lib.nixosSystem {
         inherit system specialArgs;
@@ -122,7 +121,8 @@
           self.nixosModules.bloom
           self.nixosModules.bloom-firstboot
           {
-            # Minimal host-config.nix equivalent (what Calamares would generate)
+            # Default machine settings used by the USB installer when the user
+            # accepts the standard prompts.
             nixpkgs.config.allowUnfree = true;
             boot.loader.systemd-boot.enable = true;
             boot.loader.efi.canTouchEfiVariables = true;
@@ -150,13 +150,13 @@
           };
         in
         {
-          # Fast: build the installed system closure locally — catches locale errors,
-          # module conflicts, bad package references, and NixOS evaluation failures
-          # without touching QEMU.  Run with: nix build .#checks.x86_64-linux.bloom-config
+          # Fast: build the installed system closure locally — catches locale
+          # errors, module conflicts, bad package references, and NixOS
+          # evaluation failures without touching QEMU.
           bloom-config = self.nixosConfigurations.bloom-installed-test.config.system.build.toplevel;
 
-          # Thorough: boot the installed system in a NixOS test VM and verify that
-          # critical services come up.  Run with: nix build .#checks.x86_64-linux.bloom-boot
+          # Thorough: boot the installed system in a NixOS test VM and verify
+          # that critical services come up.
           bloom-boot = pkgsUnfree.testers.nixosTest {
             name = "bloom-boot";
 

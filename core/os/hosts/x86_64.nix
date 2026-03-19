@@ -4,6 +4,7 @@
 {
   imports = [
     ../modules/bloom-app.nix
+    ../modules/bloom-firstboot.nix
     ../modules/bloom-llm.nix
     ../modules/bloom-matrix.nix
     ../modules/bloom-network.nix

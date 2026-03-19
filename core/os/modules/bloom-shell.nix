@@ -49,7 +49,7 @@ in
     extraGroups  = [ "wheel" "networkmanager" ];
     home         = "/home/${u}";
     shell        = pkgs.bash;
-    # No initial password — set by the Calamares installer via chpasswd.
+    # No initial password — set interactively by bloom-wizard.sh on first boot.
   };
   users.groups.${u} = {};
 

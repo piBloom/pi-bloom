@@ -6,10 +6,10 @@ This directory contains NixOS integration tests for the Bloom OS platform. These
 
 | Test | Description | Duration | Nodes |
 |------|-------------|----------|-------|
-| `bloom-config` | Fast build test of the installed system closure | ~1 min | None |
+| `bloom-config` | Fast build test of the default installed system closure | ~1 min | None |
 | `bloom-boot` | Basic VM boot and service startup test | ~3 min | 1 |
 | `bloom-matrix` | Matrix homeserver (Conduwuity) functionality | ~3 min | 1 |
-| `bloom-firstboot` | First-boot wizard automation | ~5 min | 1 |
+| `bloom-firstboot` | First-boot preparation and unattended prefill automation | ~5 min | 1 |
 | `bloom-localai` | LocalAI inference service with test model | ~10 min | 1 |
 | `bloom-network` | Network connectivity and SSH between nodes | ~5 min | 2 |
 | `bloom-daemon` | Pi daemon Matrix agent connection | ~5 min | 2 |

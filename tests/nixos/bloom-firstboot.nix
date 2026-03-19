@@ -52,7 +52,7 @@ pkgs.testers.runNixOSTest {
       mkdir -p ${homeDir}/.bloom
       cat > ${homeDir}/.bloom/prefill.env << 'EOF'
     PREFILL_USERNAME=testuser
-    PREFILL_PASSWORD=testpassword123
+    PREFILL_MATRIX_PASSWORD=testpassword123
     EOF
       chown -R ${username}:${username} ${homeDir}/.bloom
       chmod 755 ${homeDir}/.bloom
@@ -87,6 +87,9 @@ pkgs.testers.runNixOSTest {
     
     # Test 3: prefill.env was consumed (still exists but firstboot ran)
     bloom.succeed("test -f " + home + "/.bloom/prefill.env")
+
+    # Test 3b: Matrix credentials were written from the unattended setup path
+    bloom.succeed("grep -q '\"userPassword\": \"testpassword123\"' " + home + "/.pi/matrix-credentials.json")
     
     # Test 4: wizard-state directory was created
     bloom.succeed("test -d " + home + "/.bloom/wizard-state")

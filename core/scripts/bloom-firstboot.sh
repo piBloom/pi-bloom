@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# bloom-firstboot.sh — Non-interactive first-boot automation for Bloom OS.
-# Runs once before getty via bloom-firstboot.service as the primary Bloom user.
-# Reads ~/.bloom/prefill.env written by the Calamares bloom_prefill module.
+# bloom-firstboot.sh — Non-interactive first-boot preparation for Bloom OS.
+# Runs before getty via bloom-firstboot.service as the primary Bloom user.
+# If ~/.bloom/prefill.env is present, first boot completes unattended; otherwise
+# it performs background preparation and leaves the interactive wizard pending.
 # On failure, exits 1 (non-fatal per SuccessExitStatus). User can re-run
 # bloom-wizard.sh on next login to resume from the last incomplete checkpoint.
 set -euo pipefail
@@ -26,6 +27,11 @@ PREFILL_FILE="$HOME/.bloom/prefill.env"
 if [[ -f "$PREFILL_FILE" ]]; then
     # shellcheck source=/dev/null
     source "$PREFILL_FILE"
+fi
+
+NONINTERACTIVE_INSTALL=0
+if [[ -f "$PREFILL_FILE" ]]; then
+    NONINTERACTIVE_INSTALL=1
 fi
 
 # Load shared function library.
@@ -123,7 +129,58 @@ firstboot_localai() {
     mark_done_with localai "download-started"
 }
 
+firstboot_ai_defaults() {
+    local settings_path="$PI_DIR/agent/settings.json"
+    mkdir -p "$(dirname "$settings_path")"
+    cat > "$settings_path" <<'EOF'
+{
+  "packages": [
+    "/usr/local/share/bloom"
+  ],
+  "defaultProvider": "localai",
+  "defaultModel": "omnicoder-9b-q4_k_m",
+  "defaultThinkingLevel": "medium"
+}
+EOF
+    chmod 600 "$settings_path"
+}
+
+firstboot_repo_clone() {
+    local repo_dir="$HOME/.bloom/pi-bloom"
+    if [[ -d "$repo_dir/.git" ]]; then
+        return 0
+    fi
+    mkdir -p "$(dirname "$repo_dir")"
+    if ! curl -fsI --connect-timeout 5 https://github.com >/dev/null 2>&1; then
+        echo "bloom-firstboot: skipping repo clone until network is available"
+        return 0
+    fi
+    if timeout 30 git clone --depth 1 https://github.com/alexradunet/piBloom.git "$repo_dir"; then
+        echo "bloom-firstboot: cloned pi-bloom repo"
+    else
+        echo "bloom-firstboot: repo clone failed (non-fatal)" >&2
+    fi
+}
+
+firstboot_git_identity() {
+    [[ -n "${PREFILL_NAME:-}" ]] || return 0
+    git config --global user.name "$PREFILL_NAME"
+    if [[ -n "${PREFILL_EMAIL:-}" ]]; then
+        git config --global user.email "$PREFILL_EMAIL"
+    fi
+}
+
+firstboot_prepare_local_state() {
+    firstboot_ai_defaults
+    firstboot_repo_clone
+    firstboot_git_identity
+}
+
 firstboot_finalize() {
+    if [[ "$NONINTERACTIVE_INSTALL" -ne 1 ]]; then
+        echo "bloom-firstboot: interactive setup remains pending"
+        return 0
+    fi
     # linger is enabled statically via systemd.tmpfiles.rules in bloom-firstboot.nix
     systemctl --user enable --now pi-daemon.service || \
         echo "bloom-firstboot: pi-daemon enable failed (non-fatal)" >&2
@@ -133,6 +190,7 @@ firstboot_finalize() {
 
 main() {
     mkdir -p "$WIZARD_STATE"
+    firstboot_prepare_local_state
     step_done localai  || firstboot_localai  || true
     step_done netbird  || firstboot_netbird  || true
     step_done matrix   || firstboot_matrix   || true

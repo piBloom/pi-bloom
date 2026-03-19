@@ -44,10 +44,10 @@ pkgs.testers.runNixOSTest {
 
       # Pre-create prefill.env for automated setup
       system.activationScripts.bloom-e2e-prefill = lib.stringAfter [ "users" ] ''
-        mkdir -p ${homeDir}/.bloom
-        cat > ${homeDir}/.bloom/prefill.env << 'EOF'
+      mkdir -p ${homeDir}/.bloom
+      cat > ${homeDir}/.bloom/prefill.env << 'EOF'
     PREFILL_USERNAME=e2etest
-    PREFILL_PASSWORD=e2etestpass123
+    PREFILL_MATRIX_PASSWORD=e2etestpass123
     EOF
         chown -R ${username}:${username} ${homeDir}/.bloom
         chmod 755 ${homeDir}/.bloom

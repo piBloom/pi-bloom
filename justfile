@@ -19,17 +19,22 @@ qcow2:
 raw:
     nix build {{ flake }}#raw
 
-# Generate graphical installer ISO (Calamares + GNOME)
+# Generate minimal USB installer ISO (offline bloom-install workflow)
 iso:
     nix build {{ flake }}#iso
     
     @echo ""
-    @echo "Graphical installer ISO built: result/iso/"
+    @echo "USB installer ISO built: result/iso/"
     @echo ""
     @echo "To flash to USB:"
     @echo "  sudo dd if=result/iso/*.iso of=/dev/sdX bs=4M status=progress conv=fsync"
     @echo ""
-    @echo "To test in QEMU:"
+    @echo "To install on the target machine:"
+    @echo "  1. Boot from the USB stick"
+    @echo "  2. Log in as root"
+    @echo "  3. Run: bloom-install"
+    @echo ""
+    @echo "To test the USB workflow in QEMU:"
     @echo "  just test-iso"
 
 # Apply current flake config to the running system (local dev iteration)
@@ -56,19 +61,18 @@ vm-gui: qcow2
 vm-run:
     core/scripts/run-qemu.sh --mode headless --skip-setup
 
-# Test graphical ISO installation in QEMU with GUI display
-# This allows testing the Calamares GUI installer
+# Test the minimal USB installer ISO in QEMU
 test-iso:
     #!/usr/bin/env bash
     set -euo pipefail
-    disk="/tmp/bloom-test-disk-gui.qcow2"
-    vars="/tmp/bloom-ovmf-vars-gui.fd"
+    disk="/tmp/bloom-test-disk-installer.qcow2"
+    vars="/tmp/bloom-ovmf-vars-installer.fd"
     
     # Find the actual ISO file (result is a symlink to a store directory containing iso/)
     ISO=$(find -L {{ output }} -name "*.iso" -type f 2>/dev/null | head -1)
     if [ -z "$ISO" ]; then
         echo "Error: No ISO found in {{ output }}/"
-        echo "Run 'just iso' first to build the graphical installer."
+        echo "Run 'just iso' first to build the USB installer."
         exit 1
     fi
     
@@ -78,19 +82,20 @@ test-iso:
     cp "{{ ovmf_vars }}" "$vars"
     
     echo ""
-    echo "Starting graphical ISO test..."
+    echo "Starting USB installer ISO test..."
     echo "  - ISO: $ISO"
     echo "  - Disk: $disk (40GB)"
-    echo "  - RAM: 12GB"
+    echo "  - RAM: 6GB"
     echo ""
-    echo "Close the QEMU window to exit"
+    echo "Log in as root, run 'bloom-install', then reboot when complete."
+    echo "Press Ctrl+A X to exit QEMU."
     echo ""
     
     qemu-system-x86_64 \
         -machine q35 \
         -cpu host \
         -enable-kvm \
-        -m 12288 \
+        -m 6144 \
         -smp 2 \
         -drive if=pflash,format=raw,readonly=on,file={{ ovmf }} \
         -drive if=pflash,format=raw,file="$vars" \
@@ -98,8 +103,8 @@ test-iso:
         -cdrom "$ISO" \
         -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::5900-:5900 \
         -device virtio-net-pci,netdev=net0 \
-        -vga virtio \
-        -display gtk
+        -nographic \
+        -serial mon:stdio
 
 # Run VM in background daemon mode (detached, no terminal attached)
 # Use this when you want to run the VM and still use your shell

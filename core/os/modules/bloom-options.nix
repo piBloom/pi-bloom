@@ -7,8 +7,7 @@
     type        = lib.types.str;
     default     = "pi";
     description = ''
-      Primary system user created by the Calamares installer.
-      Set in the installer-generated host-config.nix; all Bloom modules
+      Primary system user for the Bloom machine. All Bloom modules
       derive the user name, home directory, and service ownership from it.
     '';
   };
