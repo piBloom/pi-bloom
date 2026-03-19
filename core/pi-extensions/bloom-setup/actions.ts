@@ -12,6 +12,7 @@ import {
 	getNextStep,
 	getStepsSummary,
 	isSetupComplete,
+	parseSetupState,
 	type SetupState,
 	type StepName,
 } from "../../lib/setup.js";
@@ -28,15 +29,19 @@ export function loadState(): SetupState {
 	if (existsSync(SETUP_STATE_PATH)) {
 		try {
 			const raw = readFileSync(SETUP_STATE_PATH, "utf-8");
-			return JSON.parse(raw) as SetupState;
+			const result = parseSetupState(JSON.parse(raw));
+			if (result.ok) return result.state;
+			log.warn("corrupt setup-state.json, backing up and creating fresh state", {
+				error: result.error,
+			});
 		} catch {
 			log.warn("corrupt setup-state.json, backing up and creating fresh state");
-			const backup = `${SETUP_STATE_PATH}.corrupt-${Date.now()}`;
-			try {
-				renameSync(SETUP_STATE_PATH, backup);
-			} catch {
-				// best-effort backup
-			}
+		}
+		const backup = `${SETUP_STATE_PATH}.corrupt-${Date.now()}`;
+		try {
+			renameSync(SETUP_STATE_PATH, backup);
+		} catch {
+			// best-effort backup
 		}
 	}
 	return createInitialState();

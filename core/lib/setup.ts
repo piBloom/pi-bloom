@@ -1,9 +1,32 @@
+import { Type } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
+
 /** Step names in execution order. */
 export const STEP_ORDER = ["persona"] as const;
 
 export type StepName = (typeof STEP_ORDER)[number];
 
 export type StepStatus = "pending" | "in_progress" | "completed" | "skipped";
+
+const StepStatusSchema = Type.Union([
+	Type.Literal("pending"),
+	Type.Literal("in_progress"),
+	Type.Literal("completed"),
+	Type.Literal("skipped"),
+]);
+
+const StepStateSchema = Type.Object({
+	status: StepStatusSchema,
+	at: Type.Optional(Type.String()),
+	reason: Type.Optional(Type.String()),
+});
+
+export const SetupStateSchema = Type.Object({
+	version: Type.Number(),
+	startedAt: Type.String(),
+	completedAt: Type.Union([Type.String(), Type.Null()]),
+	steps: Type.Record(Type.String(), StepStateSchema),
+});
 
 export interface StepState {
 	status: StepStatus;
@@ -16,6 +39,22 @@ export interface SetupState {
 	startedAt: string;
 	completedAt: string | null;
 	steps: Record<StepName, StepState>;
+}
+
+/**
+ * Parse and validate raw JSON as a SetupState.
+ * Returns an error string if the data is corrupt or incompatible.
+ */
+export function parseSetupState(raw: unknown): { ok: true; state: SetupState } | { ok: false; error: string } {
+	try {
+		const parsed = Value.Parse(SetupStateSchema, raw) as SetupState;
+		return { ok: true, state: parsed };
+	} catch (e) {
+		return {
+			ok: false,
+			error: `setup state corrupt or incompatible: ${e instanceof Error ? e.message : String(e)}`,
+		};
+	}
 }
 
 /** Create a fresh setup state with all steps pending. */

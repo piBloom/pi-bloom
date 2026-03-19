@@ -13,8 +13,7 @@ export default defineConfig({
 			include: ["core/daemon/**/*.ts", "core/lib/**/*.ts", "core/pi-extensions/**/*.ts"],
 			thresholds: {
 				"core/daemon/**/*.ts": { lines: 85, functions: 80, branches: 75, statements: 85 },
-				// provisional — raise to 85/85/70/85 after Task 5 (lib audit)
-			"core/lib/**/*.ts": { lines: 70, functions: 75, branches: 55, statements: 65 },
+				"core/lib/**/*.ts": { lines: 71, functions: 76, branches: 57, statements: 67 },
 				"core/pi-extensions/**/*.ts": { lines: 60, functions: 60, branches: 50, statements: 60 },
 			},
 		},
