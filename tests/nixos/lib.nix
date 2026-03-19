@@ -41,6 +41,7 @@
 
   # Bloom modules without bloom-shell (for tests that define their own user)
   bloomModulesNoShell = [ 
+    ../../core/os/modules/bloom-options.nix
     ../../core/os/modules/bloom-app.nix
     ../../core/os/modules/bloom-llm.nix
     ../../core/os/modules/bloom-matrix.nix

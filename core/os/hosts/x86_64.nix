@@ -29,7 +29,7 @@
   xdg.portal = {
     enable = true;
     extraPortals = [ pkgs.xdg-desktop-portal-wlr pkgs.xdg-desktop-portal-gtk ];
-    config.sway.default = [ "wlr" "gtk" ];
+    config.sway.default = lib.mkForce [ "wlr" "gtk" ];
   };
 
   # Sway-related packages
