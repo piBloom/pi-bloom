@@ -1,11 +1,11 @@
 import type { AgentDefinition } from "./agent-registry.js";
 import {
-	type RoomState,
 	canReplyForRoot,
 	hasProcessedEvent,
 	isAgentCoolingDown,
 	markEventProcessed,
 	markReplySent,
+	type RoomState,
 } from "./room-state.js";
 
 export interface RoomEnvelope {

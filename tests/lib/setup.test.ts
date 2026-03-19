@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-	STEP_ORDER,
 	advanceStep,
 	createInitialState,
 	getNextStep,
 	getStepsSummary,
 	isSetupComplete,
+	STEP_ORDER,
 } from "../../core/lib/setup.js";
 
 describe("createInitialState", () => {

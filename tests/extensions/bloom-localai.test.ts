@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { type MockExtensionAPI, createMockExtensionAPI } from "../helpers/mock-extension-api.js";
+import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 
 let api: MockExtensionAPI;
 

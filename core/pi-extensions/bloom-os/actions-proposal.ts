@@ -56,17 +56,18 @@ export async function handleNixConfigProposal(
 
 		const update = await run("nix", ["flake", "update"], signal, repoDir);
 		const status = await run("git", ["status", "--short", "--", "flake.lock"], signal, repoDir);
-		const text = update.exitCode === 0
-			? [
-				`Updated flake inputs in ${repoDir}.`,
-				"",
-				"Command output:",
-				summarizeOutput(update),
-				"",
-				"flake.lock status:",
-				status.stdout.trim() || "flake.lock unchanged.",
-			].join("\n")
-			: `nix flake update failed:\n${summarizeOutput(update)}`;
+		const text =
+			update.exitCode === 0
+				? [
+						`Updated flake inputs in ${repoDir}.`,
+						"",
+						"Command output:",
+						summarizeOutput(update),
+						"",
+						"flake.lock status:",
+						status.stdout.trim() || "flake.lock unchanged.",
+					].join("\n")
+				: `nix flake update failed:\n${summarizeOutput(update)}`;
 		return {
 			content: [{ type: "text" as const, text: truncate(text) }],
 			details: { repoDir, exitCode: update.exitCode },

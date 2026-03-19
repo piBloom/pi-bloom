@@ -8,8 +8,7 @@
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { type RegisteredExtensionTool, defineTool, registerTools } from "../../lib/extension-tools.js";
-import { handleSystemHealth } from "./actions-health.js";
+import { defineTool, type RegisteredExtensionTool, registerTools } from "../../lib/extension-tools.js";
 import {
 	checkPendingUpdates,
 	handleNixosUpdate,
@@ -17,6 +16,7 @@ import {
 	handleSystemdControl,
 	handleUpdateStatus,
 } from "./actions.js";
+import { handleSystemHealth } from "./actions-health.js";
 import { handleNixConfigProposal } from "./actions-proposal.js";
 
 export default function (pi: ExtensionAPI) {

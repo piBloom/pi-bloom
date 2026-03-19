@@ -7,7 +7,7 @@ import { truncate } from "../../lib/shared.js";
 function nixosSection(result: Awaited<ReturnType<typeof run>>): string {
 	if (result.exitCode !== 0) return "## OS\n(nixos-rebuild unavailable)";
 	const lines = result.stdout.trim().split("\n");
-	const current = lines.find(l => l.includes("current")) ?? lines.at(-1) ?? "";
+	const current = lines.find((l) => l.includes("current")) ?? lines.at(-1) ?? "";
 	return `## OS\nNixOS — ${current.trim()}`;
 }
 

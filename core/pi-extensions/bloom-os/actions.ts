@@ -1,8 +1,9 @@
 /**
  * Handler / business logic for bloom-os.
  */
-import { readFile, writeFile } from "node:fs/promises";
+
 import { existsSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../lib/exec.js";
 import { getBloomRepoDir, getUpdateStatusPath } from "../../lib/filesystem.js";
@@ -25,31 +26,33 @@ export async function handleNixosUpdate(
 
 	if (action === "status") {
 		const gen = await run("nixos-rebuild", ["list-generations"], signal);
-		const text = gen.exitCode === 0
-			? gen.stdout.trim() || "No generation info available."
-			: `Error: ${gen.stderr}`;
+		const text = gen.exitCode === 0 ? gen.stdout.trim() || "No generation info available." : `Error: ${gen.stderr}`;
 		return { content: [{ type: "text" as const, text: truncate(text) }], details: { exitCode: gen.exitCode } };
 	}
 
 	if (action === "rollback") {
 		const result = await run("sudo", ["nixos-rebuild", "switch", "--rollback"], signal);
-		const text = result.exitCode === 0
-			? "Rolled back to previous generation. Reboot to complete."
-			: `Rollback failed: ${result.stderr}`;
-		return { content: [{ type: "text" as const, text }], details: { exitCode: result.exitCode }, isError: result.exitCode !== 0 };
+		const text =
+			result.exitCode === 0
+				? "Rolled back to previous generation. Reboot to complete."
+				: `Rollback failed: ${result.stderr}`;
+		return {
+			content: [{ type: "text" as const, text }],
+			details: { exitCode: result.exitCode },
+			isError: result.exitCode !== 0,
+		};
 	}
 
 	// apply
-	const flake = source === "local"
-		? `${getBloomRepoDir()}#bloom-x86_64`
-		: "github:alexradunet/piBloom#bloom-x86_64";
+	const flake = source === "local" ? `${getBloomRepoDir()}#bloom-x86_64` : "github:alexradunet/piBloom#bloom-x86_64";
 	if (source === "local" && !existsSync(getBloomRepoDir())) {
 		return errorResult(`Local Bloom repo not found at ${getBloomRepoDir()}. Cannot switch the local flake.`);
 	}
 	const result = await run("sudo", ["nixos-rebuild", "switch", "--flake", flake], signal);
-	const text = result.exitCode === 0
-		? `Update applied successfully from ${source} source. New generation is active.`
-		: `Update failed: ${result.stderr}`;
+	const text =
+		result.exitCode === 0
+			? `Update applied successfully from ${source} source. New generation is active.`
+			: `Update failed: ${result.stderr}`;
 	return {
 		content: [{ type: "text" as const, text: truncate(text) }],
 		details: { exitCode: result.exitCode, source, flake },

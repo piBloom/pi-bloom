@@ -6,9 +6,9 @@
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { type RegisteredExtensionTool, defineTool, registerTools } from "../../lib/extension-tools.js";
-import { listObjects, queryObjects, searchObjects } from "./actions-query.js";
+import { defineTool, type RegisteredExtensionTool, registerTools } from "../../lib/extension-tools.js";
 import { createObject, linkObjects, readObject, updateObject, upsertObject } from "./actions.js";
+import { listObjects, queryObjects, searchObjects } from "./actions-query.js";
 
 type MemoryCreateParams = Parameters<typeof createObject>[0];
 type MemoryUpdateParams = Parameters<typeof updateObject>[0];

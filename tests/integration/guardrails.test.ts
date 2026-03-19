@@ -80,12 +80,16 @@ describe("guardrails block dangerous commands", () => {
 });
 
 describe("guardrails allow safe commands", () => {
-	it.each(["ls -la", "git status", "npm install", "cat /etc/hostname", "grep -r pattern .", "node app.js"])(
-		"allows: %s",
-		(command) => {
-			expect(matchesAny(command)).toBeNull();
-		},
-	);
+	it.each([
+		"ls -la",
+		"git status",
+		"npm install",
+		"cat /etc/hostname",
+		"grep -r pattern .",
+		"node app.js",
+	])("allows: %s", (command) => {
+		expect(matchesAny(command)).toBeNull();
+	});
 });
 
 describe("normalizeCommand integration", () => {

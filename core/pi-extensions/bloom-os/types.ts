@@ -4,6 +4,6 @@
 export interface UpdateStatus {
 	available: boolean;
 	checked: string;
-	generation?: string;   // NixOS generation number
+	generation?: string; // NixOS generation number
 	notified?: boolean;
 }

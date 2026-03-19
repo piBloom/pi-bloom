@@ -8,10 +8,10 @@
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { type RegisteredExtensionTool, defineTool, registerTools } from "../../lib/extension-tools.js";
+import { defineTool, type RegisteredExtensionTool, registerTools } from "../../lib/extension-tools.js";
 import { getBloomDir } from "../../lib/filesystem.js";
-import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
 import { discoverSkillPaths, ensureBloom, getPackageDir, handleGardenStatus } from "./actions.js";
+import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
 
 type BloomCommandContext = Parameters<Parameters<ExtensionAPI["registerCommand"]>[1]["handler"]>[1];
 

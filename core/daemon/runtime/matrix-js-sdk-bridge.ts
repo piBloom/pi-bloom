@@ -1,4 +1,4 @@
-import { ClientEvent, type MatrixClient, type MatrixEvent, MemoryStore, SyncState, createClient } from "matrix-js-sdk";
+import { ClientEvent, createClient, type MatrixClient, type MatrixEvent, MemoryStore, SyncState } from "matrix-js-sdk";
 import { renderMatrixHtml } from "../../lib/matrix-format.js";
 import type { MatrixBridge, MatrixIdentity, MatrixTextEvent } from "../contracts/matrix.js";
 import { emitMatrixConnected, emitMatrixDisconnected, emitMatrixError } from "../metrics.js";

@@ -10,8 +10,8 @@ import { run } from "../../lib/exec.js";
 import { safePath } from "../../lib/filesystem.js";
 import { stringifyFrontmatter } from "../../lib/frontmatter.js";
 import {
-	type MatrixCredentials,
 	generateAgentInstructionsMarkdown,
+	type MatrixCredentials,
 	matrixAgentCredentialsPath,
 	matrixCredentialsPath,
 	provisionMatrixAgentAccount,

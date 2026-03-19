@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
-import { type RegisteredExtensionTool, defineTool, registerTools } from "../../lib/extension-tools.js";
+import { defineTool, type RegisteredExtensionTool, registerTools } from "../../lib/extension-tools.js";
 import { STEP_ORDER } from "../../lib/setup.js";
 import {
 	getSetupSystemPrompt,

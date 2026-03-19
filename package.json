@@ -7,7 +7,9 @@
 	"engines": {
 		"node": ">=22"
 	},
-	"keywords": ["pi-package"],
+	"keywords": [
+		"pi-package"
+	],
 	"pi": {
 		"extensions": [
 			"./core/pi-extensions/bloom-persona",
@@ -18,7 +20,9 @@
 			"./core/pi-extensions/bloom-garden",
 			"./core/pi-extensions/bloom-setup"
 		],
-		"skills": ["./core/pi-skills"]
+		"skills": [
+			"./core/pi-skills"
+		]
 	},
 	"peerDependencies": {
 		"@mariozechner/pi-ai": "*",
@@ -31,7 +35,7 @@
 		"matrix-js-sdk": "^41.1.0"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
+		"@biomejs/biome": "^2.0.0",
 		"@mariozechner/pi-ai": "0.60.0",
 		"@mariozechner/pi-coding-agent": "0.60.0",
 		"@types/hosted-git-info": "^3.0.5",

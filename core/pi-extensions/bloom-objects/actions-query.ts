@@ -8,7 +8,7 @@ import { getBloomDir, safePath } from "../../lib/filesystem.js";
 import { parseFrontmatter } from "../../lib/frontmatter.js";
 import { errorResult, truncate } from "../../lib/shared.js";
 import { walkMdFiles } from "./actions.js";
-import { type ScopePreference, readMemoryRecord, scoreRecord } from "./memory.js";
+import { readMemoryRecord, type ScopePreference, scoreRecord } from "./memory.js";
 
 function resolveObjectsDir(directory?: string) {
 	if (!directory) return { dir: path.join(getBloomDir(), "Objects") };
