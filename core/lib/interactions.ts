@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { Type } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 
 export type InteractionKind = "confirm" | "select" | "input";
 export type InteractionStatus = "pending" | "resolved" | "consumed";
@@ -28,6 +30,23 @@ export interface ResolvedInteractionReply {
 	ambiguous?: boolean;
 }
 
+const InteractionRecordSchema = Type.Object({
+	token: Type.String(),
+	kind: Type.Union([Type.Literal("confirm"), Type.Literal("select"), Type.Literal("input")]),
+	key: Type.String(),
+	prompt: Type.String(),
+	status: Type.Union([Type.Literal("pending"), Type.Literal("resolved"), Type.Literal("consumed")]),
+	resolution: Type.Optional(Type.String()),
+	options: Type.Optional(Type.Array(Type.String())),
+	resumeMessage: Type.Optional(Type.String()),
+	createdAt: Type.String(),
+	updatedAt: Type.String(),
+});
+
+const InteractionStoreSchema = Type.Object({
+	records: Type.Array(InteractionRecordSchema),
+});
+
 const STORE_SUFFIX = ".bloom-interactions.json";
 const MAX_RECORDS = 32;
 
@@ -54,17 +73,7 @@ function getStorePath(ctx: ExtensionContext): string | null {
 
 function loadStore(storePath: string): InteractionStore {
 	try {
-		const raw = JSON.parse(fs.readFileSync(storePath, "utf-8")) as InteractionStore;
-		if (!Array.isArray(raw.records)) return { records: [] };
-		return {
-			records: raw.records.filter(
-				(record) =>
-					record &&
-					typeof record.kind === "string" &&
-					typeof record.key === "string" &&
-					typeof record.prompt === "string",
-			),
-		};
+		return Value.Parse(InteractionStoreSchema, JSON.parse(fs.readFileSync(storePath, "utf-8")));
 	} catch {
 		return { records: [] };
 	}

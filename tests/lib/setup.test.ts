@@ -5,6 +5,7 @@ import {
 	getNextStep,
 	getStepsSummary,
 	isSetupComplete,
+	parseSetupState,
 	STEP_ORDER,
 } from "../../core/lib/setup.js";
 
@@ -88,5 +89,76 @@ describe("getStepsSummary", () => {
 		const summary = getStepsSummary(state);
 		expect(summary).toHaveLength(1);
 		expect(summary[0]).toEqual({ name: "persona", status: "completed" });
+	});
+});
+
+describe("parseSetupState", () => {
+	it("returns ok:true with state for valid input", () => {
+		const input = {
+			version: 1,
+			startedAt: "2025-01-01T00:00:00.000Z",
+			completedAt: null,
+			steps: { persona: { status: "pending" } },
+		};
+		const result = parseSetupState(input);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.state.version).toBe(1);
+			expect(result.state.startedAt).toBe("2025-01-01T00:00:00.000Z");
+			expect(result.state.completedAt).toBeNull();
+			expect(result.state.steps.persona.status).toBe("pending");
+		}
+	});
+
+	it("returns ok:false with error message for wrong field type", () => {
+		const input = {
+			version: "not-a-number",
+			startedAt: "2025-01-01T00:00:00.000Z",
+			completedAt: null,
+			steps: {},
+		};
+		const result = parseSetupState(input);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error).toContain("setup state corrupt or incompatible");
+		}
+	});
+
+	it("returns ok:false with error message for missing required field", () => {
+		const input = {
+			version: 1,
+			completedAt: null,
+			steps: {},
+			// startedAt is missing
+		};
+		const result = parseSetupState(input);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error).toContain("setup state corrupt or incompatible");
+		}
+	});
+
+	it("returns ok:false for null input", () => {
+		const result = parseSetupState(null);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error).toContain("setup state corrupt or incompatible");
+		}
+	});
+
+	it("returns ok:false for empty object input", () => {
+		const result = parseSetupState({});
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error).toContain("setup state corrupt or incompatible");
+		}
+	});
+
+	it("returns ok:false for primitive input", () => {
+		const result = parseSetupState(42);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error).toContain("setup state corrupt or incompatible");
+		}
 	});
 });

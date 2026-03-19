@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 /** Ensure a directory exists. */
@@ -13,15 +13,6 @@ export function atomicWriteFile(filePath: string, content: string, mode?: number
 	const tmpPath = `${filePath}.tmp`;
 	writeFileSync(tmpPath, content, "utf-8");
 	renameSync(tmpPath, filePath);
-}
-
-/** Parse JSON from disk with a fallback when the file is absent or invalid. */
-export function readJsonFile<T>(filePath: string, fallback: T): T {
-	try {
-		return JSON.parse(readFileSync(filePath, "utf-8")) as T;
-	} catch {
-		return fallback;
-	}
 }
 
 /**
