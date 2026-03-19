@@ -48,7 +48,7 @@
 			"**/!.worktrees",
 			"**/!core/os/output/**",
 			"**/!.pi",
-			"**/!.claude",
+			"!.claude/**",
 			"**/!coverage/**"
 		]
 	},
