@@ -34,6 +34,13 @@ if [[ -f "$PREFILL_FILE" ]]; then
     NONINTERACTIVE_INSTALL=1
 fi
 
+SUDO_BIN=""
+if command -v sudo >/dev/null 2>&1; then
+    SUDO_BIN="$(command -v sudo)"
+elif [[ -x /run/wrappers/bin/sudo ]]; then
+    SUDO_BIN="/run/wrappers/bin/sudo"
+fi
+
 # Load shared function library.
 # firstboot.sh is run directly from the Nix source tree (not via app),
 # so $(dirname "$0") points into the source store, not app's $out/bin/.
@@ -48,13 +55,21 @@ source "$SETUP_LIB"
 
 step_done() { [[ -f "$WIZARD_STATE/$1" ]]; }
 
+run_root_command() {
+    if [[ -n "$SUDO_BIN" ]]; then
+        "$SUDO_BIN" "$@"
+    else
+        "$@"
+    fi
+}
+
 # --- First-boot steps ---
 
 firstboot_netbird() {
     [[ -z "${PREFILL_NETBIRD_KEY:-}" ]] && { echo "nixpi-firstboot: no NetBird key, skipping"; return 0; }
     echo "nixpi-firstboot: connecting to NetBird..."
     if ! systemctl is-active --quiet netbird.service; then
-        sudo systemctl start netbird.service
+        run_root_command systemctl start netbird.service
     fi
     local wait_count=0
     while [[ ! -S /var/run/netbird/sock ]]; do
@@ -62,7 +77,7 @@ firstboot_netbird() {
         [[ $wait_count -ge 20 ]] && { echo "nixpi-firstboot: NetBird daemon did not start" >&2; return 1; }
         sleep 0.5
     done
-    if sudo netbird up --setup-key "$PREFILL_NETBIRD_KEY"; then
+    if run_root_command netbird up --setup-key "$PREFILL_NETBIRD_KEY"; then
         sleep 3
         local mesh_ip
         mesh_ip=$(netbird status 2>/dev/null | grep -oP 'NetBird IP:\s+\K[\d.]+' || true)
@@ -114,16 +129,16 @@ firstboot_localai() {
             ;;
         activating)
             echo "nixpi-firstboot: AI model download in progress (background)"
-            echo "nixpi-firstboot: track with: sudo journalctl -fu localai-download"
+            echo "nixpi-firstboot: track with: journalctl -fu localai-download"
             ;;
         failed)
-            echo "nixpi-firstboot: AI model download failed — retry with: sudo systemctl restart localai-download" >&2
+            echo "nixpi-firstboot: AI model download failed — retry with: systemctl restart localai-download" >&2
             return 1
             ;;
         *)
             echo "nixpi-firstboot: starting AI model download in background..."
-            sudo systemctl start --no-block localai-download.service || true
-            echo "nixpi-firstboot: track with: sudo journalctl -fu localai-download"
+            run_root_command systemctl start --no-block localai-download.service || true
+            echo "nixpi-firstboot: track with: journalctl -fu localai-download"
             ;;
     esac
     mark_done_with localai "download-started"
@@ -171,6 +186,7 @@ firstboot_git_identity() {
 }
 
 firstboot_prepare_local_state() {
+    mkdir -p "$NIXPI_DIR"
     firstboot_ai_defaults
     firstboot_repo_clone
     firstboot_git_identity

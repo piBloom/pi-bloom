@@ -66,7 +66,7 @@ pkgs.testers.runNixOSTest {
     nixpi.wait_until_succeeds("test -f " + home + "/.nixpi/.setup-complete", timeout=120)
 
     nixpi.wait_until_succeeds("test -f " + home + "/.config/nixpi/home/index.html", timeout=120)
-    nixpi.wait_until_succeeds("test -f " + home + "/.config/nixpi/fluffychat/config.json", timeout=120)
+    nixpi.wait_until_succeeds("test -f " + home + "/.config/nixpi/chat/config.json", timeout=120)
     nixpi.succeed("grep -q 'nixPI Home' " + home + "/.config/nixpi/home/index.html")
     nixpi.succeed("grep -q 'nixPI Chat' " + home + "/.config/nixpi/home/index.html")
     nixpi.succeed("grep -q 'nixPI Files' " + home + "/.config/nixpi/home/index.html")

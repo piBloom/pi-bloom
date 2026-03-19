@@ -91,7 +91,10 @@ in
       };
     };
 
-    networking.firewall.trustedInterfaces = [ "wt0" ];
+    networking.firewall = {
+      trustedInterfaces = [ "wt0" ];
+      allowedTCPPorts = [ 22 6167 8080 8081 5000 8443 ];
+    };
     networking.networkmanager.enable = true;
 
     environment.etc."nixpi/fluffychat-web".source = pkgs.fluffychat-web;
@@ -158,6 +161,9 @@ in
     };
 
     systemd.tmpfiles.rules = [
+      "d /home/${u}/.config 0755 ${u} ${u} -"
+      "d /home/${u}/.config/systemd 0755 ${u} ${u} -"
+      "d /home/${u}/.config/systemd/user 0755 ${u} ${u} -"
       "d /home/${u}/.config/nixpi 0755 ${u} ${u} -"
       "d /home/${u}/.config/nixpi/home 0755 ${u} ${u} -"
       "d /home/${u}/.config/nixpi/chat 0755 ${u} ${u} -"
@@ -166,6 +172,9 @@ in
     ];
 
     system.activationScripts.nixpi-builtins = lib.stringAfter [ "users" ] ''
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/systemd
+      install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/systemd/user
       install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/nixpi/home
       install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/nixpi/home/tmp
       install -d -m 0755 -o ${u} -g ${u} /home/${u}/.config/nixpi/chat
@@ -236,7 +245,7 @@ http {
 }
 NGINX
 
-      chown -R ${u}:${u} /home/${u}/.config/nixpi /home/${u}/.config/code-server /home/${u}/Public/nixPI
+      chown -R ${u}:${u} /home/${u}/.config /home/${u}/Public/nixPI
     '';
   };
 }
