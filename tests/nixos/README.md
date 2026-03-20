@@ -14,6 +14,7 @@ This directory contains NixOS integration tests for the NixPI platform. These te
   - existing happy-path tests: `boot`, `nixpi-matrix`, `nixpi-firstboot`, `localai`, `nixpi-network`, `nixpi-daemon`, `nixpi-e2e`, `nixpi-home`, `nixpi-security`, `nixpi-modular-services`, `nixpi-matrix-bridge`
   - new policy tests: `nixpi-bootstrap-mode`, `nixpi-post-setup-lockdown`, `nixpi-broker`
 - `nixos-destructive`: slower install/lockdown/broker cases intended for manual or scheduled runs
+  - `nixpi-installer-smoke`
 
 ## Running Tests
 
@@ -31,6 +32,7 @@ nix build .#checks.x86_64-linux.nixos-full --no-link -L
 ### Run the destructive lane
 ```bash
 nix build .#checks.x86_64-linux.nixos-destructive --no-link -L
+nix build .#checks.x86_64-linux.nixpi-installer-smoke --no-link -L
 ```
 
 ### Run a specific test
@@ -44,6 +46,7 @@ just check-config
 just check-nixos-smoke
 just check-nixos-full
 just check-nixos-destructive
+just check-installer-smoke
 ```
 
 ### Interactive test driver
@@ -69,6 +72,7 @@ tests/nixos/
 ├── nixpi-daemon.nix           # Pi daemon test
 ├── nixpi-e2e.nix              # End-to-end integration test
 ├── nixpi-home.nix             # NixPI Home and built-in system services test
+├── nixpi-installer-smoke.nix  # live Calamares installer smoke test
 ├── nixpi-modular-services.nix # system.services/configData regression
 ├── nixpi-matrix-bridge.nix    # multi-node Matrix daemon transport test
 └── README.md            # This file

@@ -155,6 +155,11 @@ check-config:
 check-installer:
     nix {{ nix_opts }} build {{ flake }}#checks.{{ system }}.installer-backend --no-link
 
+# Live Calamares installer smoke test. This is intentionally separate from the
+# PR smoke lane until runtime and stability are proven.
+check-installer-smoke:
+    nix {{ nix_vm_lane_opts }} build {{ flake }}#checks.{{ system }}.nixpi-installer-smoke --no-link -L
+
 # Full VM boot test: boots the installed system in a NixOS test VM.
 # Slower than check-config but verifies runtime behaviour (services, users).
 # Requires KVM. Takes 20-40 min on first run.

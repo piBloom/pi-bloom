@@ -12,7 +12,7 @@
 #
 # Or run all: nix flake check
 
-{ pkgs, lib, piAgent, appPackage, self }:
+{ pkgs, lib, piAgent, appPackage, self, installerPkgs ? pkgs }:
 
 let
   # Import shared helpers
@@ -47,12 +47,32 @@ let
       mkPrefillActivation
       self;
   };
+
+  mkInstallerTest = testFile: import testFile {
+    inherit
+      pkgs
+      lib
+      nixPiModules
+      nixPiModulesNoShell
+      piAgent
+      appPackage
+      mkNixPiNode
+      mkTestFilesystems
+      matrixTestClient
+      matrixRegisterScript
+      mkManagedUserConfig
+      mkExistingUserConfig
+      mkPrefillActivation
+      self
+      installerPkgs;
+  };
 in
 {
   smoke-matrix = mkTest ./nixpi-matrix.nix;
   smoke-firstboot = mkTest ./nixpi-firstboot.nix;
   smoke-security = mkTest ./nixpi-security.nix;
   smoke-broker = mkTest ./nixpi-broker.nix;
+  installer-smoke = mkInstallerTest ./nixpi-installer-smoke.nix;
 
   # Matrix homeserver test
   nixpi-matrix = mkTest ./nixpi-matrix.nix;
@@ -92,4 +112,7 @@ in
 
   # Broker autonomy and privilege boundaries test
   nixpi-broker = mkTest ./nixpi-broker.nix;
+
+  # Live installer smoke test that drives Calamares through a real install.
+  nixpi-installer-smoke = mkInstallerTest ./nixpi-installer-smoke.nix;
 }

@@ -133,7 +133,7 @@
           # Using pkgsUnfree so tests can use packages that require allowUnfree
           nixosTests = import ./tests/nixos {
             pkgs = pkgsUnfree;
-            inherit lib piAgent appPackage self;
+            inherit lib piAgent appPackage self installerPkgs;
           };
           bootCheck = pkgsUnfree.testers.runNixOSTest {
             name = "boot";
@@ -248,6 +248,7 @@
           ];
 
           nixos-destructive = mkCheckLane "nixos-destructive" [
+            { name = "nixpi-installer-smoke"; path = nixosTests.nixpi-installer-smoke; }
             { name = "nixpi-post-setup-lockdown"; path = nixosTests.nixpi-post-setup-lockdown; }
             { name = "nixpi-broker"; path = nixosTests.nixpi-broker; }
           ];
