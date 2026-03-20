@@ -11,6 +11,15 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
       lib = nixpkgs.lib;
+      nixpiSource = lib.cleanSource ./.;
+      installerCalamaresOverlay = import ./core/os/overlays/installer-calamares.nix {
+        inherit nixpiSource;
+      };
+      installerPkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+        overlays = [ installerCalamaresOverlay ];
+      };
       # pkgsUnfree is used only for boot nixosTest.  pkgs.testers.nixosTest
       # injects its own pkgs as nixpkgs.pkgs for test nodes, which means modules
       # cannot set nixpkgs.config (NixOS assertion).  Using a pkgs already created
@@ -166,6 +175,17 @@
           # errors, module conflicts, bad package references, and NixOS
           # evaluation failures without touching QEMU.
           config = self.nixosConfigurations.installed-test.config.system.build.toplevel;
+
+          # Fast installer-specific guard: build the exact Calamares extension
+          # used by the ISO and validate the generated Python job artifact.
+          installer-calamares = installerPkgs.runCommandLocal "installer-calamares-check" {
+            nativeBuildInputs = [ installerPkgs.python3 ];
+          } ''
+            module="${installerPkgs.calamares-nixos-extensions}/lib/calamares/modules/nixos/main.py"
+            grep -F 'NIXPI_INSTALL_MODULE = """{ ... }:' "$module" >/dev/null
+            PYTHONPYCACHEPREFIX="$TMPDIR/pycache" python3 -m py_compile "$module"
+            touch "$out"
+          '';
 
           # Regression guard for the local desktop VM path used by `just qcow2`.
           desktop-vm = self.nixosConfigurations.desktop-vm.config.system.build.vm;

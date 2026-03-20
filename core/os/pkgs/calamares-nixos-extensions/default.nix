@@ -50,7 +50,7 @@ text = text.replace("import re\n", "import re\nimport shutil\n", 1)
 marker = 'def env_is_set(name):\n'
 injected = """NIXPI_SOURCE = "@nixpiSource@"
 
-NIXPI_INSTALL_MODULE = '''{ ... }:
+NIXPI_INSTALL_MODULE = \"\"\"{ ... }:
 
 {
   imports = [
@@ -70,9 +70,9 @@ NIXPI_INSTALL_MODULE = '''{ ... }:
 
   nixpkgs.config.allowUnfree = true;
 }
-'''
+\"\"\"
 
-NIXPI_FLAKE = '''{
+NIXPI_FLAKE = \"\"\"{
   description = "NixPI installed system";
 
   inputs = {
@@ -98,7 +98,7 @@ NIXPI_FLAKE = '''{
       };
     };
 }
-'''
+\"\"\"
 
 """
 text = text.replace(marker, injected + marker, 1)
@@ -144,6 +144,7 @@ PY
     substituteInPlace "$out/etc/calamares/settings.conf" --replace-fail @out@ "$out"
     substituteInPlace "$out/etc/calamares/modules/locale.conf" --replace-fail @glibcLocales@ "${glibcLocales}"
     substituteInPlace "$out/lib/calamares/modules/nixos/main.py" --replace-fail "@nixpiSource@" "${nixpiSource}"
+    PYTHONPYCACHEPREFIX="$(mktemp -d)" python3 -m py_compile "$out/lib/calamares/modules/nixos/main.py"
 
     runHook postInstall
   '';
