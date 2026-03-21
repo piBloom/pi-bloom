@@ -1,4 +1,4 @@
-{ lib, pkgs, modulesPath, installerHelper, ... }:
+{ lib, pkgs, modulesPath, installerHelper, self, ... }:
 
 {
   imports = [
@@ -51,5 +51,9 @@
 
   environment.systemPackages = [
     installerHelper
+  ];
+
+  system.extraDependencies = [
+    self.nixosConfigurations.desktop.config.system.build.toplevel
   ];
 }

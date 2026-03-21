@@ -14,6 +14,7 @@
       nixpiSource = lib.cleanSource ./.;
       installerHelper = pkgs.callPackage ./core/os/pkgs/installer {
         inherit nixpiSource;
+        nixpkgsSource = nixpkgs.outPath;
       };
       setupPackage = pkgs.callPackage ./core/os/pkgs/setup {};
       # pkgsUnfree is used only for boot nixosTest.  pkgs.testers.nixosTest

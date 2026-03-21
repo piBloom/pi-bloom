@@ -7,13 +7,14 @@ import shutil
 from pathlib import Path
 
 NIXPI_SOURCE = "@nixpiSource@"
+NIXPKGS_SOURCE = "@nixpkgsSource@"
 NIXPI_INSTALL_MODULE_TEMPLATE_PATH = "@nixpiInstallModuleTemplate@"
 
 NIXPI_FLAKE_TEMPLATE = """{
   description = "NixPI installed system";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/@nixpkgsRev@?narHash=@nixpkgsNarHash@";
+    nixpkgs.url = "path:./nixpkgs";
   };
 
   outputs = { nixpkgs, ... }:
@@ -107,6 +108,7 @@ def prepare_nixpi_install_artifacts(root_mount_point, username, hostname, passwo
     return {
         "hostname": hostname,
         "nixpi_source_target": str(nixos_etc / "nixpi"),
+        "nixpkgs_source_target": str(nixos_etc / "nixpkgs"),
         "nixpi_install_path": str(nixos_etc / "nixpi-install.nix"),
         "nixpi_appliance_path": str(nixos_etc / "nixpi-appliance.nix"),
         "nixpi_host_path": str(nixos_etc / "nixpi-host.nix"),
@@ -132,6 +134,9 @@ def write_nixpi_install_artifacts(root_mount_point, username, hostname, password
     nixpi_source_target.parent.mkdir(parents=True, exist_ok=True)
     shutil.rmtree(nixpi_source_target, ignore_errors=True)
     shutil.copytree(NIXPI_SOURCE, nixpi_source_target, symlinks=True)
+    nixpkgs_source_target = Path(artifacts["nixpkgs_source_target"])
+    shutil.rmtree(nixpkgs_source_target, ignore_errors=True)
+    shutil.copytree(NIXPKGS_SOURCE, nixpkgs_source_target, symlinks=True)
 
     for key, content in (
         ("nixpi_install_path", artifacts["nixpi_install_module"]),

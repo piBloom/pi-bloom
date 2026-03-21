@@ -1,9 +1,4 @@
-{ pkgs, python3, makeWrapper, nixpiSource }:
-
-let
-  lock = builtins.fromJSON (builtins.readFile ../../../../flake.lock);
-  nixpkgsLocked = lock.nodes.nixpkgs.locked;
-in
+{ pkgs, python3, makeWrapper, nixpiSource, nixpkgsSource }:
 
 pkgs.stdenvNoCC.mkDerivation {
   pname = "nixpi-installer";
@@ -22,9 +17,8 @@ pkgs.stdenvNoCC.mkDerivation {
 
     substituteInPlace "$out/share/nixpi-installer/nixpi_installer.py" \
       --replace-fail "@nixpiSource@" "${nixpiSource}" \
-      --replace-fail "@nixpiInstallModuleTemplate@" "$out/share/nixpi-installer/nixpi-install-module.nix.in" \
-      --replace-fail "@nixpkgsRev@" "${nixpkgsLocked.rev}" \
-      --replace-fail "@nixpkgsNarHash@" "${nixpkgsLocked.narHash}"
+      --replace-fail "@nixpkgsSource@" "${nixpkgsSource}" \
+      --replace-fail "@nixpiInstallModuleTemplate@" "$out/share/nixpi-installer/nixpi-install-module.nix.in"
 
     substituteInPlace "$out/share/nixpi-installer/nixpi-installer.sh" \
       --replace-fail "@helperBin@" "$out/bin/nixpi-installer-apply"
