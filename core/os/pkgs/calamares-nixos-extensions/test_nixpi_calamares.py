@@ -21,6 +21,12 @@ def load_module():
 class NixpiCalamaresTests(unittest.TestCase):
     def setUp(self):
         self.module = load_module()
+        self.template_path = Path(__file__).with_name("nixpi-install-module.nix.in")
+        self.original_template_path = self.module.NIXPI_INSTALL_MODULE_TEMPLATE_PATH
+        self.module.NIXPI_INSTALL_MODULE_TEMPLATE_PATH = str(self.template_path)
+
+    def tearDown(self):
+        self.module.NIXPI_INSTALL_MODULE_TEMPLATE_PATH = self.original_template_path
 
     def test_prepare_artifacts_enables_flakes_and_renders_values(self):
         cfg = "{\n  imports =\n    [ # Include the results of the hardware scan.\n      ./hardware-configuration.nix\n      ./nixpi-install.nix\n    ];\n}\n"
@@ -35,6 +41,7 @@ class NixpiCalamaresTests(unittest.TestCase):
         self.assertEqual(artifacts["flake_path"], "/mnt/target/etc/nixos/flake.nix")
         self.assertEqual(artifacts["flake_install_ref"], "/mnt/target/etc/nixos#pi-box")
         self.assertIn('nix.settings.experimental-features = [ "nix-command" "flakes" ];', artifacts["nixpi_install_module"])
+        self.assertTrue(artifacts["nixpi_install_module"].startswith("{ pkgs, ... }:"))
         self.assertIn('piAgent = pkgs.callPackage ./nixpi/core/os/pkgs/pi {};', artifacts["nixpi_install_module"])
         self.assertIn('_module.args = { inherit piAgent appPackage; };', artifacts["nixpi_install_module"])
         self.assertIn('nixosConfigurations."pi-box"', artifacts["nixpi_flake"])

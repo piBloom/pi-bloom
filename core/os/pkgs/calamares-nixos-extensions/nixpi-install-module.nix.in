@@ -1,0 +1,27 @@
+{ pkgs, ... }:
+
+let
+  piAgent = pkgs.callPackage ./nixpi/core/os/pkgs/pi {};
+  appPackage = pkgs.callPackage ./nixpi/core/os/pkgs/app { inherit piAgent; };
+in
+{
+  _module.args = { inherit piAgent appPackage; };
+
+  imports = [
+    ./nixpi/core/os/modules/app.nix
+    ./nixpi/core/os/modules/broker.nix
+    ./nixpi/core/os/modules/firstboot.nix
+    ./nixpi/core/os/modules/llm.nix
+    ./nixpi/core/os/modules/matrix.nix
+    ./nixpi/core/os/modules/network.nix
+    ./nixpi/core/os/modules/shell.nix
+    ./nixpi/core/os/modules/update.nix
+  ];
+
+  nixpi.primaryUser = "@@username@@";
+  nixpi.install.mode = "existing-user";
+  nixpi.createPrimaryUser = false;
+
+  nixpkgs.config.allowUnfree = true;
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+}

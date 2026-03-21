@@ -129,6 +129,17 @@
         let
           calamaresHelper = ./core/os/pkgs/calamares-nixos-extensions/nixpi_calamares.py;
           calamaresHelperTests = ./core/os/pkgs/calamares-nixos-extensions/test_nixpi_calamares.py;
+          generatedInstallModule =
+            let
+              template = builtins.readFile ./core/os/pkgs/calamares-nixos-extensions/nixpi-install-module.nix.in;
+              sourceRoot = toString nixpiSource;
+            in
+            builtins.toFile "nixpi-install-generated.nix" (
+              lib.replaceStrings
+                [ "@@username@@" "./nixpi/" ]
+                [ "installer" "${sourceRoot}/" ]
+                template
+            );
           # Import the NixOS integration test suite
           # Using pkgsUnfree so tests can use packages that require allowUnfree
           nixosTests = import ./tests/nixos {
@@ -194,8 +205,10 @@
             nativeBuildInputs = [ installerPkgs.python3 ];
           } ''
             module="${installerPkgs.calamares-nixos-extensions}/lib/calamares/modules/nixos/main.py"
+            install_template="${installerPkgs.calamares-nixos-extensions}/share/calamares/nixpi-templates/nixpi-install-module.nix.in"
             grep -F 'def write_nixpi_install_artifacts(' "$module" >/dev/null
-            grep -F 'nix.settings.experimental-features = [ "nix-command" "flakes" ];' "$module" >/dev/null
+            grep -F 'nix.settings.experimental-features = [ "nix-command" "flakes" ];' "$install_template" >/dev/null
+            grep -F '{ pkgs, ... }:' "$install_template" >/dev/null
             grep -F '"--option",' "$module" >/dev/null
             grep -F '"extra-experimental-features",' "$module" >/dev/null
             grep -F '"nix-command flakes",' "$module" >/dev/null
@@ -214,6 +227,31 @@
             python3 "${calamaresHelperTests}"
             touch "$out"
           '';
+
+          installer-generated-config = (nixpkgs.lib.nixosSystem {
+            inherit system;
+            modules = [
+              generatedInstallModule
+              {
+                networking.hostName = "installer-vm";
+                time.timeZone = "UTC";
+                i18n.defaultLocale = "en_US.UTF-8";
+                users.groups.installer = {};
+                users.users.installer = {
+                  isNormalUser = true;
+                  group = "installer";
+                  extraGroups = [ "networkmanager" ];
+                };
+                boot.loader.grub.enable = true;
+                boot.loader.grub.device = "/dev/vda";
+                fileSystems."/" = {
+                  device = "/dev/vda1";
+                  fsType = "ext4";
+                };
+                system.stateVersion = "25.05";
+              }
+            ];
+          }).config.system.build.toplevel;
 
           # Regression guard for the local desktop VM path used by `just qcow2`.
           desktop-vm = self.nixosConfigurations.desktop-vm.config.system.build.vm;

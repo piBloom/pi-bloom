@@ -155,6 +155,11 @@ check-config:
 check-installer:
     nix {{ nix_opts }} build {{ flake }}#checks.{{ system }}.installer-backend --no-link
 
+# Fast generated-config eval: forces the shared Calamares install module to
+# evaluate as a NixOS module before the full VM smoke path.
+check-installer-generated-config:
+    nix {{ nix_opts }} build {{ flake }}#checks.{{ system }}.installer-generated-config --no-link
+
 # Live Calamares installer smoke test. This is intentionally separate from the
 # PR smoke lane until runtime and stability are proven.
 check-installer-smoke:

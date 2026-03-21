@@ -110,10 +110,14 @@ PY
     cp -r source/modules "$out/lib/calamares/"
     cp -r source/config/* "$out/etc/calamares/"
     cp -r source/branding "$out/share/calamares/"
+    mkdir -p "$out/share/calamares/nixpi-templates"
+    cp ${./nixpi-install-module.nix.in} "$out/share/calamares/nixpi-templates/nixpi-install-module.nix.in"
 
     substituteInPlace "$out/etc/calamares/settings.conf" --replace-fail @out@ "$out"
     substituteInPlace "$out/etc/calamares/modules/locale.conf" --replace-fail @glibcLocales@ "${glibcLocales}"
     substituteInPlace "$out/lib/calamares/modules/nixos/main.py" --replace-fail "@nixpiSource@" "${nixpiSource}"
+    substituteInPlace "$out/lib/calamares/modules/nixos/main.py" \
+      --replace-fail "@nixpiInstallModuleTemplate@" "$out/share/calamares/nixpi-templates/nixpi-install-module.nix.in"
     PYTHONPYCACHEPREFIX="$(mktemp -d)" python3 -m py_compile "$out/lib/calamares/modules/nixos/main.py"
 
     runHook postInstall

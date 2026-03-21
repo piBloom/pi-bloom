@@ -2,37 +2,14 @@ import os
 import shutil
 import subprocess
 import tempfile
+from pathlib import Path
 
 NIXPI_SOURCE = "@nixpiSource@"
-
-NIXPI_INSTALL_MODULE_TEMPLATE = """{ ... }:
-
-let
-  piAgent = pkgs.callPackage ./nixpi/core/os/pkgs/pi {};
-  appPackage = pkgs.callPackage ./nixpi/core/os/pkgs/app { inherit piAgent; };
-in
-{
-  _module.args = { inherit piAgent appPackage; };
-
-  imports = [
-    ./nixpi/core/os/modules/app.nix
-    ./nixpi/core/os/modules/broker.nix
-    ./nixpi/core/os/modules/firstboot.nix
-    ./nixpi/core/os/modules/llm.nix
-    ./nixpi/core/os/modules/matrix.nix
-    ./nixpi/core/os/modules/network.nix
-    ./nixpi/core/os/modules/shell.nix
-    ./nixpi/core/os/modules/update.nix
-  ];
-
-  nixpi.primaryUser = "@@username@@";
-  nixpi.install.mode = "existing-user";
-  nixpi.createPrimaryUser = false;
-
-  nixpkgs.config.allowUnfree = true;
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-}
-"""
+TEMPLATE_DIR = Path(__file__).resolve().parent
+NIXPI_INSTALL_MODULE_TEMPLATE_PATH = os.environ.get(
+    "NIXPI_INSTALL_MODULE_TEMPLATE",
+    "@nixpiInstallModuleTemplate@",
+)
 
 NIXPI_FLAKE_TEMPLATE = """{
   description = "NixPI installed system";
@@ -77,6 +54,13 @@ def strip_nixpi_install_import(cfg):
     return cfg.replace("      ./nixpi-install.nix\n", "", 1)
 
 
+def load_nixpi_install_module_template():
+    template_path = NIXPI_INSTALL_MODULE_TEMPLATE_PATH
+    if template_path.startswith("@") and template_path.endswith("@"):
+        template_path = str(TEMPLATE_DIR / "nixpi-install-module.nix.in")
+    return Path(template_path).read_text(encoding="utf-8")
+
+
 def prepare_nixpi_install_artifacts(root_mount_point, variables, cfg):
     nixpi_etc = os.path.join(root_mount_point, "etc/nixos")
     username = _string_var(variables, "username", "nixpi")
@@ -90,7 +74,7 @@ def prepare_nixpi_install_artifacts(root_mount_point, variables, cfg):
         "flake_path": os.path.join(nixpi_etc, "flake.nix"),
         "flake_install_ref": f"{nixpi_etc}#{hostname}",
         "host_cfg": strip_nixpi_install_import(cfg),
-        "nixpi_install_module": NIXPI_INSTALL_MODULE_TEMPLATE.replace("@@username@@", username),
+        "nixpi_install_module": load_nixpi_install_module_template().replace("@@username@@", username),
         "nixpi_flake": NIXPI_FLAKE_TEMPLATE.replace("@@hostname@@", hostname),
     }
 
