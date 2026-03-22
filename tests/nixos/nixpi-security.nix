@@ -36,14 +36,8 @@ let
       shell = pkgs.bash;
     };
     users.groups.${username} = { };
-    services.matrix-continuwuity.settings = {
-      admin_execute = [ "users create pi pi-bot-pass123" ];
-    };
-
     system.activationScripts.nixpi-prefill = ''
       mkdir -p ${homeDir}/.nixpi
-      mkdir -p ${homeDir}/.nixpi/wizard-state/matrix-state
-      printf '%s' 'pi-bot-pass123' > ${homeDir}/.nixpi/wizard-state/matrix-state/bot_password
       ${if prefill then ''
         cat > ${homeDir}/.nixpi/prefill.env << 'EOF'
 PREFILL_USERNAME=testuser

@@ -100,6 +100,16 @@ matrix_username_is_valid() {
 	[[ "$username" =~ ^[a-z][a-z0-9._-]*$ ]]
 }
 
+matrix_username_is_reserved() {
+	local username="$1"
+	[[ "$username" == "pi" ]]
+}
+
+matrix_password_is_bootstrap_safe() {
+	local password="$1"
+	[[ -n "$password" ]] && [[ "$password" != *[[:space:]]* ]] && [[ "$password" != *'"'* ]] && [[ "$password" != *"'"* ]] && [[ "$password" != *\\* ]]
+}
+
 default_operator_username() {
 	if [[ -n "${PREFILL_USERNAME:-}" ]]; then
 		printf '%s' "$PREFILL_USERNAME"
@@ -128,7 +138,7 @@ read_initial_matrix_registration_token() {
 		journal_output=$(root_command journalctl -u continuwuity --no-pager 2>/dev/null || true)
 	fi
 
-	token=$(printf '%s\n' "$journal_output" | sed -n 's/.*registration token \([^[:space:]]*\).*/\1/p' | tail -n 1)
+	token=$(printf '%s\n' "$journal_output" | sed -n 's/.*using the registration token \([^[:space:]]*\).*/\1/p' | tail -n 1)
 	if [[ -n "$token" ]]; then
 		printf '%s' "$token"
 	fi
@@ -142,9 +152,13 @@ matrix_register() {
 	local url="${MATRIX_HOMESERVER}/_matrix/client/v3/register"
 	local result status body_file
 	body_file=$(mktemp)
-	status=$(curl -sS -o "$body_file" -w "%{http_code}" -X POST "$url" \
-		-H "Content-Type: application/json" \
-		-d "{\"username\":\"${username}\",\"password\":\"${password}\",\"inhibit_login\":false}" || true)
+	status=$(jq -cn \
+		--arg username "$username" \
+		--arg password "$password" \
+		'{ username: $username, password: $password, inhibit_login: false }' \
+		| curl -sS -o "$body_file" -w "%{http_code}" -X POST "$url" \
+			-H "Content-Type: application/json" \
+			-d @- || true)
 	result=$(cat "$body_file")
 	rm -f "$body_file"
 
@@ -233,9 +247,17 @@ matrix_login() {
 	local username="$1" password="$2"
 	local url="${MATRIX_HOMESERVER}/_matrix/client/v3/login"
 	local result
-	result=$(curl -s -X POST "$url" \
-		-H "Content-Type: application/json" \
-		-d "{\"type\":\"m.login.password\",\"identifier\":{\"type\":\"m.id.user\",\"user\":\"${username}\"},\"password\":\"${password}\"}")
+	result=$(jq -cn \
+		--arg username "$username" \
+		--arg password "$password" \
+		'{
+			type: "m.login.password",
+			identifier: { type: "m.id.user", user: $username },
+			password: $password
+		}' \
+		| curl -s -X POST "$url" \
+			-H "Content-Type: application/json" \
+			-d @-)
 
 	if ! echo "$result" | grep -q '"access_token"'; then
 		return 1
@@ -329,23 +351,25 @@ start_matrix_homeserver() {
 	fi
 }
 
-step_matrix() {
-	echo ""
-	echo "--- Matrix Messaging ---"
-	echo "Setting up Matrix messaging..."
-	echo ""
+restart_matrix_homeserver() {
+	if command -v nixpi-bootstrap-matrix-systemctl >/dev/null 2>&1; then
+		root_command nixpi-bootstrap-matrix-systemctl restart continuwuity.service >/dev/null 2>&1 || true
+	else
+		root_command systemctl restart continuwuity.service >/dev/null 2>&1 || true
+	fi
+}
 
-	# Wait for Matrix homeserver
-	echo "Waiting for Matrix homeserver..."
-	start_matrix_homeserver
+wait_for_matrix_homeserver() {
+	local service_timeout="${1:-120}" api_timeout="${2:-30}"
 	local attempts=0
+
 	while ! systemctl is-active --quiet continuwuity.service; do
 		attempts=$((attempts + 1))
 		if [[ $attempts -eq 30 ]]; then
 			start_matrix_homeserver
 		fi
-		if [[ $attempts -ge 120 ]]; then
-			echo "ERROR: continuwuity.service did not start within 120 seconds." >&2
+		if [[ $attempts -ge "$service_timeout" ]]; then
+			echo "ERROR: continuwuity.service did not start within ${service_timeout} seconds." >&2
 			if command -v nixpi-bootstrap-matrix-journal >/dev/null 2>&1; then
 				echo "Recent continuwuity logs:" >&2
 				root_command nixpi-bootstrap-matrix-journal >&2 || true
@@ -358,11 +382,12 @@ step_matrix() {
 		sleep 1
 	done
 	echo "Matrix homeserver is running."
+
 	attempts=0
 	while ! curl -sf "${MATRIX_HOMESERVER}/_matrix/client/versions" >/dev/null 2>&1; do
 		attempts=$((attempts + 1))
-		if [[ $attempts -ge 30 ]]; then
-			echo "ERROR: Matrix client API did not become ready within 30 seconds." >&2
+		if [[ $attempts -ge "$api_timeout" ]]; then
+			echo "ERROR: Matrix client API did not become ready within ${api_timeout} seconds." >&2
 			if command -v nixpi-bootstrap-matrix-journal >/dev/null 2>&1; then
 				echo "Recent continuwuity logs:" >&2
 				root_command nixpi-bootstrap-matrix-journal >&2 || true
@@ -374,16 +399,52 @@ step_matrix() {
 		sleep 1
 	done
 	echo "Matrix client API is responding."
+}
 
-	# Read registration token
+matrix_binary_path() {
+	systemctl cat continuwuity.service 2>/dev/null | sed -n 's/^ExecStart=\([^[:space:]]*\).*/\1/p' | head -n 1
+}
+
+bootstrap_first_matrix_user() {
+	local username="$1" password="$2"
+	if ! command -v nixpi-bootstrap-matrix-execute >/dev/null 2>&1; then
+		echo "ERROR: nixpi-bootstrap-matrix-execute is unavailable." >&2
+		return 1
+	fi
+
+	if command -v nixpi-bootstrap-matrix-systemctl >/dev/null 2>&1; then
+		root_command nixpi-bootstrap-matrix-systemctl stop continuwuity.service >/dev/null 2>&1 || true
+	else
+		root_command systemctl stop continuwuity.service >/dev/null 2>&1 || true
+	fi
+
+	root_command nixpi-bootstrap-matrix-execute "users create-user $username $password"
+}
+
+step_matrix() {
+	echo ""
+	echo "--- Matrix Messaging ---"
+	echo "Setting up Matrix messaging..."
+	echo ""
+
+	# Wait for Matrix homeserver
+	echo "Waiting for Matrix homeserver..."
+	start_matrix_homeserver
+	wait_for_matrix_homeserver || return 1
+
 	load_existing_matrix_credentials
 
 	# Prompt for username
 	local username
 	username=$(matrix_state_get username)
+	if [[ -n "$username" ]] && matrix_username_is_reserved "$username"; then
+		echo "Stored Matrix username '${username}' is reserved for the Pi bot. Choosing a different operator username."
+		matrix_state_unset username
+		username=""
+	fi
 	if [[ -z "$username" ]]; then
 		username=$(default_operator_username)
-		if [[ -n "$username" ]] && matrix_username_is_valid "$username"; then
+		if [[ -n "$username" ]] && matrix_username_is_valid "$username" && ! matrix_username_is_reserved "$username"; then
 			echo "Username: ${username} [from login username]"
 			matrix_state_set username "$username"
 		else
@@ -397,6 +458,10 @@ step_matrix() {
 					echo "Username must start with a lowercase letter and contain only a-z, 0-9, '.', '_', '-'."
 					continue
 				fi
+				if matrix_username_is_reserved "$username"; then
+					echo "Username '${username}' is reserved for the Pi bot. Choose another username."
+					continue
+				fi
 				matrix_state_set username "$username"
 				break
 			done
@@ -405,55 +470,21 @@ step_matrix() {
 		echo "Resuming Matrix setup for @${username}:nixpi"
 	fi
 
-	# Always prefer the live bootstrap token over cached state. Matrix bootstrap
-	# state can survive retries while the runtime token changes, and reusing a
-	# stale token traps the wizard in a loop.
 	local registration_token
 	registration_token=$(read_bootstrap_matrix_registration_token)
 	if [[ -z "$registration_token" ]]; then
 		registration_token=$(matrix_state_get registration_token)
 	fi
-	if [[ -n "$registration_token" ]]; then
-		matrix_state_set registration_token "$registration_token"
-	fi
+	local initial_registration_token
+	initial_registration_token=$(read_initial_matrix_registration_token)
 
-	local bot_password bot_token bot_user_id bot_result bot_registration_token
+	local bot_password bot_token bot_user_id bot_result
 	bot_password=$(matrix_state_get bot_password)
 	bot_token=$(matrix_state_get bot_token)
 	bot_user_id=$(matrix_state_get bot_user_id)
-	bot_registration_token="$registration_token"
 	if [[ -z "$bot_password" ]]; then
 		bot_password=$(generate_password)
 		matrix_state_set bot_password "$bot_password"
-	fi
-	if [[ -z "$bot_token" || -z "$bot_user_id" ]]; then
-		echo "Creating or resuming Pi bot account..."
-		bot_result=$(matrix_login "pi" "$bot_password" 2>/dev/null || true)
-		if [[ -z "$bot_result" ]]; then
-			bot_result=$(matrix_register "pi" "$bot_password" "$registration_token" 2>/dev/null || true)
-			if [[ -z "$bot_result" ]]; then
-				local initial_registration_token
-				initial_registration_token=$(read_initial_matrix_registration_token)
-				if [[ -n "$initial_registration_token" && "$initial_registration_token" != "$registration_token" ]]; then
-					echo "Retrying Pi bot registration with the first-user bootstrap token..."
-					bot_registration_token="$initial_registration_token"
-					bot_result=$(matrix_register "pi" "$bot_password" "$initial_registration_token" 2>/dev/null || true)
-				fi
-			fi
-		fi
-		if [[ -z "$bot_result" ]]; then
-			matrix_state_unset registration_token
-			matrix_state_unset bot_token
-			matrix_state_unset bot_user_id
-			bot_result=$(matrix_register "pi" "$bot_password" "$bot_registration_token") || {
-				echo "ERROR: Failed to register or recover @pi:nixpi bot account." >&2
-				return 1
-			}
-		fi
-		bot_token=$(jq -r '.access_token // empty' <<< "$bot_result")
-		bot_user_id=$(jq -r '.user_id // empty' <<< "$bot_result")
-		matrix_state_set bot_token "$bot_token"
-		matrix_state_set bot_user_id "$bot_user_id"
 	fi
 
 	# Register user account
@@ -471,25 +502,75 @@ step_matrix() {
 		fi
 		if [[ -z "$user_password" ]]; then
 			user_password=$(generate_password)
+		elif ! matrix_password_is_bootstrap_safe "$user_password"; then
+			if [[ "$NONINTERACTIVE_SETUP" -eq 1 ]]; then
+				echo "Login password is not suitable for automatic Matrix bootstrap. Generating a dedicated Matrix password."
+				user_password=$(generate_password)
+			else
+				echo "Your login password cannot be used for automatic Matrix bootstrap because the homeserver console path does not support spaces, quotes, or backslashes reliably."
+				while true; do
+					read -rsp "Choose a dedicated Matrix password: " user_password
+					echo ""
+					if ! matrix_password_is_bootstrap_safe "$user_password"; then
+						echo "Matrix bootstrap passwords cannot contain spaces, quotes, or backslashes."
+						continue
+					fi
+					break
+				done
+			fi
 		else
 			echo "Using the login password for your Matrix account."
 		fi
 		matrix_state_set user_password "$user_password"
 	fi
-	if [[ -z "$user_token" || -z "$user_user_id" ]]; then
-		echo "Creating or resuming your account (@${username}:nixpi)..."
+
+	if [[ -n "$registration_token" ]]; then
+		matrix_state_set registration_token "$registration_token"
+	fi
+
+	echo "Ensuring your account exists (@${username}:nixpi)..."
+	user_result=$(matrix_login "$username" "$user_password" 2>/dev/null || true)
+	if [[ -z "$user_result" ]]; then
+		echo "Bootstrapping your first Matrix account through the homeserver console..."
+		bootstrap_first_matrix_user "$username" "$user_password" || {
+			echo "ERROR: Failed to bootstrap the first Matrix account through the homeserver console." >&2
+			return 1
+		}
+		start_matrix_homeserver
+		wait_for_matrix_homeserver || return 1
 		user_result=$(matrix_login "$username" "$user_password" 2>/dev/null || true)
 		if [[ -z "$user_result" ]]; then
-			user_result=$(matrix_register "$username" "$user_password" "$registration_token") || {
-				echo "ERROR: Failed to register or recover @${username}:nixpi account." >&2
-				return 1
-			}
+			echo "ERROR: Failed to create or recover @${username}:nixpi account." >&2
+			if [[ -n "$initial_registration_token" ]]; then
+				echo "Create your first Matrix account manually using token: ${initial_registration_token}" >&2
+			fi
+			return 1
 		fi
-		user_token=$(jq -r '.access_token // empty' <<< "$user_result")
-		user_user_id=$(jq -r '.user_id // empty' <<< "$user_result")
-		matrix_state_set user_token "$user_token"
-		matrix_state_set user_user_id "$user_user_id"
 	fi
+
+	user_token=$(jq -r '.access_token // empty' <<< "$user_result")
+	user_user_id=$(jq -r '.user_id // empty' <<< "$user_result")
+	matrix_state_set user_token "$user_token"
+	matrix_state_set user_user_id "$user_user_id"
+
+	echo "Ensuring Pi bot account exists..."
+	bot_result=$(matrix_login "pi" "$bot_password" 2>/dev/null || true)
+	if [[ -z "$bot_result" ]]; then
+		if [[ -z "$registration_token" ]]; then
+			echo "ERROR: Matrix registration token is unavailable for bot bootstrap." >&2
+			return 1
+		fi
+		echo "Registering the Pi bot account..."
+		bot_result=$(matrix_register "pi" "$bot_password" "$registration_token") || {
+			echo "ERROR: Failed to create or recover @pi:nixpi bot account." >&2
+			return 1
+		}
+	fi
+
+	bot_token=$(jq -r '.access_token // empty' <<< "$bot_result")
+	bot_user_id=$(jq -r '.user_id // empty' <<< "$bot_result")
+	matrix_state_set bot_token "$bot_token"
+	matrix_state_set bot_user_id "$bot_user_id"
 
 	# Store credentials
 	mkdir -p "$PI_DIR"

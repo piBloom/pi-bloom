@@ -32,6 +32,35 @@ let
   bootstrapPasswd = bootstrapAction "passwd" "/run/current-system/sw/bin/passwd ${primaryUser}";
   bootstrapChpasswd = bootstrapAction "chpasswd" "/run/current-system/sw/bin/chpasswd";
   bootstrapBroker = bootstrapAction "brokerctl" "/run/current-system/sw/bin/nixpi-brokerctl";
+  bootstrapMatrixExecute = pkgs.writeShellScriptBin "nixpi-bootstrap-matrix-execute" ''
+    set -euo pipefail
+    if [ -f "${setupCompleteFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+
+    command_string="''${1:-}"
+    if [ -z "$command_string" ]; then
+      echo "usage: nixpi-bootstrap-matrix-execute '<admin command>'" >&2
+      exit 1
+    fi
+
+    binary="$(${pkgs.systemd}/bin/systemctl cat continuwuity.service | ${pkgs.gnused}/bin/sed -n 's/^ExecStart=\([^[:space:]]*\).*/\1/p' | ${pkgs.coreutils}/bin/head -n 1)"
+    if [ -z "$binary" ] || [ ! -x "$binary" ]; then
+      echo "Could not determine the Continuwuity binary path from continuwuity.service" >&2
+      exit 1
+    fi
+
+    set +e
+    ${pkgs.coreutils}/bin/env CONTINUWUITY_CONFIG=/var/lib/continuwuity/continuwuity.toml \
+      ${pkgs.coreutils}/bin/timeout 15s "$binary" --execute "$command_string"
+    status=$?
+    set -e
+
+    if [ "$status" -ne 0 ] && [ "$status" -ne 124 ] && [ "$status" -ne 137 ]; then
+      exit "$status"
+    fi
+  '';
 in
 {
   imports = [ ./options.nix ];
@@ -49,6 +78,7 @@ in
     bootstrapPasswd
     bootstrapChpasswd
     bootstrapBroker
+    bootstrapMatrixExecute
   ];
 
   security.sudo.extraRules = lib.optional config.nixpi.bootstrap.passwordlessSudo.enable {
@@ -58,6 +88,7 @@ in
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-read-primary-password"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-remove-primary-password"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-journal"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-systemctl stop continuwuity.service"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-systemctl start continuwuity.service"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-systemctl restart continuwuity.service"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-netbird-up --setup-key *"; options = [ "NOPASSWD" ]; }
@@ -71,6 +102,7 @@ in
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-chpasswd"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-brokerctl systemd *"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-brokerctl status"; options = [ "NOPASSWD" ]; }
+      { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-execute *"; options = [ "NOPASSWD" ]; }
     ];
   };
 }
