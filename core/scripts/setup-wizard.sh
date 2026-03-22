@@ -253,7 +253,7 @@ promote_full_appliance() {
 	fi
 
 	write_appliance_status "Building and activating the full NixPI appliance..."
-	if ! root_command nixos-rebuild switch --flake "${BOOTSTRAP_SYSTEM_FLAKE_DIR}#${hostname}" 2>&1 | root_command tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
+	if ! root_command nixos-rebuild switch --impure --flake "${BOOTSTRAP_SYSTEM_FLAKE_DIR}#${hostname}" 2>&1 | root_command tee -a "$BOOTSTRAP_UPGRADE_LOG_FILE"; then
 		write_appliance_status "Promotion failed. Review ${BOOTSTRAP_UPGRADE_LOG_FILE}."
 		return 1
 	fi
