@@ -184,9 +184,9 @@ write_promoted_system_flake() {
 	      nixosConfigurations."${hostname}" = nixpkgs.lib.nixosSystem {
 	        inherit system;
 	        specialArgs = {
-	          piAgent = nixpi.packages.''${system}.pi;
-	          appPackage = nixpi.packages.''${system}.app;
-	          setupPackage = nixpi.packages.''${system}.nixpi-setup;
+	          piAgent = nixpi.packages.\${system}.pi;
+	          appPackage = nixpi.packages.\${system}.app;
+	          setupPackage = nixpi.packages.\${system}.nixpi-setup;
 	        };
 	        modules = [
 	          ./configuration.nix
