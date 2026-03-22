@@ -7,6 +7,7 @@
     git
     git-lfs
     gh
+    codex
     ripgrep
     fd
     bat
