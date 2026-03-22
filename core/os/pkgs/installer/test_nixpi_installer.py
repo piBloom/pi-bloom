@@ -93,8 +93,9 @@ class NixpiInstallerTests(unittest.TestCase):
         )
 
         self.assertEqual(artifacts["configuration_module"].count("imports = ["), 1)
-        self.assertIn("./hardware-configuration.nix", artifacts["configuration_module"])
-        self.assertIn("./nixpi-install.nix", artifacts["configuration_module"])
+        self.assertIn("  imports = [\n", artifacts["configuration_module"])
+        self.assertIn("    ./hardware-configuration.nix", artifacts["configuration_module"])
+        self.assertIn("    ./nixpi-install.nix", artifacts["configuration_module"])
         self.assertIn('networking.hostName = "pi-box";', artifacts["configuration_module"])
 
     def test_main_prints_json(self):

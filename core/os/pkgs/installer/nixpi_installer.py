@@ -13,17 +13,28 @@ def load_nixpi_install_module_template():
 
 
 def ensure_import(cfg, import_path):
-    import_line = f"    {import_path}"
     if re.search(rf"^\s*{re.escape(import_path)}\s*$", cfg, flags=re.MULTILINE):
         return cfg
 
-    match = re.search(r"imports\s*=\s*\[\s*(?P<body>.*?)\s*\];", cfg, flags=re.DOTALL)
+    match = re.search(
+        r"(?P<indent>^\s*)imports\s*=\s*\[\s*(?P<body>.*?)\s*\];",
+        cfg,
+        flags=re.DOTALL | re.MULTILINE,
+    )
     if match:
+        indent = match.group("indent")
+        item_indent = indent + "  "
         raw_body = match.group("body")
-        entries = [line.rstrip() for line in raw_body.splitlines() if line.strip()]
-        body = "\n".join(entries)
-        replacement_body = f"{body}\n{import_line}" if body else import_line
-        return cfg[: match.start("body")] + replacement_body + cfg[match.end("body") :]
+        entries = [line.strip() for line in raw_body.splitlines() if line.strip()]
+        entries.append(import_path)
+        replacement = (
+            f"{indent}imports = [\n"
+            + "\n".join(f"{item_indent}{entry}" for entry in entries)
+            + f"\n{indent}];"
+        )
+        return cfg[: match.start()] + replacement + cfg[match.end() :]
+
+    import_line = f"    {import_path}"
 
     trimmed = cfg.rstrip()
     if trimmed.endswith("}"):
