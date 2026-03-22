@@ -44,13 +44,20 @@ let
     "trusted_servers"
     "allow_announcements_check"
   ];
+  managedRootSettingNames = [
+    "admin_execute"
+  ];
   matrixSettings = config.services.matrix-continuwuity.settings;
   extraGlobalSettings =
     lib.filterAttrs (name: _: !(builtins.elem name managedGlobalSettingNames))
       (matrixSettings.global or { });
-  extraRootSettings = builtins.removeAttrs matrixSettings [ "global" ];
+  extraRootSettings = builtins.removeAttrs matrixSettings ([ "global" ] ++ managedRootSettingNames);
+  adminExecuteSettings = lib.optionalAttrs (matrixSettings ? admin_execute) {
+    admin_execute = matrixSettings.admin_execute;
+  };
   extraGlobalSettingsToml = tomlFormat.generate "continuwuity-global-extra.toml" { global = extraGlobalSettings; };
   extraRootSettingsToml = tomlFormat.generate "continuwuity-extra.toml" extraRootSettings;
+  adminExecuteToml = tomlFormat.generate "continuwuity-admin-execute.toml" adminExecuteSettings;
 in
 {
   imports = [ ./options.nix ];
@@ -125,6 +132,10 @@ EOF
       if [ -s "${extraRootSettingsToml}" ]; then
         printf '\n' >> /var/lib/continuwuity/continuwuity.toml
         cat "${extraRootSettingsToml}" >> /var/lib/continuwuity/continuwuity.toml
+      fi
+      if [ ! -f "${setupCompleteFile}" ] && [ -s "${adminExecuteToml}" ]; then
+        printf '\n' >> /var/lib/continuwuity/continuwuity.toml
+        cat "${adminExecuteToml}" >> /var/lib/continuwuity/continuwuity.toml
       fi
       chown root:continuwuity /var/lib/continuwuity/continuwuity.toml
       chmod 0640 /var/lib/continuwuity/continuwuity.toml

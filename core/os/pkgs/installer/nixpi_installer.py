@@ -17,9 +17,11 @@ def ensure_import(cfg, import_path):
     if re.search(rf"^\s*{re.escape(import_path)}\s*$", cfg, flags=re.MULTILINE):
         return cfg
 
-    match = re.search(r"imports\s*=\s*\[\n(?P<body>.*?)\n\s*\];", cfg, flags=re.DOTALL)
+    match = re.search(r"imports\s*=\s*\[\s*(?P<body>.*?)\s*\];", cfg, flags=re.DOTALL)
     if match:
-        body = match.group("body").rstrip()
+        raw_body = match.group("body")
+        entries = [line.rstrip() for line in raw_body.splitlines() if line.strip()]
+        body = "\n".join(entries)
         replacement_body = f"{body}\n{import_line}" if body else import_line
         return cfg[: match.start("body")] + replacement_body + cfg[match.end("body") :]
 

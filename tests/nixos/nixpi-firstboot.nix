@@ -40,6 +40,9 @@ pkgs.testers.runNixOSTest {
       shell = pkgs.bash;
     };
     users.groups.${username} = {};
+    services.matrix-continuwuity.settings = {
+      admin_execute = [ "users create pi pi-bot-pass123" ];
+    };
 
     # Pre-create the .nixpi directory with prefill.env for unattended install
     systemd.tmpfiles.rules = [
@@ -54,6 +57,8 @@ pkgs.testers.runNixOSTest {
     PREFILL_USERNAME=testuser
     PREFILL_MATRIX_PASSWORD=testpassword123
     EOF
+      mkdir -p ${homeDir}/.nixpi/wizard-state/matrix-state
+      printf '%s' 'pi-bot-pass123' > ${homeDir}/.nixpi/wizard-state/matrix-state/bot_password
       chown -R ${username}:${username} ${homeDir}/.nixpi
       chmod 755 ${homeDir}/.nixpi
       chmod 644 ${homeDir}/.nixpi/prefill.env

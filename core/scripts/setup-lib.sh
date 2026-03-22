@@ -116,6 +116,20 @@ read_bootstrap_matrix_registration_token() {
 	fi
 }
 
+read_initial_matrix_registration_token() {
+	local journal_output token
+	if command -v nixpi-bootstrap-matrix-journal >/dev/null 2>&1; then
+		journal_output=$(root_command nixpi-bootstrap-matrix-journal 2>/dev/null || true)
+	else
+		journal_output=$(root_command journalctl -u continuwuity --no-pager 2>/dev/null || true)
+	fi
+
+	token=$(printf '%s\n' "$journal_output" | sed -n 's/.*registration token \([^[:space:]]*\).*/\1/p' | tail -n 1)
+	if [[ -n "$token" ]]; then
+		printf '%s' "$token"
+	fi
+}
+
 # Register a Matrix account.
 # Usage: matrix_register <username> <password> [registration_token]
 # Outputs: JSON with user_id and access_token on success, exits 1 on failure
@@ -412,6 +426,14 @@ step_matrix() {
 		bot_result=$(matrix_login "pi" "$bot_password" 2>/dev/null || true)
 		if [[ -z "$bot_result" ]]; then
 			bot_result=$(matrix_register "pi" "$bot_password" "$registration_token" 2>/dev/null || true)
+			if [[ -z "$bot_result" ]]; then
+				local initial_registration_token
+				initial_registration_token=$(read_initial_matrix_registration_token)
+				if [[ -n "$initial_registration_token" && "$initial_registration_token" != "$registration_token" ]]; then
+					echo "Retrying Pi bot registration with the first-user bootstrap token..."
+					bot_result=$(matrix_register "pi" "$bot_password" "$initial_registration_token" 2>/dev/null || true)
+				fi
+			fi
 		fi
 		if [[ -z "$bot_result" ]]; then
 			bot_result=$(matrix_register "pi" "$bot_password" "$registration_token") || {

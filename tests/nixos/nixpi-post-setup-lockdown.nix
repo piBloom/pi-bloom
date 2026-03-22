@@ -27,12 +27,19 @@ pkgs.testers.runNixOSTest {
       time.timeZone = "UTC";
       i18n.defaultLocale = "en_US.UTF-8";
       system.stateVersion = "25.05";
+      services.matrix-continuwuity.settings = {
+        admin_execute = [ "users create pi pi-bot-pass123" ];
+      };
 
       system.activationScripts.nixpi-prefill = mkPrefillActivation {
         inherit username homeDir;
         matrixUsername = "steadyuser";
         matrixPassword = "steadypass123";
-      };
+      } + ''
+        mkdir -p ${homeDir}/.nixpi/wizard-state/matrix-state
+        printf '%s' 'pi-bot-pass123' > ${homeDir}/.nixpi/wizard-state/matrix-state/bot_password
+        chown -R ${username}:${username} ${homeDir}/.nixpi
+      '';
     } // (mkExistingUserConfig { inherit username homeDir; });
 
     client = { ... }: {

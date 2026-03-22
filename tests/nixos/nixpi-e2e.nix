@@ -41,6 +41,9 @@ pkgs.testers.runNixOSTest {
         shell = pkgs.bash;
       };
       users.groups.${username} = {};
+      services.matrix-continuwuity.settings = {
+        admin_execute = [ "users create pi pi-bot-pass123" ];
+      };
 
       # Pre-create prefill.env for automated setup
       system.activationScripts.nixpi-e2e-prefill = lib.stringAfter [ "users" ] ''
@@ -49,6 +52,8 @@ pkgs.testers.runNixOSTest {
     PREFILL_USERNAME=e2etest
     PREFILL_MATRIX_PASSWORD=e2etestpass123
     EOF
+        mkdir -p ${homeDir}/.nixpi/wizard-state/matrix-state
+        printf '%s' 'pi-bot-pass123' > ${homeDir}/.nixpi/wizard-state/matrix-state/bot_password
         chown -R ${username}:${username} ${homeDir}/.nixpi
         chmod 755 ${homeDir}/.nixpi
         chmod 644 ${homeDir}/.nixpi/prefill.env

@@ -81,6 +81,22 @@ class NixpiInstallerTests(unittest.TestCase):
             self.assertFalse((nixos_etc / "nixpkgs").exists())
             self.assertFalse((nixos_etc / "flake.nix").exists())
 
+    def test_prepare_artifacts_updates_single_line_imports_block(self):
+        cfg = "{\n  imports = [ ./hardware-configuration.nix ];\n}\n"
+
+        artifacts = self.module.prepare_nixpi_install_artifacts(
+            "/mnt/target",
+            "alex",
+            "pi-box",
+            "supersecret",
+            cfg,
+        )
+
+        self.assertEqual(artifacts["configuration_module"].count("imports = ["), 1)
+        self.assertIn("./hardware-configuration.nix", artifacts["configuration_module"])
+        self.assertIn("./nixpi-install.nix", artifacts["configuration_module"])
+        self.assertIn('networking.hostName = "pi-box";', artifacts["configuration_module"])
+
     def test_main_prints_json(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
