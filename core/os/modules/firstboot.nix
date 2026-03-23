@@ -69,7 +69,7 @@ EOF
 
   outputs = { nixpi, nixpkgs, ... }:
     let
-      system = "x86_64-linux";
+      system = "${pkgs.stdenv.hostPlatform.system}";
     in {
       nixosConfigurations."$hostname" = nixpkgs.lib.nixosSystem {
         inherit system;
