@@ -1,6 +1,6 @@
-{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, matrixTestClient, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, matrixTestClient, ... }:
 
-pkgs.testers.runNixOSTest {
+{
   name = "nixpi-matrix-bridge";
 
   nodes = {

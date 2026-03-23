@@ -1,6 +1,6 @@
-{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkManagedUserConfig, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkManagedUserConfig, ... }:
 
-pkgs.testers.runNixOSTest {
+{
   name = "nixpi-bootstrap-mode";
 
   nodes = {

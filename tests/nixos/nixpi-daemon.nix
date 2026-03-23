@@ -1,6 +1,6 @@
-{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkMatrixAdminSeedConfig, matrixRegisterScript, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkMatrixAdminSeedConfig, matrixRegisterScript, ... }:
 
-pkgs.testers.runNixOSTest {
+{
   name = "nixpi-daemon";
 
   nodes = {

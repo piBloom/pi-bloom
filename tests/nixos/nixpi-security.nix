@@ -1,4 +1,4 @@
-{ pkgs, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
+{ nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
 
 let
   mkNode = { hostName, username, prefill ? false }: { ... }: let
@@ -48,7 +48,7 @@ EOF
     '';
   };
 in
-pkgs.testers.runNixOSTest {
+{
   name = "nixpi-security";
 
   nodes = {

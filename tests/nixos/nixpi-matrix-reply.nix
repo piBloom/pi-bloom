@@ -1,6 +1,6 @@
-{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, matrixRegisterScript, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, matrixRegisterScript, ... }:
 
-pkgs.testers.runNixOSTest {
+{
   name = "nixpi-matrix-reply";
 
   nodes = {

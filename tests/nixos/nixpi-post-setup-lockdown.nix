@@ -1,6 +1,6 @@
-{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkManagedUserConfig, mkPrefillActivation, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkManagedUserConfig, mkPrefillActivation, ... }:
 
-pkgs.testers.runNixOSTest {
+{
   name = "nixpi-post-setup-lockdown";
 
   nodes = {
