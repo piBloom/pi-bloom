@@ -15,6 +15,9 @@ pkgs.testers.runNixOSTest {
       imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
       _module.args = { inherit piAgent appPackage setupPackage; };
       nixpi.primaryUser = username;
+      services.matrix-continuwuity.settings = {
+        admin_execute = [ "users create-user server testpass123" ];
+      };
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
 
@@ -97,14 +100,6 @@ pkgs.testers.runNixOSTest {
     server.wait_for_unit("multi-user.target", timeout=300)
     server.wait_for_unit("continuwuity.service", timeout=60)
     server.wait_until_succeeds("curl -sf http://localhost:6167/_matrix/client/versions", timeout=60)
-    server.succeed(
-        "systemctl stop continuwuity.service && "
-        + "binary=$(systemctl cat continuwuity.service | sed -n 's/^ExecStart=\\([^[:space:]]*\\).*/\\1/p' | head -n1) && "
-        + "test -x \"$binary\" && "
-        + "CONTINUWUITY_CONFIG=/var/lib/continuwuity/continuwuity.toml timeout 15s \"$binary\" --execute 'users create-user server testpass123' && "
-        + "systemctl start continuwuity.service"
-    )
-    server.wait_for_unit("continuwuity.service", timeout=60)
     login_payload = json.loads(
         server.succeed(
             "curl -sf -X POST http://localhost:6167/_matrix/client/v3/login "
