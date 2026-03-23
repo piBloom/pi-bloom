@@ -122,6 +122,22 @@ has_internet_connection() {
 	ping -c1 -W5 1.1.1.1 &>/dev/null
 }
 
+has_wifi_device() {
+	command -v nmcli >/dev/null 2>&1 || return 1
+	nmcli -t -f TYPE device status 2>/dev/null | grep -q '^wifi$'
+}
+
+wifi_is_active_connection() {
+	command -v nmcli >/dev/null 2>&1 || return 1
+	nmcli -t -f TYPE,STATE device status 2>/dev/null | grep -Eq '^wifi:connected'
+}
+
+apply_wifi_preference() {
+	if command -v nixpi-prefer-wifi >/dev/null 2>&1; then
+		nixpi-prefer-wifi >/dev/null 2>&1 || true
+	fi
+}
+
 has_gui_session() {
 	[[ -n "${DISPLAY:-}" ]] && return 0
 	systemctl is-active --quiet display-manager.service 2>/dev/null || return 1
@@ -385,9 +401,59 @@ step_network() {
 	echo ""
 	echo "--- Network ---"
 	if has_internet_connection; then
-		echo "Network connected."
-		mark_done network
-		return
+		if [[ "$NONINTERACTIVE_SETUP" -eq 1 ]] || ! has_wifi_device || wifi_is_active_connection; then
+			echo "Network connected."
+			apply_wifi_preference
+			mark_done network
+			return
+		fi
+
+		echo "Internet is already up, but WiFi is not the active connection."
+		echo "NixPI prefers WiFi on mini-PC installs and falls back to Ethernet only when WiFi is unavailable."
+		echo ""
+		echo "Options:"
+		echo "  1) Launch WiFi setup (recommended)"
+		echo "  2) Continue with Ethernet fallback for now"
+		echo ""
+
+		while true; do
+			read -rp "Select option [1/2]: " choice
+			case "$choice" in
+				1|nmtui|ui)
+					echo "Launching WiFi setup..."
+					if command -v nmtui >/dev/null 2>&1; then
+						nmtui
+					else
+						echo "nmtui not available, using nmcli..."
+						nmcli device wifi list
+						read -rp "WiFi SSID: " ssid
+						read -rsp "WiFi password: " psk
+						echo ""
+						nmcli device wifi connect "$ssid" password "$psk" 2>/dev/null || true
+					fi
+					apply_wifi_preference
+					if has_internet_connection; then
+						if wifi_is_active_connection; then
+							echo "Connected with WiFi."
+						else
+							echo "Internet remains up through Ethernet fallback."
+						fi
+						mark_done network
+						return
+					fi
+					echo "Still not connected. Try again or continue with Ethernet fallback."
+					;;
+				2|skip)
+					echo "Continuing with Ethernet fallback."
+					apply_wifi_preference
+					mark_done network
+					return
+					;;
+				*)
+					echo "Invalid option. Please enter 1 or 2."
+					;;
+			esac
+		done
 	fi
 
 	echo "No network connection detected."
@@ -398,8 +464,8 @@ step_network() {
 	fi
 	echo ""
 	echo "Options:"
-	echo "  1) Launch WiFi setup (nmtui) - recommended"
-	echo "  2) Skip (configure later)"
+	echo "  1) Launch WiFi setup (recommended)"
+	echo "  2) Skip and configure network later"
 	echo ""
 
 	while true; do
@@ -417,8 +483,13 @@ step_network() {
 					echo ""
 					nmcli device wifi connect "$ssid" password "$psk" 2>/dev/null || true
 				fi
+				apply_wifi_preference
 				if has_internet_connection; then
-					echo "Connected."
+					if wifi_is_active_connection; then
+						echo "Connected with WiFi."
+					else
+						echo "Connected."
+					fi
 					mark_done network
 					return
 				fi

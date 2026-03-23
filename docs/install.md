@@ -47,7 +47,7 @@ setup-wizard.sh
   </div>
   <div class="quick-card">
     <strong>4. Finish first boot</strong>
-    The wizard brings up WiFi, clones `~/nixpi`, writes `/etc/nixos`, and promotes the machine into the full appliance.
+    The wizard brings up WiFi, prefers it over Ethernet when both are available, clones `~/nixpi`, writes `/etc/nixos`, and promotes the machine into the full appliance.
   </div>
 </div>
 

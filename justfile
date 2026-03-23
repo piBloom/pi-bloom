@@ -37,9 +37,7 @@ iso:
 # Boot the minimal installer ISO in QEMU for full install-flow testing.
 # This opens the standard QEMU graphical window.
 # Requires a host bridge so the VM behaves like a real network peer.
-# Default bridge: br0
-# Override only if your host uses a different bridge:
-#   NIXPI_INSTALL_VM_BRIDGE=virbr0 just vm-install-iso
+# The launcher auto-detects a usable bridge and fails clearly if none exists.
 # Override with:
 #   NIXPI_INSTALL_VM_DISK_PATH=$HOME/custom.qcow2
 #   NIXPI_INSTALL_VM_DISK_SIZE=32G

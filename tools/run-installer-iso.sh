@@ -5,17 +5,31 @@ disk="${NIXPI_INSTALL_VM_DISK_PATH:-$HOME/nixpi-install-vm.qcow2}"
 disk_size="${NIXPI_INSTALL_VM_DISK_SIZE:-32G}"
 memory_mb="${NIXPI_INSTALL_VM_MEMORY_MB:-8192}"
 vm_cpus="${NIXPI_INSTALL_VM_CPUS:-4}"
-bridge_name="${NIXPI_INSTALL_VM_BRIDGE:-br0}"
 ovmf_code="${NIXPI_INSTALL_VM_OVMF_CODE:-/usr/share/edk2/ovmf/OVMF_CODE.fd}"
 ovmf_vars_template="${NIXPI_INSTALL_VM_OVMF_VARS_TEMPLATE:-/usr/share/edk2/ovmf/OVMF_VARS.fd}"
 ovmf_vars="${NIXPI_INSTALL_VM_OVMF_VARS_PATH:-$HOME/.cache/nixpi-install-ovmf-vars.fd}"
 iso_path=""
 
-if ! ip link show "$bridge_name" >/dev/null 2>&1; then
-    echo "Host bridge '$bridge_name' was not found."
+detect_bridge() {
+    if ip link show br0 >/dev/null 2>&1; then
+        printf '%s\n' br0
+        return 0
+    fi
+
+    if command -v nmcli >/dev/null 2>&1; then
+        nmcli -t -f DEVICE,TYPE device status 2>/dev/null | awk -F: '$2 == "bridge" { print $1; exit }'
+        return 0
+    fi
+
+    ip -o link show | awk -F': ' '$2 ~ /^br/ { print $2; exit }'
+}
+
+bridge_name="$(detect_bridge)"
+
+if [ -z "$bridge_name" ]; then
+    echo "No usable host bridge was detected."
     echo "The canonical VM path expects a real bridge so the guest behaves like a mini-PC on your network."
-    echo "If your host uses a different bridge, override it:"
-    echo "  NIXPI_INSTALL_VM_BRIDGE=<bridge-name> just vm-install-iso"
+    echo "This host appears to be missing a bridge, which is typical on WiFi-only setups."
     exit 1
 fi
 

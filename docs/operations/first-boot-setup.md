@@ -20,8 +20,7 @@ Before first-boot setup, you need a system installed from the NixPI installer im
 
 For VM install-flow testing:
 
-- `just vm-install-iso` runs the installer with bridged networking on `br0` by default
-- if your host uses a different bridge, override it with `NIXPI_INSTALL_VM_BRIDGE=<bridge-name>`
+- `just vm-install-iso` runs the installer with auto-detected bridged networking
 - use this path only when the host bridge is configured and the VM is expected to behave like a real network peer
 - once NetBird is connected, the advertised Home, Element Web, and Matrix URLs should be reachable from any device on the mesh
 
@@ -54,7 +53,7 @@ NixPI's first-boot experience has two phases.
 
 **Current responsibilities**:
 
-1. Password change and WiFi/internet setup
+1. Password change and WiFi/internet setup, with WiFi preferred over Ethernet when available
 2. Clone `~/nixpi` and write the host-specific `/etc/nixos` flake
 3. Promote the minimal base into the full appliance with `nixos-rebuild switch`
 4. NetBird enrollment

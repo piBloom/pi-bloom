@@ -106,13 +106,14 @@ pkgs.testers.runNixOSTest {
     client.succeed("! nc -z -w 2 nixpi-steady 22")
 
     steady.wait_until_succeeds("curl -sf http://127.0.0.1:6167/_matrix/client/versions", timeout=60)
+    steady.wait_until_succeeds("curl -sf http://127.0.0.1 | grep -q 'NixPI Home'", timeout=60)
     steady.wait_until_succeeds("curl -sf http://127.0.0.1:8080 | grep -q 'NixPI Home'", timeout=60)
 
     steady.succeed("test \"$(curl -s -o /tmp/register.out -w '%{http_code}' -X POST http://127.0.0.1:6167/_matrix/client/v3/register -H 'Content-Type: application/json' -d '{\"username\":\"blocked\",\"password\":\"testpassword123\",\"inhibit_login\":false}')\" != 200")
 
     steady.succeed("fail2ban-client status sshd | grep -q 'Status for the jail: sshd'")
 
-    blocked_ports = [6167, 8080, 8081, 5000, 8443]
+    blocked_ports = [80, 6167, 8080, 8081, 5000, 8443]
     for host in ["nixpi-bootstrap", "nixpi-steady"]:
         for port in blocked_ports:
             client.succeed(f"! nc -z -w 2 {host} {port}")

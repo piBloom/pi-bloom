@@ -23,7 +23,7 @@ Use it to verify that setup, messaging, and recovery paths still match the shipp
 For VM validation:
 
 - Use `just vm-install-iso` when the host bridge is configured
-- The canonical default bridge is `br0`; override with `NIXPI_INSTALL_VM_BRIDGE=<bridge-name>` only if your host uses a different bridge
+- The launcher auto-detects a usable host bridge and fails clearly if none exists
 - Use it to validate installer flow, desktop startup, and real mesh reachability
 - Once NetBird is connected, the advertised service URLs should be reachable from any other NetBird peer
 

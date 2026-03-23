@@ -23,6 +23,38 @@ let
     lib.optionals cfg.home.enable [ cfg.home.port ]
     ++ lib.optionals cfg.elementWeb.enable [ cfg.elementWeb.port ]
     ++ [ config.nixpi.matrix.port ];
+  preferWifi = pkgs.writeShellScriptBin "nixpi-prefer-wifi" ''
+    set -euo pipefail
+
+    if ! command -v nmcli >/dev/null 2>&1; then
+      exit 0
+    fi
+
+    while IFS=: read -r uuid type; do
+      [ -n "$uuid" ] || continue
+      case "$type" in
+        802-11-wireless)
+          priority=100
+          ;;
+        802-3-ethernet)
+          priority=-100
+          ;;
+        *)
+          continue
+          ;;
+      esac
+
+      current_priority="$(nmcli -g connection.autoconnect-priority connection show uuid "$uuid" 2>/dev/null || true)"
+      current_autoconnect="$(nmcli -g connection.autoconnect connection show uuid "$uuid" 2>/dev/null || true)"
+      if [ "$current_priority" = "$priority" ] && [ "$current_autoconnect" = "yes" ]; then
+        continue
+      fi
+
+      nmcli connection modify uuid "$uuid" \
+        connection.autoconnect yes \
+        connection.autoconnect-priority "$priority" >/dev/null 2>&1 || true
+    done < <(nmcli -t -f UUID,TYPE connection show 2>/dev/null || true)
+  '';
 in
 
 {
@@ -77,6 +109,17 @@ in
     };
     networking.networkmanager.enable = true;
 
+    systemd.services.nixpi-prefer-wifi = {
+      description = "Prefer WiFi profiles over Ethernet in NetworkManager";
+      after = [ "NetworkManager.service" ];
+      wants = [ "NetworkManager.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${preferWifi}/bin/nixpi-prefer-wifi";
+      };
+    };
+
     services.fail2ban = lib.mkIf securityCfg.fail2ban.enable {
       enable = true;
       jails.sshd.settings = {
@@ -95,6 +138,7 @@ in
     environment.systemPackages = with pkgs; [
       jq
       netbird
+      preferWifi
     ];
     warnings =
       lib.optional (!securityCfg.enforceServiceFirewall && !bindsLocally) ''

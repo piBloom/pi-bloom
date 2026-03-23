@@ -160,6 +160,8 @@ systemd.services.nixpi-daemon = {
 
 **Responsibility**: Network configuration including NetBird and firewall.
 
+The first-boot path is WiFi-first on mini-PC installs. Ethernet remains enabled as fallback, but saved WiFi profiles are given higher NetworkManager autoconnect priority.
+
 **Security Model**:
 ```nix
 networking.firewall = {

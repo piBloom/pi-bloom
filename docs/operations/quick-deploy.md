@@ -60,7 +60,7 @@ setup-wizard.sh
 
 During first boot, the wizard:
 
-1. Connects the machine to WiFi or confirms Ethernet/internet is already up
+1. Connects the machine to WiFi and prefers it over Ethernet when both are usable
 2. Clones the NixPI checkout into `~/nixpi`
 3. Writes the host-specific flake under `/etc/nixos`
 4. Runs `sudo nixos-rebuild switch --flake /etc/nixos#$(hostname -s)` to promote the system into the full appliance
