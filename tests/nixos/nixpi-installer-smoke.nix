@@ -100,8 +100,17 @@
         installer.succeed("cat /tmp/nixpi-installer-artifacts.json | jq -e '.configuration_install_ref == \"" + target_mount + "/etc/nixos/configuration.nix\"'")
 
         installer.succeed("test -f " + target_mount + "/etc/nixos/configuration.nix")
+        installer.succeed("test -f " + target_mount + "/etc/nixos/hardware-configuration.nix")
         installer.succeed("test -f " + target_mount + "/etc/nixos/nixpi-install.nix")
         installer.succeed("grep -q './hardware-configuration.nix' " + target_mount + "/etc/nixos/configuration.nix")
+        installer.succeed("grep -q 'fileSystems\\.\"/\"' " + target_mount + "/etc/nixos/hardware-configuration.nix")
+        installer.succeed(
+            "nix-instantiate '<nixpkgs/nixos>' "
+            + "-A config.system.build.toplevel "
+            + "-I nixos-config="
+            + target_mount
+            + "/etc/nixos/configuration.nix >/tmp/nixpi-installer-eval.out"
+        )
         installer.succeed("grep -q 'desktop-xfce.nix' " + target_mount + "/etc/nixos/nixpi-install.nix")
         installer.succeed("grep -q 'nixpi.primaryUser = \"installer\";' " + target_mount + "/etc/nixos/nixpi-install.nix")
         installer.fail("grep -q 'nixpi.install.mode = ' " + target_mount + "/etc/nixos/nixpi-install.nix")

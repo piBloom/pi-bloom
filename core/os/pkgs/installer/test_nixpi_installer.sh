@@ -30,3 +30,9 @@ fi
 USAGE_OUTPUT="$(usage)"
 assert_contains "destructive UEFI install" <(printf '%s\n' "$USAGE_OUTPUT")
 assert_contains "first-boot setup" <(printf '%s\n' "$USAGE_OUTPUT")
+
+assert_contains 'nixos-generate-config --root "$ROOT_MOUNT"' "$SCRIPT_PATH"
+if grep -F -- '--no-filesystems' "$SCRIPT_PATH" >/dev/null; then
+  echo "installer script must not generate a filesystem-less hardware config" >&2
+  exit 1
+fi

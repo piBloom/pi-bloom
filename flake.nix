@@ -142,6 +142,55 @@
           installerHelperTests = ./core/os/pkgs/installer/test_nixpi_installer.py;
           installerFrontendSource = ./core/os/pkgs/installer/nixpi-installer.sh;
           installerFrontendTests = ./core/os/pkgs/installer/test_nixpi_installer.sh;
+          mkInstallerGeneratedConfig = {
+            hostName,
+            rootDevice,
+            bootDevice,
+          }: (nixpkgs.lib.nixosSystem {
+            inherit system specialArgs;
+            modules = [
+              ({ config, ... }: {
+                imports = [
+                  "${nixpiSource}/core/os/modules/firstboot.nix"
+                  "${nixpiSource}/core/os/modules/network.nix"
+                  "${nixpiSource}/core/os/modules/shell.nix"
+                  "${nixpiSource}/core/os/modules/update.nix"
+                ];
+
+                environment.systemPackages = [ setupPackage ];
+                networking.hostName = hostName;
+                time.timeZone = "UTC";
+                i18n.defaultLocale = "en_US.UTF-8";
+                nixpkgs.config.allowUnfree = true;
+                nix.settings.experimental-features = [ "nix-command" "flakes" ];
+                nixpi.primaryUser = "installer";
+                users.groups.installer = {};
+                users.users.installer = {
+                  isNormalUser = true;
+                  group = "installer";
+                  extraGroups = [ "networkmanager" ];
+                  initialPassword = "installerpass123";
+                };
+                system.activationScripts.nixpi-bootstrap-primary-password = ''
+                  bootstrapPasswordFile="${config.nixpi.stateDir}/bootstrap/primary-user-password"
+                  install -d -m 0755 -o root -g root "$(dirname "$bootstrapPasswordFile")"
+                  install -m 0600 -o root -g root /dev/null "$bootstrapPasswordFile"
+                  printf '%s' "installerpass123" > "$bootstrapPasswordFile"
+                '';
+                boot.loader.systemd-boot.enable = true;
+                boot.loader.efi.canTouchEfiVariables = true;
+                fileSystems."/" = {
+                  device = rootDevice;
+                  fsType = "ext4";
+                };
+                fileSystems."/boot" = {
+                  device = bootDevice;
+                  fsType = "vfat";
+                };
+                system.stateVersion = "25.05";
+              })
+            ];
+          }).config.system.build.toplevel;
           generatedInstallModule =
             let
               template = builtins.readFile ./core/os/pkgs/installer/nixpi-install-module.nix.in;
@@ -254,51 +303,23 @@
             touch "$out"
           '';
 
-          installer-generated-config = (nixpkgs.lib.nixosSystem {
-            inherit system specialArgs;
-            modules = [
-              ({ config, ... }: {
-                imports = [
-                  "${nixpiSource}/core/os/modules/firstboot.nix"
-                  "${nixpiSource}/core/os/modules/network.nix"
-                  "${nixpiSource}/core/os/modules/shell.nix"
-                  "${nixpiSource}/core/os/modules/update.nix"
-                ];
+          installer-generated-config = mkInstallerGeneratedConfig {
+            hostName = "installer-vm";
+            rootDevice = "/dev/vda2";
+            bootDevice = "/dev/vda1";
+          };
 
-                environment.systemPackages = [ setupPackage ];
-                networking.hostName = "installer-vm";
-                time.timeZone = "UTC";
-                i18n.defaultLocale = "en_US.UTF-8";
-                nixpkgs.config.allowUnfree = true;
-                nix.settings.experimental-features = [ "nix-command" "flakes" ];
-                nixpi.primaryUser = "installer";
-                users.groups.installer = {};
-                users.users.installer = {
-                  isNormalUser = true;
-                  group = "installer";
-                  extraGroups = [ "networkmanager" ];
-                  initialPassword = "installerpass123";
-                };
-                system.activationScripts.nixpi-bootstrap-primary-password = ''
-                  bootstrapPasswordFile="${config.nixpi.stateDir}/bootstrap/primary-user-password"
-                  install -d -m 0755 -o root -g root "$(dirname "$bootstrapPasswordFile")"
-                  install -m 0600 -o root -g root /dev/null "$bootstrapPasswordFile"
-                  printf '%s' "installerpass123" > "$bootstrapPasswordFile"
-                '';
-                boot.loader.systemd-boot.enable = true;
-                boot.loader.efi.canTouchEfiVariables = true;
-                fileSystems."/" = {
-                  device = "/dev/vda2";
-                  fsType = "ext4";
-                };
-                fileSystems."/boot" = {
-                  device = "/dev/vda1";
-                  fsType = "vfat";
-                };
-                system.stateVersion = "25.05";
-              })
-            ];
-          }).config.system.build.toplevel;
+          installer-generated-config-nvme = mkInstallerGeneratedConfig {
+            hostName = "installer-minipc";
+            rootDevice = "/dev/nvme0n1p2";
+            bootDevice = "/dev/nvme0n1p1";
+          };
+
+          installer-generated-config-sata = mkInstallerGeneratedConfig {
+            hostName = "installer-server";
+            rootDevice = "/dev/sda2";
+            bootDevice = "/dev/sda1";
+          };
 
           # Regression guard for the local desktop VM path used by `just qcow2`.
           desktop-vm = self.nixosConfigurations.desktop-vm.config.system.build.vm;

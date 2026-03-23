@@ -333,7 +333,7 @@ run_install_steps() {
 
   echo "=== [3/5] Writing boot configuration ==="
   log_step "Generating base NixOS config"
-  nixos-generate-config --no-filesystems --root "$ROOT_MOUNT"
+  nixos-generate-config --root "$ROOT_MOUNT"
 
   log_step "Writing NixPI install artifacts"
   "$HELPER_BIN" \
