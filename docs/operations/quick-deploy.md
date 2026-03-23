@@ -52,13 +52,11 @@ The installer writes a minimal bootable NixPI base in `/etc/nixos`. The full hos
 
 ### 4. Complete Setup
 
-Run the setup wizard after reboot if it does not auto-start:
+After reboot, the installed system should autologin into the Openbox desktop and open the NixPI terminal automatically. If the setup wizard does not appear there, run:
 
 ```bash
 setup-wizard.sh
 ```
-
-The wizard auto-runs on TTY login before setup completes. If it doesn't start, run `setup-wizard.sh` manually.
 
 During first boot, the wizard:
 

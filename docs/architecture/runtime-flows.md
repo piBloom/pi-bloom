@@ -93,10 +93,14 @@ multi-user.target
 
 ### Phase 1: Bash Wizard
 
-**Entry**: First interactive login (TTY1)
+**Entry**: Openbox desktop autologin opens the NixPI terminal
 
 ```
-login
+LightDM autologin
+    ↓
+Openbox session
+    ↓
+NixPI terminal
     ↓
 setup-wizard.sh
     ↓

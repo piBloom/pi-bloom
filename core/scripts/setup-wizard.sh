@@ -477,9 +477,9 @@ step_netbird() {
 					echo "Starting NetBird web login..."
 					echo "If no browser opens, visit the URL shown below."
 				else
-					echo "No local desktop session is active in this setup shell."
+					echo "No local desktop session is active."
 					echo "NetBird may print a login URL, but it cannot open a browser window here."
-					echo "Use option 2 with a setup key, or finish the desktop install and retry from Openbox."
+					echo "Use option 2 with a setup key, or retry once the Openbox desktop is running."
 				fi
 				if root_command nixpi-bootstrap-netbird-up 2>&1; then
 					# Wait for connection to establish
@@ -670,6 +670,9 @@ finalize() {
 		if ! root_command nixpi-bootstrap-service-systemctl enable --now nixpi-daemon.service; then
 			echo "warning: failed to enable nixpi-daemon.service during wizard finalization" >&2
 		fi
+	fi
+	if has_systemd_unit display-manager.service; then
+		root_command nixpi-bootstrap-service-systemctl start display-manager.service || echo "warning: failed to start display-manager.service" >&2
 	fi
 	touch "$SETUP_COMPLETE"
 

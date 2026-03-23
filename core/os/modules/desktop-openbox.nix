@@ -70,7 +70,40 @@ let
       -fg "#e6edf3" \
       -bg "#10161d" \
       -geometry 132x36 \
-      -e ${pkgs.bash}/bin/bash --login
+      -e ${pkgs.bash}/bin/bash -lc '
+        [ -f "${primaryHome}/.bashrc" ] && . "${primaryHome}/.bashrc"
+
+        if [ ! -f "${primaryHome}/.nixpi/.setup-complete" ]; then
+          if ! setup-wizard.sh; then
+            echo ""
+            echo "Setup paused because the last step failed."
+            echo "Review the error above, fix the issue, then rerun: setup-wizard.sh"
+          fi
+          exec ${pkgs.bash}/bin/bash --login
+        fi
+
+        if [ -z "''${PI_SESSION:-}" ] && command -v pi >/dev/null 2>&1 && mkdir /tmp/.nixpi-pi-session 2>/dev/null; then
+          trap "rmdir /tmp/.nixpi-pi-session 2>/dev/null" EXIT
+          export PI_SESSION=1
+          _nixpi_pkg="/usr/local/share/nixpi"
+          _pi_settings="${config.nixpi.stateDir}/agent/settings.json"
+          if [ -d "$_nixpi_pkg" ]; then
+            mkdir -p "$(dirname "$_pi_settings")"
+            if [ -f "$_pi_settings" ] && command -v jq >/dev/null 2>&1; then
+              if ! jq -e ".packages // [] | index(\"$_nixpi_pkg\")" "$_pi_settings" >/dev/null 2>&1; then
+                jq ".packages = ((.packages // []) + [\"$_nixpi_pkg\"] | unique)" "$_pi_settings" > "''${_pi_settings}.tmp" && \
+                  mv "''${_pi_settings}.tmp" "$_pi_settings"
+              fi
+            elif [ ! -f "$_pi_settings" ]; then
+              cp "$_nixpi_pkg/.pi/settings.json" "$_pi_settings"
+            fi
+          fi
+          unset _nixpi_pkg _pi_settings
+          pi || true
+        fi
+
+        exec ${pkgs.bash}/bin/bash --login
+      '
   '';
 
   openboxAutostart = pkgs.writeText "nixpi-openbox-autostart" ''
@@ -223,6 +256,7 @@ in
   services.displayManager.autoLogin.enable = true;
   services.displayManager.autoLogin.user = primaryUser;
   services.xserver.displayManager.lightdm.greeters.gtk.enable = true;
+  systemd.defaultUnit = lib.mkDefault "graphical.target";
 
   environment.etc = {
     "skel/.config/openbox/autostart".source = openboxAutostart;

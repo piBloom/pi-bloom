@@ -16,7 +16,7 @@ Before first-boot setup, you need a system installed from the NixPI installer im
 4. Reboot into the installed system
 5. The installed machine initially boots a minimal NixPI base from `/etc/nixos`
 6. During first boot, the setup wizard creates the local `~/nixpi` checkout and the host-specific flake at `/etc/nixos`
-7. The installed system boots into the official NixPI Openbox desktop; use it as a local automation surface and fallback GUI, not as the main setup surface
+7. The installed system autologins into the official NixPI Openbox desktop and opens the NixPI terminal there
 
 ## 🛡️ Security Note: NetBird is Mandatory
 
@@ -43,7 +43,7 @@ NixPI's first-boot experience has two phases.
 
 ### Phase 1: Bash Wizard
 
-`setup-wizard.sh` handles deterministic machine setup on first interactive login.
+`setup-wizard.sh` handles deterministic machine setup from the Openbox-launched NixPI terminal.
 
 **Current responsibilities**:
 
@@ -51,7 +51,7 @@ NixPI's first-boot experience has two phases.
 2. Clone `~/nixpi` and write the host-specific `/etc/nixos` flake
 3. Promote the minimal base into the full appliance with `nixos-rebuild switch`
 4. NetBird enrollment
-   In the text-mode first-boot shell, use a setup key for headless enrollment. OAuth web login needs a running desktop/browser session and may not be able to open a browser from the TTY wizard.
+   OAuth web login works from the desktop flow. Use a setup key only if a browser session is unavailable.
 5. Primary Matrix account bootstrap
 6. AI provider defaults for Pi
 7. Built-in service provisioning
@@ -105,6 +105,7 @@ If you want to redo persona setup, remove `~/.nixpi/wizard-state/persona-done` a
 - After the wizard completes, opening Pi checks only for `persona-done`
 - If persona setup is still pending, Pi starts that flow first and defers unrelated conversation
 - After `persona-done` exists, Pi resumes normal conversation
+- Openbox is the only supported automatic first-boot entry path
 - The wizard enables `nixpi-daemon.service` as part of setup completion
 - The wizard refreshes Matrix policy so public registration is no longer left open after setup
 - The wizard refreshes the built-in service configs so NetBird peers have a stable page listing service URLs and shareable host info
