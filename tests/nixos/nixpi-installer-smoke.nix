@@ -1,11 +1,11 @@
 { pkgs, installerHelper, self, lib, ... }:
 
-pkgs.testers.runNixOSTest {
+{
   name = "nixpi-installer-smoke";
   node.pkgsReadOnly = false;
 
   nodes.installer =
-    { ... }:
+    { pkgs, ... }:
     let
       targetDisk = "/tmp/shared/nixpi-installer-target.qcow2";
     in
