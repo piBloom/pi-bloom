@@ -22,13 +22,14 @@ For VM install-flow testing:
 
 - `just vm-install-iso` runs the installer in the default user-mode NAT network with SSH forwarding
 - use this path to validate install flow, Openbox startup, and in-guest NetBird enrollment
-- do not expect guest service URLs or the NetBird mesh IP to behave like a real inbound-reachable peer from the host or LAN in this VM mode
+- use the printed localhost forwards for host-side access to SSH, Home, Element Web, and Matrix
+- do not expect the guest NetBird mesh IP to behave like a real inbound-reachable peer from the host or LAN in this VM mode
 
 ## Security Note: NetBird Is Mandatory
 
 NetBird is the network security boundary for all NixPI services. The firewall configuration (`trustedInterfaces = ["wt0"]`) only protects services when the NetBird interface (`wt0`) is active. Without NetBird:
 
-- Matrix, Home (port 8080), and Element Web (port 8081) are exposed to the local network
+- Matrix, Home (ports 80 and 8080), and Element Web (port 8081) are exposed to the local network
 - A compromised local device could access OS tools via prompt injection
 
 **Complete NetBird setup and verify `wt0` is active before exposing this machine to any network.**
@@ -66,14 +67,15 @@ NixPI's first-boot experience has two phases.
 **Built-in services provisioned**:
 
 - Home status page on port `8080`
+- Home front door on port `80`
 - Element Web on port `8081`
 
 **Bootstrap security lifecycle**:
 
 - SSH on port `22` is available during bootstrap
-- Once `~/.nixpi/.setup-complete` is written, SSH is stopped by default
+- The installed desktop profile keeps SSH available after setup so the machine remains reachable for remote administration and VM debugging
 - Matrix registration is available during bootstrap and disabled by default after setup completes
-- Set `nixpi.bootstrap.keepSshAfterSetup = true` only if you intentionally want post-setup SSH administration
+- Lower-level test and custom module compositions can still set `nixpi.bootstrap.keepSshAfterSetup = false` if they need bootstrap-only SSH
 
 ### Phase 2: Pi Persona Step
 

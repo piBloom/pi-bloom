@@ -6,7 +6,7 @@ let
 
   openHome = pkgs.writeShellScriptBin "nixpi-open-home" ''
     set -euo pipefail
-    exec ${pkgs.chromium}/bin/chromium --app=http://127.0.0.1:${toString config.nixpi.services.home.port}
+    exec ${pkgs.chromium}/bin/chromium --app=http://127.0.0.1
   '';
 
   openChat = pkgs.writeShellScriptBin "nixpi-open-chat" ''
@@ -77,8 +77,8 @@ let
             echo ""
             echo "Setup paused because the last step failed."
             echo "Review the error above, fix the issue, then rerun: setup-wizard.sh"
+            exec ${pkgs.bash}/bin/bash --login
           fi
-          exec ${pkgs.bash}/bin/bash --login
         fi
 
         if [ -z "''${PI_SESSION:-}" ] && command -v pi >/dev/null 2>&1 && mkdir /tmp/.nixpi-pi-session 2>/dev/null; then
@@ -98,7 +98,11 @@ let
             fi
           fi
           unset _nixpi_pkg _pi_settings
-          pi || true
+          if ! pi; then
+            echo ""
+            echo "Pi exited unexpectedly."
+            echo "Run 'pi' again after checking the error above."
+          fi
         fi
 
         exec ${pkgs.bash}/bin/bash --login

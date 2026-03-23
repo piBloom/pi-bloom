@@ -23,6 +23,7 @@
   boot.kernelParams = [ "console=tty0" "console=ttyS0,115200" ];
   systemd.services."serial-getty@ttyS0".enable = true;
   nixpi.security.ssh.passwordAuthentication = lib.mkDefault true;
+  nixpi.bootstrap.keepSshAfterSetup = lib.mkDefault true;
   nixpi.primaryUser = lib.mkDefault "pi";
 
   time.timeZone = "UTC";

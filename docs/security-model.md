@@ -65,8 +65,7 @@ By default:
 - Password authentication is disabled
 - Public key authentication is enabled
 - Root login is disabled
-- SSH is intended as a bootstrap path and is stopped automatically after
-  `~/.nixpi/.setup-complete` unless `nixpi.bootstrap.keepSshAfterSetup = true`
+- The installed desktop profile keeps SSH available after setup for remote administration and VM debugging
 - SSH logins are restricted to the primary operator account by default
 
 Recommended hardening after first boot:
@@ -77,7 +76,7 @@ chmod 700 ~/.ssh
 echo "ssh-ed25519 AAAAC3... your-key" >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 
-# Then keep SSH disabled post-setup or explicitly opt back in if you need it
+# Then disable password login and keep only key-based SSH access
 ```
 
 ## Agent Privilege Boundary

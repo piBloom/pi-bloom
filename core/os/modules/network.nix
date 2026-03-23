@@ -18,6 +18,8 @@ let
     || cfg.bindAddress == "::1"
     || cfg.bindAddress == "localhost";
   exposedPorts =
+    lib.optionals cfg.home.enable [ 80 ]
+    ++
     lib.optionals cfg.home.enable [ cfg.home.port ]
     ++ lib.optionals cfg.elementWeb.enable [ cfg.elementWeb.port ]
     ++ [ config.nixpi.matrix.port ];

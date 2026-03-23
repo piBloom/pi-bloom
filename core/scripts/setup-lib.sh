@@ -295,7 +295,7 @@ write_service_home_runtime() {
 	local mesh_host page_url generated_at
 	mesh_host="${mesh_fqdn:-$mesh_ip}"
 	[[ -n "$mesh_host" ]] || mesh_host="localhost"
-	page_url="http://${mesh_host}:8080"
+	page_url="http://${mesh_host}"
 	generated_at=$(date -Iseconds)
 
 	local template="/usr/local/share/nixpi/home-template.html"

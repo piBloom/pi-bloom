@@ -20,7 +20,8 @@ For VM validation:
 
 - Use `just vm-install-iso` for the default local-dev path.
 - Use it to validate installer flow, desktop startup, and in-guest NetBird enrollment.
-- Do not expect guest NetBird URLs in the default NAT path to behave like a real network peer from the host or LAN.
+- Use the printed localhost forwards for host-side access to SSH, Home, Element Web, and Matrix.
+- Do not expect the guest NetBird mesh IP in the default NAT path to behave like a real network peer from the host or LAN.
 
 ### First Boot
 

@@ -66,9 +66,10 @@ in
             <li>Matrix: <a href="http://localhost:${toString config.nixpi-home.matrixPort}">http://localhost:${toString config.nixpi-home.matrixPort}</a></li>
           </ul>
           <h2>Remote access</h2>
-          <p>Use your NetBird hostname or mesh IP on interface ${config.nixpi-home.trustedInterface} with these ports.</p>
+          <p>Use your NetBird hostname or mesh IP on interface ${config.nixpi-home.trustedInterface}. Home is available on the bare HTTP address; Element Web and Matrix keep their explicit ports.</p>
           <ul>
-            <li>Home: ${toString config.nixpi-home.port}</li>
+            <li>Home: http://&lt;netbird-hostname-or-mesh-ip&gt;/</li>
+            <li>Home direct port: ${toString config.nixpi-home.port}</li>
             <li>Element Web: ${toString config.nixpi-home.elementWebPort}</li>
             <li>Matrix URL: ${config.nixpi-home.matrixClientBaseUrl}</li>
           </ul>

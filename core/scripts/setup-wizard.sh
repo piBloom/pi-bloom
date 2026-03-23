@@ -293,10 +293,10 @@ print_service_access_summary() {
 
 	echo "  Service access:"
 	if [[ -n "$mesh_host" ]]; then
-		echo "    NixPI Home   - http://${mesh_host}:8080"
+		echo "    NixPI Home   - http://${mesh_host}"
 	fi
 	if [[ -n "$mesh_ip" && "$mesh_ip" != "$mesh_host" ]]; then
-		echo "    NixPI Home   - http://${mesh_ip}:8080"
+		echo "    NixPI Home   - http://${mesh_ip}"
 	fi
 	echo "    Share this   - send other NetBird peers the NixPI Home URL"
 	if [[ -n "$mesh_host" ]]; then
