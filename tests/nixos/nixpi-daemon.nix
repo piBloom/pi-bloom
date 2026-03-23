@@ -35,7 +35,7 @@ pkgs.testers.runNixOSTest {
       users.users.${username} = {
         isNormalUser = true;
         group = username;
-        extraGroups = [ "wheel" "networkmanager" "agent" ];
+        extraGroups = [ "wheel" "networkmanager" ];
         home = homeDir;
         shell = pkgs.bash;
         initialPassword = "serverpass123";
@@ -69,7 +69,7 @@ pkgs.testers.runNixOSTest {
       users.users.${username} = {
         isNormalUser = true;
         group = username;
-        extraGroups = [ "wheel" "networkmanager" "agent" ];
+        extraGroups = [ "wheel" "networkmanager" ];
         home = homeDir;
         shell = pkgs.bash;
       };
@@ -83,8 +83,7 @@ pkgs.testers.runNixOSTest {
 
       # Create Matrix credentials file for daemon
       system.activationScripts.nixpi-daemon-creds = lib.stringAfter [ "users" ] ''
-        mkdir -p /var/lib/nixpi/agent
-        chown -R agent:agent /var/lib/nixpi/agent
+        install -d -m 0700 -o ${username} -g ${username} ${homeDir}/.pi
       '';
     };
   };
@@ -118,10 +117,10 @@ pkgs.testers.runNixOSTest {
     agent.start()
     agent.wait_for_unit("multi-user.target", timeout=300)
 
-    agent.succeed("mkdir -p /var/lib/nixpi/agent")
+    agent.succeed("mkdir -p /home/pi/.pi")
     agent.succeed(
         "cat > "
-        + "/var/lib/nixpi/agent/matrix-credentials.json <<'CREDS'\n"
+        + "/home/pi/.pi/matrix-credentials.json <<'CREDS'\n"
         + "{\n"
         + '  "homeserver": "http://server:6167",\n'
         + '  "botUserId": "'
@@ -134,7 +133,7 @@ pkgs.testers.runNixOSTest {
         + "}\n"
         + "CREDS"
     )
-    agent.succeed("chown -R agent:agent /var/lib/nixpi/agent")
+    agent.succeed("chown -R pi:pi /home/pi/.pi")
 
     agent.succeed(
         "touch " + home + "/.nixpi/.setup-complete && chown "
@@ -168,8 +167,8 @@ pkgs.testers.runNixOSTest {
     assert working_directory == "/home/pi/nixpi", "Unexpected WorkingDirectory: " + working_directory
     agent.succeed("ls -la /usr/local/share/nixpi/")
 
-    agent.succeed("test -f /var/lib/nixpi/agent/matrix-credentials.json")
-    creds = json.loads(agent.succeed("cat /var/lib/nixpi/agent/matrix-credentials.json"))
+    agent.succeed("test -f /home/pi/.pi/matrix-credentials.json")
+    creds = json.loads(agent.succeed("cat /home/pi/.pi/matrix-credentials.json"))
     assert creds["homeserver"] == "http://server:6167", "Credentials missing homeserver"
     assert creds["botUserId"] == user_id, "Credentials missing botUserId"
     assert creds["botAccessToken"] == access_token, "Credentials missing botAccessToken"

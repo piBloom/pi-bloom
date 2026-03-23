@@ -3,7 +3,6 @@
 let
   resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
   primaryUser = resolved.resolvedPrimaryUser;
-  serviceUser = config.nixpi.serviceUser;
   stateDir = config.nixpi.stateDir;
   socketDir = "/run/nixpi-broker";
   socketPath = "${socketDir}/broker.sock";
@@ -11,7 +10,7 @@ let
   elevationPath = "${brokerStateDir}/elevation.json";
 
   brokerConfig = pkgs.writeText "nixpi-broker-config.json" (builtins.toJSON {
-    inherit socketPath elevationPath brokerStateDir serviceUser primaryUser;
+    inherit socketPath elevationPath brokerStateDir primaryUser;
     defaultAutonomy = config.nixpi.agent.autonomy;
     elevationDuration = config.nixpi.agent.elevation.duration;
     osUpdateEnable = config.nixpi.agent.osUpdate.enable;
@@ -117,7 +116,7 @@ let
             pass
         srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         srv.bind(CONFIG["socketPath"])
-        gid = grp.getgrnam(CONFIG["serviceUser"]).gr_gid
+        gid = grp.getgrnam(CONFIG["primaryUser"]).gr_gid
         os.chown(CONFIG["socketPath"], 0, gid)
         os.chmod(CONFIG["socketPath"], 0o660)
         srv.listen(32)
@@ -241,14 +240,14 @@ in
     environment.systemPackages = [ brokerCtl ];
 
     systemd.tmpfiles.rules = [
-      "d ${brokerStateDir} 0770 root ${serviceUser} -"
+      "d ${brokerStateDir} 0770 root ${primaryUser} -"
     ];
 
     system.services.nixpi-broker = {
       imports = [ ../services/nixpi-broker.nix ];
       nixpi-broker = {
         command = "${brokerCtl}/bin/nixpi-brokerctl";
-        inherit brokerConfig serviceUser stateDir;
+        inherit brokerConfig stateDir;
       };
     };
 

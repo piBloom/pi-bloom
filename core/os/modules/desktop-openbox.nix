@@ -86,7 +86,7 @@ let
           trap "rmdir /tmp/.nixpi-pi-session 2>/dev/null" EXIT
           export PI_SESSION=1
           _nixpi_pkg="/usr/local/share/nixpi"
-          _pi_settings="${config.nixpi.stateDir}/agent/settings.json"
+          _pi_settings="${primaryHome}/.pi/settings.json"
           if [ -d "$_nixpi_pkg" ]; then
             mkdir -p "$(dirname "$_pi_settings")"
             if [ -f "$_pi_settings" ] && command -v jq >/dev/null 2>&1; then

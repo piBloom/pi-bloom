@@ -24,7 +24,7 @@ NixPI has two persistent layers:
 
 ### Working Memory
 
-Short-term continuity lives in `/var/lib/nixpi/agent/nixpi-context.json` and normal Pi session compaction.
+Short-term continuity lives in `~/.pi/nixpi-context.json` and normal Pi session compaction.
 
 Use this for:
 

@@ -76,7 +76,7 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 | Durable Memory | `~/nixpi/Objects/*.md` | Long-term facts, preferences, decisions |
 | Episodic Memory | `~/nixpi/Episodes/YYYY-MM-DD/*.md` | Raw observations, append-only |
 | Setup Markers | `~/.nixpi/.setup-complete`, `~/.nixpi/wizard-state/persona-done` | Machine setup and persona completion |
-| Agent State | `/var/lib/nixpi/agent/` | Runtime credentials and context |
+| Agent State | `~/.pi/` | Runtime credentials and context |
 | Guardrails | `~/nixpi/guardrails.yaml` | Tool execution safety rules |
 
 ### Control Surfaces

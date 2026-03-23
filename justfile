@@ -43,60 +43,13 @@ iso:
 #   NIXPI_INSTALL_VM_CPUS=4
 #   NIXPI_INSTALL_VM_SSH_PORT=2222
 vm-install-iso: iso
-    #!/usr/bin/env bash
-    set -euo pipefail
+    NIXPI_INSTALL_VM_OVMF_CODE={{ ovmf }} NIXPI_INSTALL_VM_OVMF_VARS_TEMPLATE={{ ovmf_vars }} bash tools/run-installer-iso.sh user
 
-    disk="${NIXPI_INSTALL_VM_DISK_PATH:-$HOME/nixpi-install-vm.qcow2}"
-    disk_size="${NIXPI_INSTALL_VM_DISK_SIZE:-32G}"
-    memory_mb="${NIXPI_INSTALL_VM_MEMORY_MB:-8192}"
-    vm_cpus="${NIXPI_INSTALL_VM_CPUS:-4}"
-    ssh_port="${NIXPI_INSTALL_VM_SSH_PORT:-2222}"
-    ovmf_code="{{ ovmf }}"
-    ovmf_vars_template="{{ ovmf_vars }}"
-    ovmf_vars="${NIXPI_INSTALL_VM_OVMF_VARS_PATH:-$HOME/.cache/nixpi-install-ovmf-vars.fd}"
-    iso_path=""
-
-    if [ -f result ] && [[ "$(readlink -f result)" = *.iso ]]; then
-        iso_path="$(readlink -f result)"
-    elif [ -d result/iso ]; then
-        iso_path="$(find result/iso -maxdepth 1 -name '*.iso' | head -n1)"
-    fi
-
-    if [ -z "$iso_path" ]; then
-        echo "Installer ISO not found under result/iso"
-        exit 1
-    fi
-
-    echo "Resetting installer VM state..."
-    rm -f "$disk"
-    rm -f "$ovmf_vars"
-    rm -rf "$HOME/.nixpi"
-
-    echo "Creating installer VM disk at $disk ($disk_size)..."
-    qemu-img create -f qcow2 "$disk" "$disk_size" >/dev/null
-
-    mkdir -p "$(dirname "$ovmf_vars")"
-    cp "$ovmf_vars_template" "$ovmf_vars"
-
-    echo "Booting installer ISO: $iso_path"
-    echo "ISO timestamp: $(stat -c '%y' "$iso_path")"
-    echo "Disk: $disk"
-    echo "SSH forward: localhost:$ssh_port -> guest:22"
-    echo "Console: graphical"
-
-    qemu_args=(
-        -enable-kvm
-        -m "$memory_mb"
-        -smp "$vm_cpus"
-        -drive "if=pflash,format=raw,readonly=on,file=$ovmf_code"
-        -drive "if=pflash,format=raw,file=$ovmf_vars"
-        -drive "file=$disk,format=qcow2,if=virtio"
-        -cdrom "$iso_path"
-        -boot "order=dc,once=d"
-        -nic "user,model=virtio-net-pci,hostfwd=tcp::$ssh_port-:22"
-    )
-
-    exec qemu-system-x86_64 "${qemu_args[@]}"
+# Boot the installer ISO with bridged networking for realistic NetBird validation.
+# Requires:
+#   NIXPI_INSTALL_VM_BRIDGE=br0
+vm-install-iso-bridge: iso
+    NIXPI_INSTALL_VM_OVMF_CODE={{ ovmf }} NIXPI_INSTALL_VM_OVMF_VARS_TEMPLATE={{ ovmf_vars }} bash tools/run-installer-iso.sh bridge "${NIXPI_INSTALL_VM_BRIDGE:-}"
 
 # Run VM (fresh build from current codebase)
 vm: qcow2

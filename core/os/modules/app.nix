@@ -5,10 +5,8 @@ let
   resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
   primaryUser = resolved.resolvedPrimaryUser;
   primaryHome = resolved.resolvedPrimaryHome;
-  serviceUser = config.nixpi.serviceUser;
   stateDir = config.nixpi.stateDir;
-  serviceHome = "${stateDir}/home";
-  agentStateDir = "${stateDir}/agent";
+  agentStateDir = "${primaryHome}/.pi";
 in
 
 {
@@ -16,25 +14,14 @@ in
 
   environment.systemPackages = [ appPackage piAgent ];
 
-  users.groups.${serviceUser} = {};
-  users.users.${serviceUser} = {
-    isSystemUser = true;
-    group = serviceUser;
-    home = serviceHome;
-    createHome = true;
-    shell = "${pkgs.shadow}/bin/nologin";
-  };
-
   systemd.tmpfiles.rules = [
     "L+ /usr/local/share/nixpi - - - - ${appPackage}/share/nixpi"
     "d /etc/nixpi/appservices 0755 root root -"
-    "d ${stateDir} 0770 ${serviceUser} ${serviceUser} -"
-    "d ${serviceHome} 0770 ${serviceUser} ${serviceUser} -"
-    "d ${agentStateDir} 0770 ${serviceUser} ${serviceUser} -"
-    "d ${stateDir}/nixpi-daemon 0770 ${serviceUser} ${serviceUser} -"
-    "d ${stateDir}/services 0770 ${serviceUser} ${serviceUser} -"
-    "d ${stateDir}/services/home 0770 ${serviceUser} ${serviceUser} -"
-    "d ${stateDir}/services/chat 0770 ${serviceUser} ${serviceUser} -"
+    "d ${stateDir} 0770 ${primaryUser} ${primaryUser} -"
+    "d ${stateDir}/nixpi-daemon 0770 ${primaryUser} ${primaryUser} -"
+    "d ${stateDir}/services 0770 ${primaryUser} ${primaryUser} -"
+    "d ${stateDir}/services/home 0770 ${primaryUser} ${primaryUser} -"
+    "d ${stateDir}/services/chat 0770 ${primaryUser} ${primaryUser} -"
   ];
 
   system.activationScripts.nixpi-app = lib.stringAfter [ "users" ] ''
@@ -42,31 +29,23 @@ in
     default_pi_settings="${appPackage}/share/nixpi/.pi/settings.json"
 
     install -d -m 0755 -o ${primaryUser} -g "$primary_group" ${primaryHome}
-    install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${stateDir}
-    install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${serviceHome}
-    install -d -m 0770 -o ${serviceUser} -g ${serviceUser} ${agentStateDir}
-
-    if [ -d ${primaryHome}/.pi ] && [ ! -L ${primaryHome}/.pi ] && [ ! -e ${agentStateDir}/.migration-complete ]; then
-      cp -a ${primaryHome}/.pi/. ${agentStateDir}/
-      touch ${agentStateDir}/.migration-complete
-    fi
+    install -d -m 0770 -o ${primaryUser} -g "$primary_group" ${stateDir}
+    install -d -m 0700 -o ${primaryUser} -g "$primary_group" ${agentStateDir}
 
     if [ ! -e ${agentStateDir}/settings.json ] && [ -f "$default_pi_settings" ]; then
-      install -m 0640 -o ${serviceUser} -g ${serviceUser} "$default_pi_settings" ${agentStateDir}/settings.json
+      install -m 0600 -o ${primaryUser} -g "$primary_group" "$default_pi_settings" ${agentStateDir}/settings.json
     fi
 
-    ln -sfn ${agentStateDir} ${primaryHome}/.pi
-    chown -h ${primaryUser}:"$primary_group" ${primaryHome}/.pi
-
-    ln -sfn ${agentStateDir} ${serviceHome}/.pi
-    chown -h ${serviceUser}:${serviceUser} ${serviceHome}/.pi
+    chown -R ${primaryUser}:"$primary_group" ${agentStateDir}
+    chmod 0700 ${agentStateDir}
   '';
 
   system.services.nixpi-daemon = {
     imports = [ (lib.modules.importApply ../services/nixpi-daemon.nix { inherit pkgs; }) ];
     nixpi-daemon = {
       package = appPackage;
-      inherit primaryHome primaryUser serviceHome stateDir agentStateDir serviceUser;
+      inherit primaryHome primaryUser stateDir agentStateDir;
+      serviceUser = primaryUser;
       path = [ piAgent pkgs.nodejs ];
     };
   };

@@ -5,7 +5,6 @@ let
   resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
   primaryUser = resolved.resolvedPrimaryUser;
   primaryHome = resolved.resolvedPrimaryHome;
-  serviceUser = config.nixpi.serviceUser;
   stateDir = config.nixpi.stateDir;
   setupCompleteFile = "${primaryHome}/.nixpi/.setup-complete";
   cfg = config.nixpi.services;
@@ -89,7 +88,7 @@ in
     };
 
     systemd.tmpfiles.rules = [
-      "d ${primaryHome}/nixpi 2775 ${primaryUser} ${serviceUser} -"
+      "d ${primaryHome}/nixpi 2775 ${primaryUser} ${primaryUser} -"
     ];
 
     environment.systemPackages = with pkgs; [

@@ -16,10 +16,6 @@ in
       type = pathOrStr;
     };
 
-    serviceUser = mkOption {
-      type = types.str;
-    };
-
     stateDir = mkOption {
       type = types.pathWith { absolute = true; };
     };

@@ -35,7 +35,7 @@ pkgs.testers.runNixOSTest {
     users.users.${username} = {
       isNormalUser = true;
       group = username;
-      extraGroups = [ "wheel" "networkmanager" "agent" ];
+      extraGroups = [ "wheel" "networkmanager" ];
       home = homeDir;
       shell = pkgs.bash;
     };
@@ -111,16 +111,15 @@ pkgs.testers.runNixOSTest {
     checkpoints = [c for c in checkpoints if c]  # filter empty lines
     assert len(checkpoints) > 0, f"No checkpoints found in wizard-state. Found: {checkpoints}"
     
-    # Test 8: Service-owned Pi directory structure was created and linked into the user home
+    # Test 8: Pi state lives directly under the operator home and is writable by the operator
     nixpi.succeed("test -d " + home + "/.pi")
     nixpi.succeed("test -f " + home + "/.pi/settings.json")
-    nixpi.succeed("test -d /var/lib/nixpi/agent")
-    nixpi.succeed("test -f /var/lib/nixpi/agent/settings.json")
-    nixpi.succeed("test \"$(readlink -f " + home + "/.pi)\" = /var/lib/nixpi/agent")
+    nixpi.succeed("test ! -L " + home + "/.pi")
+    nixpi.succeed("test \"$(stat -c %U " + home + "/.pi)\" = pi")
 
     # Test 8a: Login shell exports the managed Pi agent dir so `pi` can start
     nixpi.succeed(
-        "su - pi -c '. ~/.bashrc; test \"$PI_CODING_AGENT_DIR\" = /var/lib/nixpi/agent; "
+        "su - pi -c '. ~/.bashrc; test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi; "
         + "pi --help | grep -q \"AI coding assistant\"'"
     )
 

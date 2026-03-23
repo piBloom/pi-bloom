@@ -9,7 +9,7 @@
 #   WIZARD_STATE        — path to checkpoint directory (e.g. ~/.nixpi/wizard-state)
 #   MATRIX_STATE_DIR    — path to matrix state directory
 #   MATRIX_HOMESERVER   — Matrix homeserver URL (e.g. http://localhost:6167)
-#   PI_DIR              — path to Pi config dir (e.g. /var/lib/nixpi/agent or ~/.pi)
+#   PI_DIR              — path to Pi config dir (typically ~/.pi)
 #   NIXPI_CONFIG        — path to NixPI service config dir
 #   NIXPI_DIR           — path to NixPI home dir
 

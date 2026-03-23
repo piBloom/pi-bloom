@@ -16,7 +16,7 @@ pkgs.testers.runNixOSTest {
     users.users.${username} = {
       isNormalUser = true;
       group = username;
-      extraGroups = [ "wheel" "networkmanager" "agent" ];
+      extraGroups = [ "wheel" "networkmanager" ];
       home = homeDir;
       shell = pkgs.bash;
     };

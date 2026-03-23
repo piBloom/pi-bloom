@@ -20,7 +20,7 @@ Use these procedures when diagnosing and recovering from common system issues. A
    - Port conflict: verify nothing else is on port 6167
 5. If Pi is not responding to messages:
    - Check Pi agent is running and `nixpi-daemon.service` is active
-   - Verify Pi's Matrix credentials at `/var/lib/nixpi/agent/matrix-credentials.json`
+   - Verify Pi's Matrix credentials at `~/.pi/matrix-credentials.json`
 
 ## OS Update Failure
 

@@ -61,15 +61,6 @@ in
       };
     };
 
-    serviceUser = lib.mkOption {
-      type = lib.types.str;
-      default = "agent";
-      description = ''
-        Dedicated system account that owns the always-on Pi agent runtime and
-        other service-managed state.
-      '';
-    };
-
     stateDir = lib.mkOption {
       type = absolutePath;
       default = "/var/lib/nixpi";

@@ -36,7 +36,7 @@ pkgs.testers.runNixOSTest {
       users.users.${username} = {
         isNormalUser = true;
         group = username;
-        extraGroups = [ "wheel" "networkmanager" "agent" ];
+        extraGroups = [ "wheel" "networkmanager" ];
         home = homeDir;
         shell = pkgs.bash;
       };
@@ -132,16 +132,14 @@ pkgs.testers.runNixOSTest {
     nixpi.succeed("test -d " + home + "/nixpi")
     nixpi.succeed("test -d " + home + "/.nixpi")
     nixpi.succeed("test -d " + home + "/.pi")
-    nixpi.succeed("test -d /var/lib/nixpi/agent")
-    nixpi.succeed("test \"$(readlink -f " + home + "/.pi)\" = /var/lib/nixpi/agent")
+    nixpi.succeed("test ! -L " + home + "/.pi")
     nixpi.succeed("test -d /usr/local/share/nixpi")
     
     # E2E Test 10: User has correct groups
     groups = nixpi.succeed("groups " + username).strip()
     assert "wheel" in groups, "User not in wheel group: " + groups
     assert "networkmanager" in groups, "User not in networkmanager group: " + groups
-    assert "agent" in groups, "User not in agent group: " + groups
-    
+
     # E2E Test 11: NetBird service is installed and active even without a setup key
     nixpi.succeed("systemctl is-active netbird.service")
 

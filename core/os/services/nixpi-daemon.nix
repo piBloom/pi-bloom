@@ -21,10 +21,6 @@ in
       type = types.str;
     };
 
-    serviceHome = mkOption {
-      type = types.pathWith { absolute = true; };
-    };
-
     stateDir = mkOption {
       type = types.pathWith { absolute = true; };
     };
@@ -61,7 +57,7 @@ in
         UMask = "0007";
         WorkingDirectory = "${config.nixpi-daemon.primaryHome}/nixpi";
         Environment = [
-          "HOME=${config.nixpi-daemon.serviceHome}"
+          "HOME=${config.nixpi-daemon.primaryHome}"
           "NIXPI_DIR=${config.nixpi-daemon.primaryHome}/nixpi"
           "NIXPI_STATE_DIR=${config.nixpi-daemon.stateDir}"
           "NIXPI_PI_DIR=${config.nixpi-daemon.agentStateDir}"

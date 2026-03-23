@@ -1,7 +1,8 @@
 { pkgs, lib, config, ... }:
 
 let
-  serviceUser = config.nixpi.serviceUser;
+  resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
+  primaryUser = resolved.resolvedPrimaryUser;
   stateDir = config.nixpi.stateDir;
   cfg = config.nixpi.services;
   securityCfg = config.nixpi.security;
@@ -16,7 +17,8 @@ in
         nixpi-home = {
           port = cfg.home.port;
           bindAddress = cfg.bindAddress;
-          inherit stateDir serviceUser;
+          inherit stateDir;
+          serviceUser = primaryUser;
           elementWebPort = cfg.elementWeb.port;
           matrixPort = config.nixpi.matrix.port;
           matrixClientBaseUrl =
@@ -40,7 +42,8 @@ in
               config.nixpi.matrix.clientBaseUrl
             else
               "http://${config.networking.hostName}:${toString config.nixpi.matrix.port}";
-          inherit stateDir serviceUser;
+          inherit stateDir;
+          serviceUser = primaryUser;
         };
       };
     })

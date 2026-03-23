@@ -18,6 +18,12 @@ Before first-boot setup, you need a system installed from the NixPI installer im
 6. During first boot, the setup wizard creates the local `~/nixpi` checkout and the host-specific flake at `/etc/nixos`
 7. The installed system autologins into the official NixPI Openbox desktop and opens the NixPI terminal there
 
+For VM install-flow testing:
+
+- `just vm-install-iso` runs the installer in the default user-mode NAT network with SSH forwarding
+- `NIXPI_INSTALL_VM_BRIDGE=br0 just vm-install-iso-bridge` runs the installer with bridged networking for realistic NetBird reachability tests
+- Only the bridged path should be treated like a real peer on your network
+
 ## 🛡️ Security Note: NetBird is Mandatory
 
 NetBird is the network security boundary for all NixPI services. The firewall configuration (`trustedInterfaces = ["wt0"]`) only protects services when the NetBird interface (`wt0`) is active. Without NetBird:
@@ -82,7 +88,7 @@ During that Pi-side first conversation, Pi should also orient the user to the pl
 - NixPI keeps durable state in `~/nixpi/` using inspectable files
 - `~/nixpi` is the canonical git working tree for syncing with a fork and pulling from upstream, while `/etc/nixos` is the deployed host flake used for rebuilds
 - NixPI can propose persona or workflow changes through tracked evolutions instead of silently changing itself
-- Matrix is the native messaging surface, with `nixpi-daemon.service` keeping Pi active in rooms outside the local terminal session as a system service running under the `agent` account
+- Matrix is the native messaging surface, with `nixpi-daemon.service` keeping Pi active in rooms outside the local terminal session as a system service running under the primary operator account
 - Multi-agent rooms are optional and activate when valid overlays exist in `~/nixpi/Agents/*/AGENTS.md`
 
 ## 🔄 Recovery
@@ -97,7 +103,7 @@ If you want to redo persona setup, remove `~/.nixpi/wizard-state/persona-done` a
 |------|---------|
 | `~/.nixpi/.setup-complete` | Wizard complete sentinel |
 | `~/.nixpi/wizard-state/persona-done` | Persona step complete marker |
-| `/var/lib/nixpi/agent/matrix-credentials.json` | Primary Matrix credentials |
+| `~/.pi/matrix-credentials.json` | Primary Matrix credentials |
 
 ### Current Behavior
 

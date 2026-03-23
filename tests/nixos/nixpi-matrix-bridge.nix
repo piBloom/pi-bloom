@@ -18,7 +18,7 @@ pkgs.testers.runNixOSTest {
       users.users.${username} = {
         isNormalUser = true;
         group = username;
-        extraGroups = [ "wheel" "networkmanager" "agent" ];
+        extraGroups = [ "wheel" "networkmanager" ];
         home = homeDir;
         shell = pkgs.bash;
       };
@@ -43,7 +43,7 @@ pkgs.testers.runNixOSTest {
       users.users.${username} = {
         isNormalUser = true;
         group = username;
-        extraGroups = [ "wheel" "networkmanager" "agent" ];
+        extraGroups = [ "wheel" "networkmanager" ];
         home = homeDir;
         shell = pkgs.bash;
       };
@@ -57,9 +57,10 @@ pkgs.testers.runNixOSTest {
 
       system.activationScripts.nixpi-bridge-fixtures = lib.stringAfter [ "users" ] ''
         install -d -m 0755 -o ${username} -g ${username} ${homeDir}/.nixpi
-        install -d -m 0775 -o ${username} -g agent ${homeDir}/nixpi
-        install -d -m 0775 -o ${username} -g agent ${homeDir}/nixpi/Agents
-        install -d -m 0775 -o ${username} -g agent ${homeDir}/nixpi/Agents/host
+        install -d -m 0755 -o ${username} -g ${username} ${homeDir}/.pi
+        install -d -m 0775 -o ${username} -g ${username} ${homeDir}/nixpi
+        install -d -m 0775 -o ${username} -g ${username} ${homeDir}/nixpi/Agents
+        install -d -m 0775 -o ${username} -g ${username} ${homeDir}/nixpi/Agents/host
         cat > ${homeDir}/nixpi/Agents/host/AGENTS.md <<'EOF'
 ---
 id: host
@@ -72,10 +73,10 @@ respond:
 ---
 You are Pi.
 EOF
-        chown -R ${username}:agent ${homeDir}/nixpi
+        chown -R ${username}:${username} ${homeDir}/nixpi
         touch ${homeDir}/.nixpi/.setup-complete
         chown ${username}:${username} ${homeDir}/.nixpi/.setup-complete
-        install -d -m 0700 -o agent -g agent /var/lib/nixpi/agent/matrix-agents
+        install -d -m 0700 -o ${username} -g ${username} ${homeDir}/.pi/matrix-agents
       '';
 
       environment.systemPackages = [ pkgs.curl pkgs.jq ];
@@ -178,7 +179,7 @@ EOF
     room_id_enc = urllib.parse.quote(room_id, safe="")
 
     nixpi.succeed(
-        "cat > /var/lib/nixpi/agent/matrix-credentials.json <<'EOF'\n"
+        "cat > /home/pi/.pi/matrix-credentials.json <<'EOF'\n"
         + json.dumps({
             "homeserver": "http://nixpi:6167",
             "botUserId": host_creds["user_id"],
@@ -187,11 +188,11 @@ EOF
         }, indent=2)
         + "\nEOF"
     )
-    nixpi.succeed("chown agent:agent /var/lib/nixpi/agent/matrix-credentials.json")
-    nixpi.succeed("chmod 600 /var/lib/nixpi/agent/matrix-credentials.json")
+    nixpi.succeed("chown pi:pi /home/pi/.pi/matrix-credentials.json")
+    nixpi.succeed("chmod 600 /home/pi/.pi/matrix-credentials.json")
 
     nixpi.succeed(
-        "cat > /var/lib/nixpi/agent/matrix-agents/host.json <<'EOF'\n"
+        "cat > /home/pi/.pi/matrix-agents/host.json <<'EOF'\n"
         + json.dumps({
             "homeserver": "http://nixpi:6167",
             "userId": host_creds["user_id"],
@@ -201,8 +202,8 @@ EOF
         }, indent=2)
         + "\nEOF"
     )
-    nixpi.succeed("chown agent:agent /var/lib/nixpi/agent/matrix-agents/host.json")
-    nixpi.succeed("chmod 600 /var/lib/nixpi/agent/matrix-agents/host.json")
+    nixpi.succeed("chown pi:pi /home/pi/.pi/matrix-agents/host.json")
+    nixpi.succeed("chmod 600 /home/pi/.pi/matrix-agents/host.json")
 
     nixpi.wait_for_unit("nixpi-daemon.service", timeout=120)
 

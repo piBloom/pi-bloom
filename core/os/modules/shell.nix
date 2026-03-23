@@ -5,14 +5,13 @@ let
   resolved = import ../lib/resolve-primary-user.nix { inherit lib config; };
   primaryUser = resolved.resolvedPrimaryUser;
   primaryHome = resolved.resolvedPrimaryHome;
-  serviceUser = config.nixpi.serviceUser;
   stateDir = config.nixpi.stateDir;
 
   bashrc = pkgs.writeText "nixpi-bashrc" ''
     export NIXPI_DIR="${primaryHome}/nixpi"
     export NIXPI_STATE_DIR="${stateDir}"
-    export NIXPI_PI_DIR="${stateDir}/agent"
-    export PI_CODING_AGENT_DIR="${stateDir}/agent"
+    export NIXPI_PI_DIR="${primaryHome}/.pi"
+    export PI_CODING_AGENT_DIR="${primaryHome}/.pi"
     export NIXPI_CONFIG_DIR="${stateDir}/services"
     export NIXPI_INSTALL_MODE="${config.nixpi.install.mode}"
     export NIXPI_KEEP_SSH_AFTER_SETUP="${if config.nixpi.bootstrap.keepSshAfterSetup then "1" else "0"}"
@@ -20,6 +19,9 @@ let
       export BROWSER="chromium"
     fi
     export PATH="/usr/local/share/nixpi/node_modules/.bin:$PATH"
+    if [ -t 0 ]; then
+      stty sane erase '^H' 2>/dev/null || true
+    fi
   '';
 
   bashProfile = pkgs.writeText "nixpi-bash_profile" ''
@@ -39,32 +41,19 @@ in
       message = "nixpi.primaryHome must not be empty.";
     }
     {
-      assertion = serviceUser != "";
-      message = "nixpi.serviceUser must not be empty.";
-    }
-    {
-      assertion = serviceUser != primaryUser;
-      message = "nixpi.serviceUser must be distinct from nixpi.primaryUser.";
-    }
-    {
       assertion = config.nixpi.install.mode != "managed-user" || primaryUser != "";
       message = "nixpi.install.mode = managed-user requires nixpi.primaryUser.";
     }
   ];
 
-  users.users.${primaryUser} = lib.mkMerge [
-    (lib.mkIf (config.nixpi.createPrimaryUser || config.nixpi.install.mode == "managed-user") {
-      isNormalUser = true;
-      group = primaryUser;
-      extraGroups = [ "wheel" "networkmanager" serviceUser ];
-      home = primaryHome;
-      createHome = true;
-      shell = pkgs.bash;
-    })
-    (lib.mkIf (!(config.nixpi.createPrimaryUser || config.nixpi.install.mode == "managed-user")) {
-      extraGroups = lib.mkAfter [ serviceUser ];
-    })
-  ];
+  users.users.${primaryUser} = lib.mkIf (config.nixpi.createPrimaryUser || config.nixpi.install.mode == "managed-user") {
+    isNormalUser = true;
+    group = primaryUser;
+    extraGroups = [ "wheel" "networkmanager" ];
+    home = primaryHome;
+    createHome = true;
+    shell = pkgs.bash;
+  };
 
   users.groups.${primaryUser} = lib.mkIf (config.nixpi.createPrimaryUser || config.nixpi.install.mode == "managed-user") {};
 
