@@ -3,77 +3,57 @@
 let
   testLib = import ./lib.nix { inherit pkgs lib self; };
 
-  inherit (testLib)
-    nixPiModules
-    nixPiModulesNoShell
-    mkTestFilesystems
-    mkMatrixAdminSeedConfig
-    matrixTestClient
-    matrixRegisterScript
-    mkManagedUserConfig
-    mkPrefillActivation;
-
-  mkTest = testFile: import testFile {
-    inherit
-      pkgs
-      lib
+  # self is forwarded independently (not from testLib) so test node modules
+  # can reference self.nixosModules.* via _module.args.
+  sharedArgs = {
+    inherit piAgent appPackage setupPackage self;
+    inherit (testLib)
       nixPiModules
       nixPiModulesNoShell
-      piAgent
-      appPackage
-      setupPackage
       mkTestFilesystems
       mkMatrixAdminSeedConfig
       matrixTestClient
       matrixRegisterScript
       mkManagedUserConfig
-      mkPrefillActivation
-      self;
+      mkPrefillActivation;
   };
 
-  mkInstallerTest = testFile: import testFile {
-    inherit
-      pkgs
-      lib
-      nixPiModules
-      nixPiModulesNoShell
-      piAgent
-      appPackage
-      setupPackage
-      mkTestFilesystems
-      mkMatrixAdminSeedConfig
-      matrixTestClient
-      matrixRegisterScript
-      mkManagedUserConfig
-      mkPrefillActivation
-      self
-      installerHelper;
+  runTest = testFile: pkgs.testers.runNixOSTest {
+    imports = [ testFile ];
+    _module.args = sharedArgs;
+  };
+
+  runInstallerTest = testFile: pkgs.testers.runNixOSTest {
+    imports = [ testFile ];
+    _module.args = sharedArgs // { inherit installerHelper; };
   };
 
   tests = {
-    nixpi-matrix = mkTest ./nixpi-matrix.nix;
-    nixpi-firstboot = mkTest ./nixpi-firstboot.nix;
-    nixpi-network = mkTest ./nixpi-network.nix;
-    nixpi-daemon = mkTest ./nixpi-daemon.nix;
-    nixpi-e2e = mkTest ./nixpi-e2e.nix;
-    nixpi-home = mkTest ./nixpi-home.nix;
-    nixpi-desktop = mkTest ./nixpi-desktop.nix;
-    nixpi-security = mkTest ./nixpi-security.nix;
-    nixpi-modular-services = mkTest ./nixpi-modular-services.nix;
-    nixpi-matrix-bridge = mkTest ./nixpi-matrix-bridge.nix;
-    nixpi-matrix-reply = mkTest ./nixpi-matrix-reply.nix;
-    nixpi-bootstrap-mode = mkTest ./nixpi-bootstrap-mode.nix;
-    nixpi-post-setup-lockdown = mkTest ./nixpi-post-setup-lockdown.nix;
-    nixpi-broker = mkTest ./nixpi-broker.nix;
-    nixpi-installer-smoke = mkInstallerTest ./nixpi-installer-smoke.nix;
+    nixpi-matrix               = runTest ./nixpi-matrix.nix;
+    nixpi-firstboot            = runTest ./nixpi-firstboot.nix;
+    nixpi-network              = runTest ./nixpi-network.nix;
+    nixpi-daemon               = runTest ./nixpi-daemon.nix;
+    nixpi-e2e                  = runTest ./nixpi-e2e.nix;
+    nixpi-home                 = runTest ./nixpi-home.nix;
+    nixpi-desktop              = runTest ./nixpi-desktop.nix;
+    nixpi-security             = runTest ./nixpi-security.nix;
+    nixpi-modular-services     = runTest ./nixpi-modular-services.nix;
+    nixpi-matrix-bridge        = runTest ./nixpi-matrix-bridge.nix;
+    nixpi-matrix-reply         = runTest ./nixpi-matrix-reply.nix;
+    nixpi-bootstrap-mode       = runTest ./nixpi-bootstrap-mode.nix;
+    nixpi-post-setup-lockdown  = runTest ./nixpi-post-setup-lockdown.nix;
+    nixpi-broker               = runTest ./nixpi-broker.nix;
+    nixpi-installer-smoke      = runInstallerTest ./nixpi-installer-smoke.nix;
+    nixpi-update               = runTest ./nixpi-update.nix;
+    nixpi-options-validation   = runTest ./nixpi-options-validation.nix;
   };
 
   smokeAliases = {
-    smoke-matrix = tests.nixpi-matrix;
+    smoke-matrix    = tests.nixpi-matrix;
     smoke-firstboot = tests.nixpi-firstboot;
-    smoke-security = tests.nixpi-security;
-    smoke-broker = tests.nixpi-broker;
-    smoke-desktop = tests.nixpi-desktop;
+    smoke-security  = tests.nixpi-security;
+    smoke-broker    = tests.nixpi-broker;
+    smoke-desktop   = tests.nixpi-desktop;
     installer-smoke = tests.nixpi-installer-smoke;
   };
 in
