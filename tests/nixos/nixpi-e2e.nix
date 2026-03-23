@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-e2e.nix
 # End-to-end integration test - full NixPI stack validation
 
-{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkNixPiNode, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-e2e";

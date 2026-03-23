@@ -43,8 +43,7 @@ in
     imports = [ (lib.modules.importApply ../services/nixpi-daemon.nix { inherit pkgs; }) ];
     nixpi-daemon = {
       package = appPackage;
-      inherit primaryHome primaryUser stateDir agentStateDir;
-      serviceUser = primaryUser;
+      inherit primaryUser stateDir agentStateDir;
       path = [ piAgent pkgs.nodejs ];
     };
   };

@@ -51,22 +51,13 @@ EOF
     chmod 644 ${homeDir}/.nixpi/prefill.env
   '';
 
-  # Common test configuration for NixPI nodes
-  mkNixPiNode = { nixPiModules, piAgent, appPackage, setupPackage, extraConfig ? {} }: {
-    imports = nixPiModules ++ [ extraConfig ];
-    _module.args = { inherit piAgent appPackage setupPackage; };
-
-    virtualisation.diskSize = 20480;
-    virtualisation.memorySize = 4096;
-    virtualisation.graphics = false;
-
-    boot.loader.systemd-boot.enable = true;
-    boot.loader.efi.canTouchEfiVariables = true;
-    networking.hostName = lib.mkDefault "nixos";
-    time.timeZone = "UTC";
-    i18n.defaultLocale = "en_US.UTF-8";
-    networking.networkmanager.enable = true;
-    system.stateVersion = "25.05";
+  mkMatrixAdminSeedConfig = {
+    username,
+    password,
+  }: {
+    services.matrix-continuwuity.settings.admin_execute = [
+      "users create-user ${username} ${password}"
+    ];
   };
 
   # Minimal filesystem configuration for test VMs
@@ -340,5 +331,21 @@ EOF
                 return data
 
         raise AssertionError("Matrix registration did not complete: " + response)
+
+    def login_matrix_user(machine, homeserver, username, password):
+        payload = json.dumps({
+            "type": "m.login.password",
+            "identifier": {
+                "type": "m.id.user",
+                "user": username,
+            },
+            "password": password,
+        })
+        response = machine.succeed(
+            "curl -sf -X POST " + homeserver + "/_matrix/client/v3/login "
+            + "-H 'Content-Type: application/json' "
+            + "-d '" + payload + "'"
+        )
+        return json.loads(response)
   '';
 }

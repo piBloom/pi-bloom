@@ -16,10 +16,6 @@ in
       type = types.str;
     };
 
-    primaryHome = mkOption {
-      type = types.pathWith { absolute = true; };
-    };
-
     path = mkOption {
       type = types.str;
     };
@@ -46,7 +42,6 @@ in
         Environment = [
           "PATH=${config.nixpi-update.path}"
           "NIXPI_PRIMARY_USER=${config.nixpi-update.primaryUser}"
-          "NIXPI_PRIMARY_HOME=${config.nixpi-update.primaryHome}"
           "NIXPI_SYSTEM_FLAKE_DIR=${config.nixpi-update.flakeDir}"
         ];
       };

@@ -20,12 +20,11 @@ let
   inherit (testLib)
     nixPiModules
     nixPiModulesNoShell
-    mkNixPiNode
     mkTestFilesystems
+    mkMatrixAdminSeedConfig
     matrixTestClient
     matrixRegisterScript
     mkManagedUserConfig
-    mkExistingUserConfig
     mkPrefillActivation;
   
   # Test function with common dependencies
@@ -38,12 +37,11 @@ let
       piAgent
       appPackage
       setupPackage
-      mkNixPiNode
       mkTestFilesystems
+      mkMatrixAdminSeedConfig
       matrixTestClient
       matrixRegisterScript
       mkManagedUserConfig
-      mkExistingUserConfig
       mkPrefillActivation
       self;
   };
@@ -57,64 +55,40 @@ let
       piAgent
       appPackage
       setupPackage
-      mkNixPiNode
       mkTestFilesystems
+      mkMatrixAdminSeedConfig
       matrixTestClient
       matrixRegisterScript
       mkManagedUserConfig
-      mkExistingUserConfig
       mkPrefillActivation
       self
       installerHelper;
   };
+
+  tests = {
+    nixpi-matrix = mkTest ./nixpi-matrix.nix;
+    nixpi-firstboot = mkTest ./nixpi-firstboot.nix;
+    nixpi-network = mkTest ./nixpi-network.nix;
+    nixpi-daemon = mkTest ./nixpi-daemon.nix;
+    nixpi-e2e = mkTest ./nixpi-e2e.nix;
+    nixpi-home = mkTest ./nixpi-home.nix;
+    nixpi-desktop = mkTest ./nixpi-desktop.nix;
+    nixpi-security = mkTest ./nixpi-security.nix;
+    nixpi-modular-services = mkTest ./nixpi-modular-services.nix;
+    nixpi-matrix-bridge = mkTest ./nixpi-matrix-bridge.nix;
+    nixpi-bootstrap-mode = mkTest ./nixpi-bootstrap-mode.nix;
+    nixpi-post-setup-lockdown = mkTest ./nixpi-post-setup-lockdown.nix;
+    nixpi-broker = mkTest ./nixpi-broker.nix;
+    nixpi-installer-smoke = mkInstallerTest ./nixpi-installer-smoke.nix;
+  };
+
+  smokeAliases = {
+    smoke-matrix = tests.nixpi-matrix;
+    smoke-firstboot = tests.nixpi-firstboot;
+    smoke-security = tests.nixpi-security;
+    smoke-broker = tests.nixpi-broker;
+    smoke-desktop = tests.nixpi-desktop;
+    installer-smoke = tests.nixpi-installer-smoke;
+  };
 in
-{
-  smoke-matrix = mkTest ./nixpi-matrix.nix;
-  smoke-firstboot = mkTest ./nixpi-firstboot.nix;
-  smoke-security = mkTest ./nixpi-security.nix;
-  smoke-broker = mkTest ./nixpi-broker.nix;
-  smoke-desktop = mkTest ./nixpi-desktop.nix;
-  installer-smoke = mkInstallerTest ./nixpi-installer-smoke.nix;
-
-  # Matrix homeserver test
-  nixpi-matrix = mkTest ./nixpi-matrix.nix;
-  
-  # First-boot wizard test
-  nixpi-firstboot = mkTest ./nixpi-firstboot.nix;
-  
-  # Network connectivity test
-  nixpi-network = mkTest ./nixpi-network.nix;
-  
-  # Pi daemon test
-  nixpi-daemon = mkTest ./nixpi-daemon.nix;
-  
-  # End-to-end integration test
-  nixpi-e2e = mkTest ./nixpi-e2e.nix;
-
-  # NixPI Home landing page and user service test
-  nixpi-home = mkTest ./nixpi-home.nix;
-
-  # Graphical Openbox desktop session smoke test
-  nixpi-desktop = mkTest ./nixpi-desktop.nix;
-
-  # Firewall and service exposure policy test
-  nixpi-security = mkTest ./nixpi-security.nix;
-
-  # Modular service/configData regression test
-  nixpi-modular-services = mkTest ./nixpi-modular-services.nix;
-
-  # Multi-node Matrix daemon transport test
-  nixpi-matrix-bridge = mkTest ./nixpi-matrix-bridge.nix;
-
-  # No-prefill bootstrap policy test
-  nixpi-bootstrap-mode = mkTest ./nixpi-bootstrap-mode.nix;
-
-  # Post-setup security transition and persistence test
-  nixpi-post-setup-lockdown = mkTest ./nixpi-post-setup-lockdown.nix;
-
-  # Broker autonomy and privilege boundaries test
-  nixpi-broker = mkTest ./nixpi-broker.nix;
-
-  # Live installer smoke test that drives the minimal manual install flow.
-  nixpi-installer-smoke = mkInstallerTest ./nixpi-installer-smoke.nix;
-}
+tests // smokeAliases

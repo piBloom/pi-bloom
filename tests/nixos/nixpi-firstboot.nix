@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-firstboot.nix
 # Test that the NixPI first-boot wizard runs correctly
 
-{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkNixPiNode, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-firstboot";

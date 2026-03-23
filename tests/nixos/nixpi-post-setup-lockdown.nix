@@ -1,4 +1,4 @@
-{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkExistingUserConfig, mkPrefillActivation, ... }:
+{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkManagedUserConfig, mkPrefillActivation, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-post-setup-lockdown";
@@ -34,7 +34,7 @@ pkgs.testers.runNixOSTest {
       } + ''
         chown -R ${username}:${username} ${homeDir}/.nixpi
       '';
-    } // (mkExistingUserConfig { inherit username homeDir; });
+    } // (mkManagedUserConfig { inherit username homeDir; });
 
     client = { ... }: {
       imports = [ mkTestFilesystems ];

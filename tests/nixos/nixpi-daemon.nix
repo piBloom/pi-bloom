@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-daemon.nix
 # Test that the Pi Daemon Matrix agent starts and connects to homeserver
 
-{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkNixPiNode, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkMatrixAdminSeedConfig, matrixRegisterScript, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-daemon";
@@ -12,12 +12,12 @@ pkgs.testers.runNixOSTest {
       username = "server";
       homeDir = "/home/${username}";
     in {
-      imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
+      imports = nixPiModulesNoShell ++ [ mkTestFilesystems (mkMatrixAdminSeedConfig {
+        username = username;
+        password = "testpass123";
+      }) ];
       _module.args = { inherit piAgent appPackage setupPackage; };
       nixpi.primaryUser = username;
-      services.matrix-continuwuity.settings = {
-        admin_execute = [ "users create-user server testpass123" ];
-      };
       virtualisation.diskSize = 10240;
       virtualisation.memorySize = 2048;
 
@@ -88,7 +88,7 @@ pkgs.testers.runNixOSTest {
   };
 
   testScript = ''
-    import json
+    ${matrixRegisterScript}
 
     agent = machines[0]
     server = machines[1]
@@ -100,13 +100,7 @@ pkgs.testers.runNixOSTest {
     server.wait_for_unit("multi-user.target", timeout=300)
     server.wait_for_unit("continuwuity.service", timeout=60)
     server.wait_until_succeeds("curl -sf http://localhost:6167/_matrix/client/versions", timeout=60)
-    login_payload = json.loads(
-        server.succeed(
-            "curl -sf -X POST http://localhost:6167/_matrix/client/v3/login "
-            + "-H 'Content-Type: application/json' "
-            + "-d '{\"type\":\"m.login.password\",\"identifier\":{\"type\":\"m.id.user\",\"user\":\"server\"},\"password\":\"testpass123\"}'"
-        )
-    )
+    login_payload = login_matrix_user(server, "http://localhost:6167", "server", "testpass123")
     access_token = login_payload["access_token"]
     user_id = login_payload["user_id"]
     assert user_id, "Continuwuity login produced an empty user_id"

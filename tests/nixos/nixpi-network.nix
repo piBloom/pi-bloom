@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-network.nix
 # Test network connectivity, SSH, and NetBird mesh setup between nodes
 
-{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkNixPiNode, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-network";

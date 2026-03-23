@@ -34,10 +34,6 @@ in
       assertion = primaryUser != "";
       message = "nixpi.primaryUser must resolve to a real human user. Set `nixpi.primaryUser` explicitly.";
     }
-    {
-      assertion = primaryHome != "";
-      message = "nixpi.primaryUser must resolve to a valid home directory.";
-    }
   ];
 
   users.users.${primaryUser} = {

@@ -2,7 +2,6 @@
 
 let
   primaryUser = config.nixpi.primaryUser;
-  stateDir = config.nixpi.stateDir;
   cfg = config.nixpi.services;
   securityCfg = config.nixpi.security;
 in
@@ -16,8 +15,7 @@ in
         nixpi-home = {
           port = cfg.home.port;
           bindAddress = cfg.bindAddress;
-          inherit stateDir;
-          serviceUser = primaryUser;
+          inherit primaryUser;
           elementWebPort = cfg.elementWeb.port;
           matrixPort = config.nixpi.matrix.port;
           matrixClientBaseUrl =
@@ -35,14 +33,13 @@ in
         nixpi-element-web = {
           port = cfg.elementWeb.port;
           bindAddress = cfg.bindAddress;
+          inherit primaryUser;
           matrixServerName = config.networking.hostName;
           matrixClientBaseUrl =
             if config.nixpi.matrix.clientBaseUrl != "" then
               config.nixpi.matrix.clientBaseUrl
             else
               "http://${config.networking.hostName}:${toString config.nixpi.matrix.port}";
-          inherit stateDir;
-          serviceUser = primaryUser;
         };
       };
     })

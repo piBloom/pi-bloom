@@ -1,7 +1,7 @@
 # tests/nixos/nixpi-matrix.nix
 # Test that the NixPI Matrix homeserver (Continuwuity) starts and accepts connections
 
-{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkNixPiNode, mkTestFilesystems, ... }:
+{ pkgs, lib, nixPiModules, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-matrix";

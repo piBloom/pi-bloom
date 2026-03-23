@@ -1,4 +1,4 @@
-{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkExistingUserConfig, ... }:
+{ pkgs, lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkManagedUserConfig, ... }:
 
 pkgs.testers.runNixOSTest {
   name = "nixpi-bootstrap-mode";
@@ -26,8 +26,8 @@ pkgs.testers.runNixOSTest {
       i18n.defaultLocale = "en_US.UTF-8";
       system.stateVersion = "25.05";
 
-      # Existing-user bootstrap path without prefill keeps the machine in setup mode.
-    } // (mkExistingUserConfig { inherit username; });
+      # Bootstrap without prefill keeps the machine in setup mode.
+    } // (mkManagedUserConfig { inherit username; });
 
     client = { ... }: {
       imports = [ mkTestFilesystems ];

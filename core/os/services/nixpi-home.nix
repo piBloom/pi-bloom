@@ -18,11 +18,7 @@ in
       type = types.str;
     };
 
-    stateDir = mkOption {
-      type = types.pathWith { absolute = true; };
-    };
-
-    serviceUser = mkOption {
+    primaryUser = mkOption {
       type = types.str;
     };
 
@@ -87,8 +83,8 @@ in
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        User = config.nixpi-home.serviceUser;
-        Group = config.nixpi-home.serviceUser;
+        User = config.nixpi-home.primaryUser;
+        Group = config.nixpi-home.primaryUser;
         UMask = "0007";
         Restart = "on-failure";
         RestartSec = "10";

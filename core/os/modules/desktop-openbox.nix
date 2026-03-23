@@ -217,10 +217,6 @@ in
       assertion = primaryUser != "";
       message = "nixpi.primaryUser must resolve before enabling the Openbox desktop session.";
     }
-    {
-      assertion = primaryHome != "";
-      message = "nixpi.primaryUser must resolve before enabling the Openbox desktop session.";
-    }
   ];
 
   environment.systemPackages = with pkgs; [

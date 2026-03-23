@@ -3,7 +3,6 @@
 
 let
   primaryUser = config.nixpi.primaryUser;
-  primaryHome = "/home/${primaryUser}";
 in
 
 {
@@ -24,7 +23,7 @@ in
     imports = [ ../services/nixpi-update.nix ];
     nixpi-update = {
       command = pkgs.writeShellScript "nixpi-update" (builtins.readFile ../../../core/scripts/system-update.sh);
-      inherit primaryUser primaryHome;
+      inherit primaryUser;
       flakeDir = "/etc/nixos";
       path = "/run/current-system/sw/bin:${lib.makeBinPath (with pkgs; [ nix git jq ])}";
     };

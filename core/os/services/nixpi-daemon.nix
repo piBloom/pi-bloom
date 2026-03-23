@@ -4,6 +4,7 @@
 
 let
   inherit (lib) mkOption types;
+  primaryHome = "/home/${config.nixpi-daemon.primaryUser}";
 in
 {
   _class = "service";
@@ -11,10 +12,6 @@ in
   options.nixpi-daemon = {
     package = mkOption {
       type = types.package;
-    };
-
-    primaryHome = mkOption {
-      type = types.pathWith { absolute = true; };
     };
 
     primaryUser = mkOption {
@@ -27,10 +24,6 @@ in
 
     agentStateDir = mkOption {
       type = types.pathWith { absolute = true; };
-    };
-
-    serviceUser = mkOption {
-      type = types.str;
     };
 
     path = mkOption {
@@ -50,20 +43,19 @@ in
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
-      unitConfig.ConditionPathExists = "${config.nixpi-daemon.primaryHome}/.nixpi/.setup-complete";
+      unitConfig.ConditionPathExists = "${primaryHome}/.nixpi/.setup-complete";
       serviceConfig = {
-        User = config.nixpi-daemon.serviceUser;
-        Group = config.nixpi-daemon.serviceUser;
+        User = config.nixpi-daemon.primaryUser;
+        Group = config.nixpi-daemon.primaryUser;
         UMask = "0007";
-        WorkingDirectory = "${config.nixpi-daemon.primaryHome}/nixpi";
+        WorkingDirectory = "${primaryHome}/nixpi";
         Environment = [
-          "HOME=${config.nixpi-daemon.primaryHome}"
-          "NIXPI_DIR=${config.nixpi-daemon.primaryHome}/nixpi"
+          "HOME=${primaryHome}"
+          "NIXPI_DIR=${primaryHome}/nixpi"
           "NIXPI_STATE_DIR=${config.nixpi-daemon.stateDir}"
           "NIXPI_PI_DIR=${config.nixpi-daemon.agentStateDir}"
           "NIXPI_DAEMON_STATE_DIR=${config.nixpi-daemon.stateDir}/nixpi-daemon"
           "NIXPI_PRIMARY_USER=${config.nixpi-daemon.primaryUser}"
-          "NIXPI_PRIMARY_HOME=${config.nixpi-daemon.primaryHome}"
           "PATH=${lib.makeBinPath config.nixpi-daemon.path}:/run/current-system/sw/bin"
         ];
         Restart = "on-failure";
@@ -74,7 +66,7 @@ in
         ProtectHome = false;
         ReadWritePaths = [
           config.nixpi-daemon.stateDir
-          "${config.nixpi-daemon.primaryHome}/nixpi"
+          "${primaryHome}/nixpi"
         ];
       };
     };
