@@ -133,6 +133,12 @@ EOF
       echo "usage: nixpi-bootstrap-write-host-nix <hostname> <primary_user> <timezone> <keyboard>" >&2
       exit 1
     fi
+    if ! printf '%s' "$tz" | grep -qE '^[A-Za-z0-9_+/.-]{1,64}$'; then
+      echo "invalid timezone: $tz" >&2; exit 1
+    fi
+    if ! printf '%s' "$kb" | grep -qE '^[a-zA-Z0-9_-]{1,32}$'; then
+      echo "invalid keyboard layout: $kb" >&2; exit 1
+    fi
 
     install -d -m 0755 /etc/nixos
     cat > /etc/nixos/nixpi-host.nix <<EOF
