@@ -11,7 +11,7 @@ This directory contains NixOS integration tests for the NixPI platform. These te
   - `smoke-security`
   - `smoke-broker`
 - `nixos-full`: comprehensive VM lane
-  - existing happy-path tests: `boot`, `nixpi-matrix`, `nixpi-firstboot`, `nixpi-network`, `nixpi-daemon`, `nixpi-e2e`, `nixpi-home`, `nixpi-security`, `nixpi-modular-services`, `nixpi-matrix-bridge`
+  - existing happy-path tests: `boot`, `nixpi-matrix`, `nixpi-firstboot`, `nixpi-network`, `nixpi-daemon`, `nixpi-e2e`, `nixpi-home`, `nixpi-security`, `nixpi-modular-services`, `nixpi-matrix-bridge`, `nixpi-matrix-reply`
   - new policy tests: `nixpi-bootstrap-mode`, `nixpi-post-setup-lockdown`, `nixpi-broker`
 - `nixos-destructive`: slower install/lockdown/broker cases intended for manual or scheduled runs
   - `nixpi-installer-smoke`
@@ -74,6 +74,7 @@ tests/nixos/
 ├── nixpi-installer-smoke.nix  # live minimal manual installer smoke test
 ├── nixpi-modular-services.nix # system.services/configData regression
 ├── nixpi-matrix-bridge.nix    # multi-node Matrix daemon transport test
+├── nixpi-matrix-reply.nix     # booted daemon can receive and answer Matrix messages
 └── README.md            # This file
 ```
 

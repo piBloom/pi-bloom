@@ -328,6 +328,7 @@
             { name = "nixpi-security"; path = nixosTests.nixpi-security; }
             { name = "nixpi-modular-services"; path = nixosTests.nixpi-modular-services; }
             { name = "nixpi-matrix-bridge"; path = nixosTests.nixpi-matrix-bridge; }
+            { name = "nixpi-matrix-reply"; path = nixosTests.nixpi-matrix-reply; }
             { name = "nixpi-bootstrap-mode"; path = nixosTests.nixpi-bootstrap-mode; }
             { name = "nixpi-post-setup-lockdown"; path = nixosTests.nixpi-post-setup-lockdown; }
             { name = "nixpi-broker"; path = nixosTests.nixpi-broker; }

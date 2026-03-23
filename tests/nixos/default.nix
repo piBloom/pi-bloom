@@ -61,6 +61,7 @@ let
     nixpi-security = mkTest ./nixpi-security.nix;
     nixpi-modular-services = mkTest ./nixpi-modular-services.nix;
     nixpi-matrix-bridge = mkTest ./nixpi-matrix-bridge.nix;
+    nixpi-matrix-reply = mkTest ./nixpi-matrix-reply.nix;
     nixpi-bootstrap-mode = mkTest ./nixpi-bootstrap-mode.nix;
     nixpi-post-setup-lockdown = mkTest ./nixpi-post-setup-lockdown.nix;
     nixpi-broker = mkTest ./nixpi-broker.nix;
