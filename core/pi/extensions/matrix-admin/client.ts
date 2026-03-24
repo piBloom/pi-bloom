@@ -59,7 +59,8 @@ export class MatrixAdminClient {
   private readonly homeserver: string;
   private readonly accessToken: string;
   private readonly serverName: string;
-  readonly botUserId: string;
+  readonly botUserId: string;        // @pi:nixpi — caller identity
+  private readonly _serverBotId: string;  // @conduit:nixpi — server bot that replies
   private readonly configPath: string;
   readonly _fetch: typeof globalThis.fetch;
   private readonly _mutex = new AsyncMutex();
@@ -69,7 +70,8 @@ export class MatrixAdminClient {
     this.homeserver = options.homeserver.replace(/\/$/, "");
     this.accessToken = options.accessToken;
     this.serverName = options.botUserId.split(":")[1] ?? "nixpi";
-    this.botUserId = `@conduit:${this.serverName}`;
+    this.botUserId = options.botUserId;
+    this._serverBotId = `@conduit:${this.serverName}`;
     this.configPath = options.configPath;
     this._fetch = options.fetch ?? globalThis.fetch;
     this._loadCachedRoomId();

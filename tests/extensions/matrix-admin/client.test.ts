@@ -43,6 +43,13 @@ describe("admin room discovery", () => {
     expect(cached.adminRoomId).toBe("!abc123:nixpi");
   });
 
+  it("stores caller botUserId from options, not the server bot ID", () => {
+    const mockFetch = vi.fn();
+    const client = makeClient(tmpDir, mockFetch);
+    // The client should preserve the caller identity, not overwrite with server bot
+    expect(client.botUserId).toBe("@pi:nixpi");
+  });
+
   it("uses cached room ID without calling the API", async () => {
     const configPath = path.join(tmpDir, "matrix-admin.json");
     fs.writeFileSync(configPath, JSON.stringify({ adminRoomId: "!cached:nixpi" }));
