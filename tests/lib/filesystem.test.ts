@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as filesystemModule from "../../core/lib/filesystem.js";
 import {
 	assertCanonicalRepo,
 	assertValidPrimaryUser,
@@ -155,6 +156,15 @@ describe("canonical repo policy", () => {
 		expect(getPrimaryUser()).toBe("pi");
 	});
 
+	it("requires NIXPI_PRIMARY_USER when running as root", () => {
+		delete process.env.NIXPI_PRIMARY_USER;
+		const userInfoSpy = vi.spyOn(os, "userInfo").mockReturnValue({ username: "root" } as os.UserInfo<string>);
+
+		expect(() => getPrimaryUser()).toThrow("NIXPI_PRIMARY_USER is required when resolving canonical repo paths as root");
+
+		userInfoSpy.mockRestore();
+	});
+
 	it("rejects invalid primary user values", () => {
 		process.env.NIXPI_PRIMARY_USER = "../escape";
 		expect(() => getPrimaryUser()).toThrow("Invalid primary user for canonical repo path: ../escape");
@@ -271,15 +281,13 @@ describe("canonical repo policy", () => {
 
 describe("canonical repo metadata", () => {
 	let origPrimaryUser: string | undefined;
-	let metadataRoot: string;
 	let metadataPath: string;
 
 	beforeEach(() => {
+		vi.resetModules();
 		origPrimaryUser = process.env.NIXPI_PRIMARY_USER;
 		process.env.NIXPI_PRIMARY_USER = "codex-test-user";
-		metadataRoot = path.join(os.tmpdir(), "codex-test-user");
-		metadataPath = path.join(metadataRoot, ".nixpi", "canonical-repo.json");
-		fs.rmSync(metadataRoot, { recursive: true, force: true });
+		metadataPath = "/home/codex-test-user/.nixpi/canonical-repo.json";
 	});
 
 	afterEach(() => {
@@ -288,61 +296,108 @@ describe("canonical repo metadata", () => {
 		} else {
 			delete process.env.NIXPI_PRIMARY_USER;
 		}
-		fs.rmSync(metadataRoot, { recursive: true, force: true });
+		vi.doUnmock("node:fs");
+		vi.doUnmock("../../core/lib/filesystem.js");
+		vi.restoreAllMocks();
 	});
 
-	it("writes and reads canonical repo metadata via the shared API", () => {
+	it("writes and reads canonical repo metadata via the shared API", async () => {
 		const metadata = {
 			path: "/home/codex-test-user/nixpi",
 			origin: "https://github.com/example/nixpi.git",
 			branch: "main",
 		};
 
-		const writtenPath = writeCanonicalRepoMetadata(metadata, "codex-test-user", metadataPath);
+		const atomicWriteMock = vi.fn();
+		vi.doMock("../../core/lib/filesystem.js", async () => {
+			const actual = await vi.importActual<typeof import("../../core/lib/filesystem.js")>(
+				"../../core/lib/filesystem.js",
+			);
+			return { ...actual, atomicWriteFile: atomicWriteMock };
+		});
+		const { writeCanonicalRepoMetadata, readCanonicalRepoMetadata } = await import("../../core/lib/repo-metadata.js");
+
+		const writtenPath = writeCanonicalRepoMetadata(metadata, "codex-test-user");
 
 		expect(writtenPath).toBe(metadataPath);
-		expect(readCanonicalRepoMetadata("codex-test-user", metadataPath)).toEqual(metadata);
+		expect(atomicWriteMock).toHaveBeenCalledWith(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
+
+		vi.doMock("node:fs", async () => {
+			const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+			return {
+				...actual,
+				existsSync: vi.fn().mockReturnValue(true),
+				readFileSync: vi.fn().mockReturnValue(JSON.stringify(metadata)),
+			};
+		});
+		vi.resetModules();
+		const reloaded = await import("../../core/lib/repo-metadata.js");
+		expect(reloaded.readCanonicalRepoMetadata("codex-test-user")).toEqual(metadata);
 	});
 
-	it("returns undefined when canonical repo metadata is absent", () => {
-		expect(readCanonicalRepoMetadata("codex-test-user", metadataPath)).toBeUndefined();
+	it("returns undefined when canonical repo metadata is absent", async () => {
+		vi.doMock("node:fs", async () => {
+			const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+			return { ...actual, existsSync: vi.fn().mockReturnValue(false) };
+		});
+		const { readCanonicalRepoMetadata } = await import("../../core/lib/repo-metadata.js");
+		expect(readCanonicalRepoMetadata("codex-test-user")).toBeUndefined();
 	});
 
-	it("rejects malformed canonical repo metadata", () => {
-		fs.mkdirSync(path.dirname(metadataPath), { recursive: true });
-		fs.writeFileSync(metadataPath, JSON.stringify({ path: "/home/codex-test-user/nixpi" }));
+	it("rejects malformed canonical repo metadata", async () => {
+		vi.doMock("node:fs", async () => {
+			const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+			return {
+				...actual,
+				existsSync: vi.fn().mockReturnValue(true),
+				readFileSync: vi.fn().mockReturnValue(JSON.stringify({ path: "/home/codex-test-user/nixpi" })),
+			};
+		});
+		const { readCanonicalRepoMetadata } = await import("../../core/lib/repo-metadata.js");
 
-		expect(() => readCanonicalRepoMetadata("codex-test-user", metadataPath)).toThrow(
+		expect(() => readCanonicalRepoMetadata("codex-test-user")).toThrow(
 			`Invalid canonical repo metadata in ${metadataPath}`,
 		);
 	});
 
-	it("rejects writing canonical repo metadata with a non-canonical path", () => {
-		expect(() =>
-			writeCanonicalRepoMetadata(
-				{
-					path: "/tmp/pi-nixpi",
-					origin: "https://github.com/example/nixpi.git",
-					branch: "main",
-				},
-				"codex-test-user",
-				metadataPath,
-			),
-		).toThrow("Invalid canonical repo metadata path: expected /home/codex-test-user/nixpi, got /tmp/pi-nixpi");
-	});
+	it("rejects writing canonical repo metadata with a non-canonical path", async () => {
+		const atomicWriteMock = vi.fn();
+		vi.doMock("../../core/lib/filesystem.js", async () => {
+			const actual = await vi.importActual<typeof import("../../core/lib/filesystem.js")>(
+				"../../core/lib/filesystem.js",
+			);
+			return { ...actual, atomicWriteFile: atomicWriteMock };
+		});
+		const { writeCanonicalRepoMetadata } = await import("../../core/lib/repo-metadata.js");
 
-	it("rejects reading canonical repo metadata with a non-canonical path", () => {
-		fs.mkdirSync(path.dirname(metadataPath), { recursive: true });
-		fs.writeFileSync(
-			metadataPath,
-			JSON.stringify({
+		expect(() =>
+			writeCanonicalRepoMetadata({
 				path: "/tmp/pi-nixpi",
 				origin: "https://github.com/example/nixpi.git",
 				branch: "main",
-			}),
-		);
+			}, "codex-test-user"),
+		).toThrow("Invalid canonical repo metadata path: expected /home/codex-test-user/nixpi, got /tmp/pi-nixpi");
+		expect(atomicWriteMock).not.toHaveBeenCalled();
+	});
 
-		expect(() => readCanonicalRepoMetadata("codex-test-user", metadataPath)).toThrow(
+	it("rejects reading canonical repo metadata with a non-canonical path", async () => {
+		vi.doMock("node:fs", async () => {
+			const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+			return {
+				...actual,
+				existsSync: vi.fn().mockReturnValue(true),
+				readFileSync: vi.fn().mockReturnValue(
+					JSON.stringify({
+						path: "/tmp/pi-nixpi",
+						origin: "https://github.com/example/nixpi.git",
+						branch: "main",
+					}),
+				),
+			};
+		});
+		const { readCanonicalRepoMetadata } = await import("../../core/lib/repo-metadata.js");
+
+		expect(() => readCanonicalRepoMetadata("codex-test-user")).toThrow(
 			"Invalid canonical repo metadata path: expected /home/codex-test-user/nixpi, got /tmp/pi-nixpi",
 		);
 	});

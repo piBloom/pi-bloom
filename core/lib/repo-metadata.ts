@@ -23,8 +23,8 @@ export function getCanonicalRepoMetadataPath(primaryUser = getPrimaryUser()): st
 
 export function readCanonicalRepoMetadata(
 	primaryUser = getPrimaryUser(),
-	metadataPath = getCanonicalRepoMetadataPath(primaryUser),
 ): CanonicalRepoMetadata | undefined {
+	const metadataPath = getCanonicalRepoMetadataPath(primaryUser);
 	if (!existsSync(metadataPath)) return undefined;
 	const validatedUser = assertValidPrimaryUser(primaryUser);
 	const parsed = JSON.parse(readFileSync(metadataPath, "utf-8")) as Partial<CanonicalRepoMetadata>;
@@ -41,8 +41,8 @@ export function readCanonicalRepoMetadata(
 export function writeCanonicalRepoMetadata(
 	metadata: CanonicalRepoMetadata,
 	primaryUser = getPrimaryUser(),
-	metadataPath = getCanonicalRepoMetadataPath(primaryUser),
 ): string {
+	const metadataPath = getCanonicalRepoMetadataPath(primaryUser);
 	const validatedUser = assertValidPrimaryUser(primaryUser);
 	atomicWriteFile(metadataPath, `${JSON.stringify(assertCanonicalMetadataPath(metadata, validatedUser), null, 2)}\n`);
 	return metadataPath;

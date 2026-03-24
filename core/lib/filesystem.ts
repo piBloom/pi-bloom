@@ -101,7 +101,15 @@ export function assertValidPrimaryUser(primaryUser: string): string {
 
 /** Resolve the primary account name used for the canonical repo checkout. */
 export function getPrimaryUser(): string {
-	return assertValidPrimaryUser(process.env.NIXPI_PRIMARY_USER ?? os.userInfo().username);
+	const envPrimaryUser = process.env.NIXPI_PRIMARY_USER;
+	if (envPrimaryUser) return assertValidPrimaryUser(envPrimaryUser);
+
+	const currentUser = os.userInfo().username;
+	if (currentUser === "root") {
+		throw new Error("NIXPI_PRIMARY_USER is required when resolving canonical repo paths as root");
+	}
+
+	return assertValidPrimaryUser(currentUser);
 }
 
 /** Resolve the canonical working repo path for the primary user. */
