@@ -70,9 +70,9 @@ Every installation has exactly one supported NixPI Git worktree:
 
 - canonical repo path: `/srv/nixpi`
 
-That repository is a full Git checkout whose `origin` and active branch must match the
-configured install values exactly. NixPI should not support alternate working-repo locations
-for normal operation.
+That repository is a full Git checkout whose `origin` must match the configured install
+remote exactly. NixPI should not support alternate working-repo locations for normal
+operation.
 
 The machine also has a separate host-specific configuration layer:
 
@@ -99,6 +99,13 @@ The local-path policy is strict:
   as source-of-truth repos
 - `/etc/nixos` remains a host layer only and must not be treated as the main repo
 
+The branch policy is intentionally split between development and activation:
+
+- humans and agents may use local feature branches in `/srv/nixpi`
+- the repo path remains canonical even when the active branch is not `main`
+- supported rebuilds and activation run only from `main`
+- rebuild tooling should fail clearly if `/srv/nixpi` is not currently on `main`
+
 ---
 
 ## Components
@@ -106,7 +113,8 @@ The local-path policy is strict:
 ### Installer and bootstrap
 
 Installation or first boot must create `/srv/nixpi` as a full Git checkout from a selected
-remote and branch. Bootstrap must fail hard if it cannot create or validate that checkout.
+remote and default branch. Bootstrap must fail hard if it cannot create or validate that
+checkout.
 
 Bootstrap must also write a minimal `/etc/nixos` host layer that imports generic NixPI
 configuration from `/srv/nixpi`.
@@ -122,11 +130,24 @@ The `/etc/nixos` shim should remain intentionally small and generic. Host-specif
 configuration should be the only content written there, along with imports that connect the
 host to the generic code in `/srv/nixpi`.
 
+The host layer should be flake-based and NixOS-native:
+
+- `/etc/nixos/flake.nix` is the stable activation entrypoint
+- `/etc/nixos/flake.nix` stays intentionally small
+- `/etc/nixos` does not carry an independent `flake.lock`
+- `/srv/nixpi` remains the source of lock state for generic code
+
 ### Rebuild and update flows
 
 Operators, scripts, and helpers edit code in `/srv/nixpi`, but activation proceeds through
 the stable host layer in `/etc/nixos`. This keeps the NixOS entrypoint conventional while
 leaving the real code in one canonical repo.
+
+The supported rebuild shape is:
+
+- edit and branch in `/srv/nixpi`
+- switch back to `main` for supported rebuilds
+- activate through `/etc/nixos/flake.nix`, which imports from `/srv/nixpi`
 
 ### Docs and agent policy
 
@@ -143,9 +164,9 @@ Docs, skills, and agent instructions must converge on the same invariant:
 
 On installation:
 
-1. choose or receive the Git remote URL and branch
+1. choose or receive the Git remote URL and default branch
 2. clone the repo into `/srv/nixpi`
-3. validate that `/srv/nixpi` is a Git repo with the expected `origin` and branch
+3. validate that `/srv/nixpi` is a Git repo with the expected `origin`
 4. generate a tiny `/etc/nixos` host layer
 5. activate the system through the `/etc/nixos` entrypoint, which imports from `/srv/nixpi`
 
@@ -156,12 +177,14 @@ During normal operation:
 3. host-local machine config remains in `/etc/nixos`
 4. rebuilds evaluate the host layer, which composes local machine data with generic code from
    `/srv/nixpi`
+5. supported rebuilds require `/srv/nixpi` to be on `main`
 
 For upstream/fork workflows:
 
-1. install chooses an upstream repo or a fork as the canonical remote
+1. install chooses an upstream repo or a fork as the canonical `origin`
 2. the local repo path remains `/srv/nixpi`
-3. contributions are pushed from that one checkout
+3. additional remotes such as `upstream` are allowed
+4. contributions are pushed from that one checkout
 
 The invariant is simple: one repo path, one Git workflow, one host layer.
 
@@ -176,8 +199,8 @@ Installation or runtime should stop with a clear error when:
 1. `/srv/nixpi` does not exist when required
 2. `/srv/nixpi` exists but is not a Git repository
 3. `/srv/nixpi` points at the wrong `origin`
-4. `/srv/nixpi` is on the wrong branch
-5. installation cannot create `/srv/nixpi` exactly
+4. installation cannot create `/srv/nixpi` exactly
+5. rebuild tooling is invoked while `/srv/nixpi` is not on `main`
 6. code attempts to use `/home/$USER/nixpi`, `~/.nixpi/pi-nixpi`, or
    `/var/lib/nixpi/pi-nixpi` as the working repo
 7. code tries to treat `/etc/nixos` as the canonical Git worktree
@@ -194,7 +217,8 @@ operator and agent workflows without introducing a second writable clone.
 
 The cleanest operational model is:
 
-- `/srv/nixpi` is writable by the primary admin/operator workflow
+- the primary user owns the working tree in `/srv/nixpi`
+- root retains full access through normal system privileges
 - rebuilds and activation still use normal root privileges when required
 - broker mediation remains optional for privileged operations, not mandatory for normal code
   edits
@@ -225,9 +249,8 @@ Verify:
 
 - successful clone into `/srv/nixpi`
 - failure when `/srv/nixpi` already exists but is not a Git repo
-- acceptance only when an existing `/srv/nixpi` exactly matches expected `origin` and branch
+- acceptance only when an existing `/srv/nixpi` exactly matches expected `origin`
 - failure when the remote is wrong
-- failure when the branch is wrong
 - successful generation of a minimal `/etc/nixos` host layer
 
 ### Runtime and operations tests
@@ -237,6 +260,7 @@ Verify:
 - path resolution returns `/srv/nixpi`
 - rebuild and update helpers use the `/etc/nixos` host layer and import generic code from
   `/srv/nixpi`
+- rebuild tooling fails clearly when `/srv/nixpi` is not on `main`
 - docs and agent guidance point to `/srv/nixpi`
 - legacy repo paths are rejected clearly
 
