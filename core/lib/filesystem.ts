@@ -161,6 +161,9 @@ export function assertCanonicalRepo(args: CanonicalRepoValidationArgs): void {
 	if (actualOrigin !== undefined && expectedOrigin === undefined) {
 		throw new Error("Canonical repo origin expectation missing");
 	}
+	if (expectedOrigin !== undefined && actualOrigin === undefined) {
+		throw new Error("Canonical repo origin actual value missing");
+	}
 	if (expectedOrigin !== undefined && actualOrigin !== expectedOrigin) {
 		throw new Error(
 			`Canonical repo origin mismatch: expected ${expectedOrigin ?? "(missing)"}, got ${actualOrigin ?? "(missing)"}`,
@@ -168,6 +171,9 @@ export function assertCanonicalRepo(args: CanonicalRepoValidationArgs): void {
 	}
 	if (actualBranch !== undefined && expectedBranch === undefined) {
 		throw new Error("Canonical repo branch expectation missing");
+	}
+	if (expectedBranch !== undefined && actualBranch === undefined) {
+		throw new Error("Canonical repo branch actual value missing");
 	}
 	if (expectedBranch !== undefined && actualBranch !== expectedBranch) {
 		throw new Error(

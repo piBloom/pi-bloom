@@ -231,6 +231,15 @@ describe("canonical repo policy", () => {
 		).toThrow("Canonical repo origin expectation missing");
 	});
 
+	it("rejects origin checks without an actual origin", () => {
+		expect(() =>
+			assertCanonicalRepo({
+				path: "/home/alex/nixpi",
+				expectedOrigin: "https://github.com/alexradunet/nixpi.git",
+			}),
+		).toThrow("Canonical repo origin actual value missing");
+	});
+
 	it("rejects repos on the wrong branch", () => {
 		expect(() =>
 			assertCanonicalRepo({
@@ -250,6 +259,15 @@ describe("canonical repo policy", () => {
 				branch: "main",
 			}),
 		).toThrow("Canonical repo branch expectation missing");
+	});
+
+	it("rejects branch checks without an actual branch", () => {
+		expect(() =>
+			assertCanonicalRepo({
+				path: "/home/alex/nixpi",
+				expectedBranch: "main",
+			}),
+		).toThrow("Canonical repo branch actual value missing");
 	});
 });
 
