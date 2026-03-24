@@ -110,8 +110,8 @@ let
 in {
   assertions = [
     {
-      assertion = currentBranch == "$branch";
-      message = "Supported rebuilds require $repo_dir to be on $branch";
+      assertion = currentBranch == "main";
+      message = "Supported rebuilds require $repo_dir to be on main";
     }
   ];
 }

@@ -5,6 +5,7 @@
 let
   inherit (lib) mkOption types;
   primaryHome = "/home/${config.nixpi-daemon.primaryUser}";
+  canonicalRepoDir = "/srv/nixpi";
   systemReadyFile = "${primaryHome}/.nixpi/wizard-state/system-ready";
 in
 {
@@ -52,10 +53,10 @@ in
         User = config.nixpi-daemon.primaryUser;
         Group = config.nixpi-daemon.primaryUser;
         UMask = "0007";
-        WorkingDirectory = "${primaryHome}/nixpi";
+        WorkingDirectory = canonicalRepoDir;
         Environment = [
           "HOME=${primaryHome}"
-          "NIXPI_DIR=${primaryHome}/nixpi"
+          "NIXPI_DIR=${canonicalRepoDir}"
           "NIXPI_STATE_DIR=${config.nixpi-daemon.stateDir}"
           "NIXPI_PI_DIR=${config.nixpi-daemon.agentStateDir}"
           "PI_CODING_AGENT_DIR=${config.nixpi-daemon.agentStateDir}"
@@ -71,7 +72,7 @@ in
         ProtectHome = false;
         ReadWritePaths = [
           config.nixpi-daemon.stateDir
-          "${primaryHome}/nixpi"
+          canonicalRepoDir
         ];
       };
     };

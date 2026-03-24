@@ -119,7 +119,7 @@
         "mkdir -p " + home + "/.nixpi/wizard-state && touch " + home + "/.nixpi/wizard-state/system-ready && chown -R "
         + username + ":" + username + " " + home + "/.nixpi"
     )
-    agent.succeed("mkdir -p " + home + "/nixpi && chown -R " + username + ":" + username + " " + home + "/nixpi")
+    agent.succeed("mkdir -p /srv/nixpi && chown -R " + username + ":" + username + " /srv/nixpi")
 
     agent.succeed("systemctl start nixpi-daemon.service || true")
 
@@ -143,10 +143,10 @@
     working_directory = agent.succeed("systemctl show -p WorkingDirectory --value nixpi-daemon.service").strip()
     assert "node" in exec_start and "/usr/local/share/nixpi/dist/core/daemon/index.js" in exec_start, \
         "Unexpected ExecStart in nixpi-daemon service: " + exec_start
-    assert "NIXPI_DIR=/home/pi/nixpi" in environment, "Expected NIXPI_DIR environment in nixpi-daemon service"
+    assert "NIXPI_DIR=/srv/nixpi" in environment, "Expected NIXPI_DIR environment in nixpi-daemon service"
     assert "PI_CODING_AGENT_DIR=/home/pi/.pi" in environment, \
         "Expected PI_CODING_AGENT_DIR environment in nixpi-daemon service"
-    assert working_directory == "/home/pi/nixpi", "Unexpected WorkingDirectory: " + working_directory
+    assert working_directory == "/srv/nixpi", "Unexpected WorkingDirectory: " + working_directory
     agent.succeed("ls -la /usr/local/share/nixpi/")
 
     agent.succeed("test -f /home/pi/.pi/matrix-credentials.json")

@@ -178,7 +178,7 @@ in
     }, canonical_repo
 
     nixpi.succeed("su - pi -c 'cd /srv/nixpi && git switch -c feature/test'")
-    nixpi.fail("su - pi -c '/run/current-system/sw/bin/nixpi-bootstrap-nixos-rebuild-switch' > /tmp/non-main-rebuild.log 2>&1")
+    nixpi.fail("nixos-rebuild build --flake /etc/nixos#nixpi > /tmp/non-main-rebuild.log 2>&1")
     nixpi.succeed("grep -q 'Supported rebuilds require /srv/nixpi to be on main' /tmp/non-main-rebuild.log")
     nixpi.succeed("su - pi -c 'cd /srv/nixpi && git switch main'")
 

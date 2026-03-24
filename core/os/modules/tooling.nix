@@ -8,6 +8,7 @@
     git-lfs
     gh
     codex
+    nodejs
     ripgrep
     fd
     bat
