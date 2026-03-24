@@ -78,7 +78,7 @@ in
       '';
     };
 
-    # `systemd.service` portability: guard systemd-specific config so this module
+    # `system.services` portability: guard systemd-specific config so this module
     # can be consumed by non-systemd init systems if NixOS ever supports them.
     # See nixpkgs nixos/README-modular-services.md.
   } // lib.optionalAttrs (options ? systemd) {
