@@ -4,10 +4,8 @@
 
 let
   absolutePath = lib.types.pathWith { absolute = true; };
-  externalAbsolutePath = lib.types.pathWith {
-    absolute = true;
-    inStore = false;
-  };
+  # Absolute path that must not be a Nix store path (user-managed external state).
+  externalAbsolutePath = lib.types.externalPath;
   mkPortOption = default: description:
     lib.mkOption {
       type = lib.types.port;
