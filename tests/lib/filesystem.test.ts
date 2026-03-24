@@ -158,11 +158,6 @@ describe("canonical repo policy", () => {
 		expect(() =>
 			assertCanonicalRepo({
 				path: "/home/alex/.nixpi/pi-nixpi",
-				origin: "https://github.com/alexradunet/nixpi.git",
-				branch: "main",
-				expectedPath: "/home/alex/nixpi",
-				expectedOrigin: "https://github.com/alexradunet/nixpi.git",
-				expectedBranch: "main",
 			}),
 		).toThrow("Canonical repo path mismatch: expected /home/alex/nixpi, got /home/alex/.nixpi/pi-nixpi");
 	});
@@ -172,10 +167,7 @@ describe("canonical repo policy", () => {
 			assertCanonicalRepo({
 				path: "/home/alex/nixpi",
 				origin: "git@github.com:alexradunet/nixpi.git",
-				branch: "main",
-				expectedPath: "/home/alex/nixpi",
 				expectedOrigin: "https://github.com/alexradunet/nixpi.git",
-				expectedBranch: "main",
 			}),
 		).toThrow(
 			"Canonical repo origin mismatch: expected https://github.com/alexradunet/nixpi.git, got git@github.com:alexradunet/nixpi.git",
@@ -188,8 +180,6 @@ describe("canonical repo policy", () => {
 				path: "/home/alex/nixpi",
 				origin: "https://github.com/alexradunet/nixpi.git",
 				branch: "feature/task-1",
-				expectedPath: "/home/alex/nixpi",
-				expectedOrigin: "https://github.com/alexradunet/nixpi.git",
 				expectedBranch: "main",
 			}),
 		).toThrow("Canonical repo branch mismatch: expected main, got feature/task-1");

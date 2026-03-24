@@ -133,9 +133,9 @@ export function getNixPiRepoDir(): string {
 
 function getExpectedCanonicalRepoValues(args: CanonicalRepoValidationArgs) {
 	return {
-		expectedPath: args.expectedPath ?? args.path ?? getCanonicalRepoDir(),
-		expectedOrigin: args.expectedOrigin ?? args.origin,
-		expectedBranch: args.expectedBranch ?? args.branch,
+		expectedPath: args.expectedPath ?? getCanonicalRepoDir(),
+		expectedOrigin: args.expectedOrigin,
+		expectedBranch: args.expectedBranch,
 		actualPath: args.actualPath ?? args.path,
 		actualOrigin: args.actualOrigin ?? args.origin,
 		actualBranch: args.actualBranch ?? args.branch,
@@ -150,12 +150,12 @@ export function assertCanonicalRepo(args: CanonicalRepoValidationArgs): void {
 	if (actualPath !== expectedPath) {
 		throw new Error(`Canonical repo path mismatch: expected ${expectedPath}, got ${actualPath ?? "(missing)"}`);
 	}
-	if (actualOrigin !== expectedOrigin) {
+	if (expectedOrigin !== undefined && actualOrigin !== expectedOrigin) {
 		throw new Error(
 			`Canonical repo origin mismatch: expected ${expectedOrigin ?? "(missing)"}, got ${actualOrigin ?? "(missing)"}`,
 		);
 	}
-	if (actualBranch !== expectedBranch) {
+	if (expectedBranch !== undefined && actualBranch !== expectedBranch) {
 		throw new Error(
 			`Canonical repo branch mismatch: expected ${expectedBranch ?? "(missing)"}, got ${actualBranch ?? "(missing)"}`,
 		);
