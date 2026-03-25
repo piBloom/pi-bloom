@@ -15,7 +15,7 @@ in
       homeDir = "/home/${username}";
     in {
       imports = nixPiModulesNoShell ++ [ 
-        ../../core/os/modules/firstboot.nix
+        ../../core/os/modules/firstboot
         mkTestFilesystems 
       ];
       _module.args = { inherit piAgent appPackage setupPackage; };

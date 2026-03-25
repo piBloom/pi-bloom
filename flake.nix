@@ -83,7 +83,7 @@
         };
 
         # First-boot service module (included separately, not part of the portable NixPI module).
-        firstboot = import ./core/os/modules/firstboot.nix;
+        firstboot = import ./core/os/modules/firstboot;
       };
 
       # Managed NixPI desktop profile used for local builds and installer generation.
@@ -151,7 +151,7 @@
             modules = [
               ({ config, ... }: {
                 imports = [
-                  "${nixpiSource}/core/os/modules/firstboot.nix"
+                  "${nixpiSource}/core/os/modules/firstboot/default.nix"
                   "${nixpiSource}/core/os/modules/network.nix"
                   "${nixpiSource}/core/os/modules/shell.nix"
                   "${nixpiSource}/core/os/modules/update.nix"
@@ -213,7 +213,7 @@
                   (toString piAgent)
                   (toString appPackage)
                   (toString setupPackage)
-                  "${toString nixpiSource}/core/os/modules/firstboot.nix"
+                  "${toString nixpiSource}/core/os/modules/firstboot/default.nix"
                   "${toString nixpiSource}/core/os/modules/desktop-xfce.nix"
                   "${toString nixpiSource}/core/os/modules/network.nix"
                   "${toString nixpiSource}/core/os/modules/shell.nix"

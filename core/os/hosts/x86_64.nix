@@ -4,16 +4,7 @@
 
 {
   imports = [
-    ../modules/options.nix
-    ../modules/setup.nix
-    ../modules/network.nix
-    ../modules/update.nix
-    ../modules/runtime.nix
-    ../modules/collab.nix
-    ../modules/tooling.nix
-    ../modules/shell.nix
-    ../modules/firstboot.nix
-    ../modules/desktop-xfce.nix
+    ../modules
   ];
 
   system.stateVersion = "25.05";

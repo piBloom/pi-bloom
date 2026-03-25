@@ -5,7 +5,7 @@
 
   nodes.nixpi = { ... }: {
     imports = [
-      ../../core/os/modules/firstboot.nix
+      ../../core/os/modules/firstboot
       ../../core/os/modules/desktop-xfce.nix
       {
         fileSystems."/" = { device = "/dev/vda"; fsType = "ext4"; };

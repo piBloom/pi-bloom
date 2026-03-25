@@ -234,14 +234,6 @@ in
         '';
       };
 
-      macaroonSecretKeyFile = lib.mkOption {
-        type = lib.types.nullOr externalAbsolutePath;
-        default = null;
-        description = ''
-          Deprecated Synapse-era option. Continuwuity does not use a macaroon
-          secret key, so this value is ignored.
-        '';
-      };
     };
 
     netbird = {

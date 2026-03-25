@@ -9,7 +9,7 @@
     in {
       imports = nixPiModulesNoShell ++ [
         ../../core/os/modules/broker.nix
-        ../../core/os/modules/firstboot.nix
+        ../../core/os/modules/firstboot
         mkTestFilesystems
       ];
       _module.args = { inherit piAgent appPackage setupPackage; };

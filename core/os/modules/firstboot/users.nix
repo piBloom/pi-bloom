@@ -1,10 +1,8 @@
-{ config, pkgs, lib, piAgent, appPackage, setupPackage, ... }:
+{ config, pkgs, lib, ... }:
 
 let
   primaryUser = config.nixpi.primaryUser;
   primaryHome = "/home/${primaryUser}";
-  canonicalRepoDir = "/srv/nixpi";
-  canonicalRepoMetadataPath = "/etc/nixpi/canonical-repo.json";
   stateDir = config.nixpi.stateDir;
   netbirdApiTokenFile =
     if config.nixpi.netbird.apiTokenFile != null then
@@ -18,167 +16,52 @@ let
     else
       "${stateDir}/secrets/matrix-registration-shared-secret";
   bootstrapPrimaryPasswordFile = "${stateDir}/bootstrap/primary-user-password";
-  bootstrapAction = action: command: pkgs.writeShellScriptBin "nixpi-bootstrap-${action}" ''
+
+  bootstrapReadMatrixSecret = pkgs.writeShellScriptBin "nixpi-bootstrap-read-matrix-secret" ''
     set -euo pipefail
     if [ -f "${systemReadyFile}" ]; then
       echo "NixPI bootstrap access is disabled after setup completes" >&2
       exit 1
     fi
-    exec ${command} "$@"
+    exec /run/current-system/sw/bin/sh -c 'tr -d "\n" < ${matrixRegistrationSecretFile}' "$@"
   '';
-  bootstrapReadMatrixSecret = bootstrapAction "read-matrix-secret" "/run/current-system/sw/bin/sh -c 'tr -d \"\\n\" < ${matrixRegistrationSecretFile}'";
-  bootstrapReadPrimaryPassword = bootstrapAction "read-primary-password" "/run/current-system/sw/bin/sh -c 'tr -d \"\\n\" < ${bootstrapPrimaryPasswordFile}'";
-  bootstrapRemovePrimaryPassword = bootstrapAction "remove-primary-password" "/run/current-system/sw/bin/rm -f ${bootstrapPrimaryPasswordFile}";
-  bootstrapEnsureRepoTarget = pkgs.writeShellScriptBin "nixpi-bootstrap-ensure-repo-target" ''
+
+  bootstrapReadPrimaryPassword = pkgs.writeShellScriptBin "nixpi-bootstrap-read-primary-password" ''
     set -euo pipefail
     if [ -f "${systemReadyFile}" ]; then
       echo "NixPI bootstrap access is disabled after setup completes" >&2
       exit 1
     fi
-
-    repo_dir="''${1:-}"
-    primary_user="''${2:-}"
-    if [ -z "$repo_dir" ] || [ -z "$primary_user" ]; then
-      echo "usage: nixpi-bootstrap-ensure-repo-target <repo_dir> <primary_user>" >&2
-      exit 1
-    fi
-
-    install -d -m 0755 /srv
-    if [ ! -e "$repo_dir" ]; then
-      install -d -o "$primary_user" -g "$primary_user" -m 0755 "$repo_dir"
-    else
-      chown "$primary_user:$primary_user" "$repo_dir"
-      chmod 0755 "$repo_dir"
-    fi
+    exec /run/current-system/sw/bin/sh -c 'tr -d "\n" < ${bootstrapPrimaryPasswordFile}' "$@"
   '';
-  bootstrapPrepareRepo = pkgs.writeShellScriptBin "nixpi-bootstrap-prepare-repo" ''
+
+  bootstrapRemovePrimaryPassword = pkgs.writeShellScriptBin "nixpi-bootstrap-remove-primary-password" ''
     set -euo pipefail
     if [ -f "${systemReadyFile}" ]; then
       echo "NixPI bootstrap access is disabled after setup completes" >&2
       exit 1
     fi
-
-    repo_dir="''${1:-}"
-    remote_url="''${2:-}"
-    branch="''${3:-}"
-    primary_user="''${4:-}"
-    if [ -z "$repo_dir" ] || [ -z "$remote_url" ] || [ -z "$branch" ] || [ -z "$primary_user" ]; then
-      echo "usage: nixpi-bootstrap-prepare-repo <repo_dir> <remote_url> <branch> <primary_user>" >&2
-      exit 1
-    fi
-
-    if [ ! -d "$repo_dir/.git" ]; then
-      echo "canonical repo checkout is missing .git: $repo_dir" >&2
-      exit 1
-    fi
-
-    actual_remote="$(${pkgs.git}/bin/git -C "$repo_dir" remote get-url origin 2>/dev/null || true)"
-    if [ "$actual_remote" != "$remote_url" ]; then
-      echo "canonical repo origin mismatch: expected $remote_url, got ''${actual_remote:-<missing>}" >&2
-      exit 1
-    fi
-
-    actual_branch="$(${pkgs.git}/bin/git -C "$repo_dir" branch --show-current 2>/dev/null || true)"
-    if [ "$actual_branch" != "$branch" ]; then
-      echo "canonical repo branch mismatch: expected $branch, got ''${actual_branch:-<detached>}" >&2
-      exit 1
-    fi
-
-    install -d -m 0755 /etc/nixos
-    if [ ! -f /etc/nixos/hardware-configuration.nix ]; then
-      cat > /etc/nixos/hardware-configuration.nix <<EOF
-{ ... }:
-{
-}
-EOF
-    fi
-
-    cat > /etc/nixos/configuration.nix <<EOF
-{ ... }:
-{
-  imports = [
-    ./hardware-configuration.nix
-    ./nixpi-host.nix
-  ];
-}
-EOF
-
-    cat > /etc/nixos/nixpi-branch-guard.nix <<EOF
-{ ... }:
-let
-  currentBranch = builtins.replaceStrings [ "ref: refs/heads/" "\n" ] [ "" "" ] (builtins.readFile "$repo_dir/.git/HEAD");
-in {
-  assertions = [
-    {
-      assertion = currentBranch == "main";
-      message = "Supported rebuilds require $repo_dir to be on main";
-    }
-  ];
-}
-EOF
-
-    cat > /etc/nixos/flake.nix <<EOF
-{
-  description = "NixPI installed host";
-
-  inputs.nixpkgs.url = "path:${pkgs.path}";
-
-  outputs = { nixpkgs, ... }:
-    let
-      system = "${pkgs.stdenv.hostPlatform.system}";
-      repoDir = /srv/nixpi;
-    in {
-      nixosConfigurations.nixpi = nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = {
-          piAgent = ${piAgent};
-          appPackage = ${appPackage};
-          setupPackage = ${setupPackage};
-        };
-        modules = [
-          (repoDir + "/core/os/hosts/x86_64.nix")
-          ./configuration.nix
-          ./nixpi-branch-guard.nix
-          {
-            nixpkgs.hostPlatform = system;
-            nixpkgs.config.allowUnfree = true;
-          }
-        ];
-      };
-    };
-}
-EOF
-
-    rm -f /etc/nixos/flake.lock
-
-    install -d -m 0755 /etc/nixpi
-    cat > "${canonicalRepoMetadataPath}" <<EOF
-{
-  "path": "$repo_dir",
-  "origin": "$remote_url",
-  "branch": "$branch"
-}
-EOF
-    chown root:root "${canonicalRepoMetadataPath}"
-    chmod 0644 "${canonicalRepoMetadataPath}"
+    exec /run/current-system/sw/bin/rm -f ${bootstrapPrimaryPasswordFile} "$@"
   '';
-  bootstrapNixosRebuildSwitch = pkgs.writeShellScriptBin "nixpi-bootstrap-nixos-rebuild-switch" ''
-    set -euo pipefail
-    current_branch="$(${pkgs.git}/bin/git -C ${canonicalRepoDir} branch --show-current 2>/dev/null || true)"
-    if [ "$current_branch" != "main" ]; then
-      echo "Supported rebuilds require ${canonicalRepoDir} to be on main" >&2
-      exit 1
-    fi
 
+  bootstrapMatrixJournal = pkgs.writeShellScriptBin "nixpi-bootstrap-matrix-journal" ''
+    set -euo pipefail
     if [ -f "${systemReadyFile}" ]; then
       echo "NixPI bootstrap access is disabled after setup completes" >&2
       exit 1
     fi
-
-    exec /run/current-system/sw/bin/nixos-rebuild switch --impure --flake "/etc/nixos#nixpi"
+    exec /run/current-system/sw/bin/journalctl -u continuwuity --no-pager "$@"
   '';
-  bootstrapMatrixJournal = bootstrapAction "matrix-journal" "/run/current-system/sw/bin/journalctl -u continuwuity --no-pager";
-  bootstrapNetbird = bootstrapAction "netbird-up" "/run/current-system/sw/bin/netbird up";
+
+  bootstrapNetbird = pkgs.writeShellScriptBin "nixpi-bootstrap-netbird-up" ''
+    set -euo pipefail
+    if [ -f "${systemReadyFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+    exec /run/current-system/sw/bin/netbird up "$@"
+  '';
+
   bootstrapNetbirdProvisioner = pkgs.writeShellScriptBin "nixpi-bootstrap-netbird-provisioner" ''
     set -euo pipefail
     if [ -f "${systemReadyFile}" ]; then
@@ -199,6 +82,7 @@ EOF
 
     exec /run/current-system/sw/bin/systemctl "$@"
   '';
+
   bootstrapWriteNetbirdToken = pkgs.writeShellScriptBin "nixpi-bootstrap-write-netbird-token" ''
     set -euo pipefail
     if [ -f "${systemReadyFile}" ]; then
@@ -218,6 +102,7 @@ EOF
     chmod 0600 "${netbirdApiTokenFile}"
     echo "NetBird API token saved."
   '';
+
   bootstrapCreateNetworkActivityRoom = pkgs.writeShellScriptBin "nixpi-bootstrap-create-network-activity-room" ''
     set -euo pipefail
     if [ -f "${systemReadyFile}" ]; then
@@ -290,17 +175,75 @@ EOF
     echo "Network activity room created: #network-activity:${config.networking.hostName}"
     echo "Future peer connections, logins, and policy changes will appear there."
   '';
-  bootstrapNetbirdSystemctl = bootstrapAction "netbird-systemctl" "/run/current-system/sw/bin/systemctl";
-  bootstrapMatrixSystemctl = bootstrapAction "matrix-systemctl" "/run/current-system/sw/bin/systemctl";
-  bootstrapServiceSystemctl = bootstrapAction "service-systemctl" "/run/current-system/sw/bin/systemctl";
+
+  bootstrapNetbirdSystemctl = pkgs.writeShellScriptBin "nixpi-bootstrap-netbird-systemctl" ''
+    set -euo pipefail
+    if [ -f "${systemReadyFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+    exec /run/current-system/sw/bin/systemctl "$@"
+  '';
+
+  bootstrapMatrixSystemctl = pkgs.writeShellScriptBin "nixpi-bootstrap-matrix-systemctl" ''
+    set -euo pipefail
+    if [ -f "${systemReadyFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+    exec /run/current-system/sw/bin/systemctl "$@"
+  '';
+
+  bootstrapServiceSystemctl = pkgs.writeShellScriptBin "nixpi-bootstrap-service-systemctl" ''
+    set -euo pipefail
+    if [ -f "${systemReadyFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+    exec /run/current-system/sw/bin/systemctl "$@"
+  '';
+
   finalizeServiceSystemctl = pkgs.writeShellScriptBin "nixpi-finalize-service-systemctl" ''
     set -euo pipefail
     exec /run/current-system/sw/bin/systemctl "$@"
   '';
-  bootstrapSshdSystemctl = bootstrapAction "sshd-systemctl" "/run/current-system/sw/bin/systemctl";
-  bootstrapPasswd = bootstrapAction "passwd" "/run/current-system/sw/bin/passwd ${primaryUser}";
-  bootstrapChpasswd = bootstrapAction "chpasswd" "/run/current-system/sw/bin/chpasswd";
-  bootstrapBroker = bootstrapAction "brokerctl" "/run/current-system/sw/bin/nixpi-brokerctl";
+
+  bootstrapSshdSystemctl = pkgs.writeShellScriptBin "nixpi-bootstrap-sshd-systemctl" ''
+    set -euo pipefail
+    if [ -f "${systemReadyFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+    exec /run/current-system/sw/bin/systemctl "$@"
+  '';
+
+  bootstrapPasswd = pkgs.writeShellScriptBin "nixpi-bootstrap-passwd" ''
+    set -euo pipefail
+    if [ -f "${systemReadyFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+    exec /run/current-system/sw/bin/passwd ${primaryUser} "$@"
+  '';
+
+  bootstrapChpasswd = pkgs.writeShellScriptBin "nixpi-bootstrap-chpasswd" ''
+    set -euo pipefail
+    if [ -f "${systemReadyFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+    exec /run/current-system/sw/bin/chpasswd "$@"
+  '';
+
+  bootstrapBroker = pkgs.writeShellScriptBin "nixpi-bootstrap-brokerctl" ''
+    set -euo pipefail
+    if [ -f "${systemReadyFile}" ]; then
+      echo "NixPI bootstrap access is disabled after setup completes" >&2
+      exit 1
+    fi
+    exec /run/current-system/sw/bin/nixpi-brokerctl "$@"
+  '';
+
   bootstrapWriteHostNix = pkgs.writeShellScriptBin "nixpi-bootstrap-write-host-nix" ''
     set -euo pipefail
     if [ -f "${systemReadyFile}" ]; then
@@ -317,10 +260,12 @@ EOF
       exit 1
     fi
     if ! printf '%s' "$tz" | grep -qE '^[A-Za-z0-9_+/.-]{1,64}$'; then
-      echo "invalid timezone: $tz" >&2; exit 1
+      echo "invalid timezone: $tz" >&2
+      exit 1
     fi
     if ! printf '%s' "$kb" | grep -qE '^[a-zA-Z0-9_-]{1,32}$'; then
-      echo "invalid keyboard layout: $kb" >&2; exit 1
+      echo "invalid keyboard layout: $kb" >&2
+      exit 1
     fi
 
     install -d -m 0755 /etc/nixos
@@ -334,6 +279,7 @@ EOF
 }
 EOF
   '';
+
   bootstrapMatrixExecute = pkgs.writeShellScriptBin "nixpi-bootstrap-matrix-execute" ''
     set -euo pipefail
     if [ -f "${systemReadyFile}" ]; then
@@ -365,15 +311,12 @@ EOF
   '';
 in
 {
-  imports = [ ./options.nix ];
+  imports = [ ../options.nix ];
 
   environment.systemPackages = [
     bootstrapReadMatrixSecret
     bootstrapReadPrimaryPassword
     bootstrapRemovePrimaryPassword
-    bootstrapEnsureRepoTarget
-    bootstrapPrepareRepo
-    bootstrapNixosRebuildSwitch
     bootstrapMatrixJournal
     bootstrapNetbird
     bootstrapNetbirdProvisioner
@@ -397,9 +340,6 @@ in
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-read-matrix-secret"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-read-primary-password"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-remove-primary-password"; options = [ "NOPASSWD" ]; }
-      { command = "/run/current-system/sw/bin/nixpi-bootstrap-ensure-repo-target *"; options = [ "NOPASSWD" ]; }
-      { command = "/run/current-system/sw/bin/nixpi-bootstrap-prepare-repo *"; options = [ "NOPASSWD" ]; }
-      { command = "/run/current-system/sw/bin/nixpi-bootstrap-nixos-rebuild-switch"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-journal"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-systemctl stop continuwuity.service"; options = [ "NOPASSWD" ]; }
       { command = "/run/current-system/sw/bin/nixpi-bootstrap-matrix-systemctl start continuwuity.service"; options = [ "NOPASSWD" ]; }
