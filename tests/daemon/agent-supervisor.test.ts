@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AgentDefinition } from "../../core/daemon/agent-registry.js";
 import { AgentSupervisor } from "../../core/daemon/agent-supervisor.js";
 import type { SessionEvent } from "../../core/daemon/contracts/session.js";
-import type { RoomEnvelope } from "../../core/daemon/router.js";
+import type { RoomEnvelope } from "../../core/daemon/agent-supervisor.js";
 
 function makeAgent(id: string, userId: string, mode: AgentDefinition["respond"]["mode"]): AgentDefinition {
 	return {
@@ -861,16 +861,19 @@ describe("AgentSupervisor", () => {
 		const maxPublicTurns = 2;
 		const totalBudget = 4;
 
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const s = supervisor as any;
+
 		// Initially can reply
-		expect(supervisor.canReplyForRoot(roomId, rootEventId, agentId, maxPublicTurns, totalBudget)).toBe(true);
+		expect(s.canReplyForRoot(roomId, rootEventId, agentId, maxPublicTurns, totalBudget)).toBe(true);
 
 		// After first reply
-		supervisor.markReplySent(roomId, rootEventId, agentId, 1_000);
-		expect(supervisor.canReplyForRoot(roomId, rootEventId, agentId, maxPublicTurns, totalBudget)).toBe(true);
+		s.markReplySent(roomId, rootEventId, agentId, 1_000);
+		expect(s.canReplyForRoot(roomId, rootEventId, agentId, maxPublicTurns, totalBudget)).toBe(true);
 
 		// After second reply — per-agent limit (maxPublicTurns=2) reached
-		supervisor.markReplySent(roomId, rootEventId, agentId, 2_000);
-		expect(supervisor.canReplyForRoot(roomId, rootEventId, agentId, maxPublicTurns, totalBudget)).toBe(false);
+		s.markReplySent(roomId, rootEventId, agentId, 2_000);
+		expect(s.canReplyForRoot(roomId, rootEventId, agentId, maxPublicTurns, totalBudget)).toBe(false);
 
 		await supervisor.shutdown();
 	});
@@ -896,13 +899,16 @@ describe("AgentSupervisor", () => {
 		const maxPublicTurns = 2;
 		const totalBudget = 4;
 
-		supervisor.markReplySent(roomId, rootEventId, "host", 1_000);
-		supervisor.markReplySent(roomId, rootEventId, "planner", 2_000);
-		supervisor.markReplySent(roomId, rootEventId, "critic", 3_000);
-		supervisor.markReplySent(roomId, rootEventId, "host", 4_000);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const s = supervisor as any;
+
+		s.markReplySent(roomId, rootEventId, "host", 1_000);
+		s.markReplySent(roomId, rootEventId, "planner", 2_000);
+		s.markReplySent(roomId, rootEventId, "critic", 3_000);
+		s.markReplySent(roomId, rootEventId, "host", 4_000);
 
 		// Total budget (4) exhausted — no further replies allowed regardless of agent
-		expect(supervisor.canReplyForRoot(roomId, rootEventId, "planner", maxPublicTurns, totalBudget)).toBe(false);
+		expect(s.canReplyForRoot(roomId, rootEventId, "planner", maxPublicTurns, totalBudget)).toBe(false);
 
 		await supervisor.shutdown();
 	});

@@ -83,7 +83,8 @@
       "Bash(find /home/alex/pi-bloom -type f \\\\\\( -name \"*.nix\" -o -name \"*.ts\" -o -name \"*.py\" -o -name \"*.sh\" \\\\\\) ! -path \"*/node_modules/*\" ! -path \"*/.git/*\" ! -path \"*/dist/*\" ! -path \"*/.vitepress/*\" ! -path \"*/coverage/*\" -exec wc -l {} +)",
       "Bash(wc -l /home/alex/pi-bloom/core/daemon/*.ts /home/alex/pi-bloom/core/pi/extensions/**/*.ts)",
       "Bash(find /home/alex/pi-bloom/core/os/modules -name \"*.nix\" -exec wc -l {} +)",
-      "Bash(find /home/alex/pi-bloom -path */extensions/* -name *.ts)"
+      "Bash(find /home/alex/pi-bloom -path */extensions/* -name *.ts)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
