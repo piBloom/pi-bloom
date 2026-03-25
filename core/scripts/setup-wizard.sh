@@ -95,9 +95,32 @@ has_full_appliance() {
 }
 
 configured_primary_user() {
-	grep 'nixpi\.primaryUser' /etc/nixos/nixpi-host.nix 2>/dev/null \
-		| sed 's/.*= "\(.*\)".*/\1/' \
-		| head -n 1
+	read_nixos_assignment 'nixpi\.primaryUser' /etc/nixos/nixpi-host.nix /etc/nixos/nixpi-install.nix
+}
+
+configured_hostname() {
+	read_nixos_assignment 'networking\.hostName' /etc/nixos/nixpi-host.nix /etc/nixos/nixpi-install.nix
+}
+
+read_nixos_assignment() {
+	local pattern="$1"
+	shift
+
+	local path value
+	for path in "$@"; do
+		[[ -f "$path" ]] || continue
+		value="$(
+			grep "$pattern" "$path" 2>/dev/null \
+				| sed 's/.*= "\(.*\)".*/\1/' \
+				| head -n 1
+		)"
+		if [[ -n "$value" ]]; then
+			printf '%s' "$value"
+			return 0
+		fi
+	done
+
+	return 1
 }
 
 refresh_group_session_if_needed() {
@@ -441,12 +464,16 @@ step_locale() {
 		echo "Keyboard layout (prefill): $kb"
 	fi
 
-	# Read existing values from nixpi-host.nix (preserve hostname and primaryUser)
+	# Preserve the installer-selected hostname and primary user exactly.
 	local hostname primary_user
-	hostname="$(grep 'networking\.hostName' /etc/nixos/nixpi-host.nix 2>/dev/null \
-		| sed 's/.*= "\(.*\)".*/\1/' || echo "nixpi")"
-	primary_user="$(grep 'nixpi\.primaryUser' /etc/nixos/nixpi-host.nix 2>/dev/null \
-		| sed 's/.*= "\(.*\)".*/\1/' || echo "pi")"
+	hostname="$(configured_hostname)" || {
+		echo "ERROR: Could not determine the configured hostname from /etc/nixos/nixpi-host.nix or /etc/nixos/nixpi-install.nix." >&2
+		return 1
+	}
+	primary_user="$(configured_primary_user)" || {
+		echo "ERROR: Could not determine the configured primary user from /etc/nixos/nixpi-host.nix or /etc/nixos/nixpi-install.nix." >&2
+		return 1
+	}
 
 	# Rewrite nixpi-host.nix in full (idempotent)
 	root_command nixpi-bootstrap-write-host-nix "$hostname" "$primary_user" "$tz" "$kb"
