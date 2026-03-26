@@ -33,9 +33,9 @@ run_check "Boot filesystem mounted"   "mountpoint -q /boot"
 run_check "systemd-boot present"      "[ -f /boot/EFI/systemd/systemd-bootx64.efi ]"
 run_check "Network reachable"         "ping -c1 1.1.1.1"
 run_check "NetworkManager active"     "systemctl is-active NetworkManager"
-run_check "Matrix service healthy"    "systemctl is-active continuwuity"
 run_check "Pi daemon healthy"         "systemctl is-active nixpi-daemon"
-run_check "Element Web accessible"    "curl -sf http://localhost:8081"
+run_check "Chat service healthy"      "systemctl is-active nixpi-chat"
+run_check "Chat UI accessible"        "curl -sf http://localhost:8080"
 
 # Setup wizard state check (non-binary: report status either way)
 echo -n "INFO  Setup wizard state — "

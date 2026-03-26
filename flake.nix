@@ -334,7 +334,6 @@
           boot = bootCheck;
 
           nixos-smoke = mkCheckLane "nixos-smoke" [
-            { name = "smoke-matrix"; path = nixosTests.smoke-matrix; }
             { name = "smoke-firstboot"; path = nixosTests.smoke-firstboot; }
             { name = "smoke-install-wizard"; path = nixosTests.smoke-install-wizard; }
             { name = "smoke-security"; path = nixosTests.smoke-security; }
@@ -345,7 +344,6 @@
 
           nixos-full = mkCheckLane "nixos-full" [
             { name = "boot"; path = bootCheck; }
-            { name = "nixpi-matrix"; path = nixosTests.nixpi-matrix; }
             { name = "nixpi-firstboot"; path = nixosTests.nixpi-firstboot; }
             { name = "nixpi-install-wizard"; path = nixosTests.nixpi-install-wizard; }
             { name = "nixpi-network"; path = nixosTests.nixpi-network; }
@@ -354,8 +352,6 @@
             { name = "nixpi-rdp"; path = nixosTests.nixpi-rdp; }
             { name = "nixpi-security"; path = nixosTests.nixpi-security; }
             { name = "nixpi-modular-services"; path = nixosTests.nixpi-modular-services; }
-            { name = "nixpi-matrix-bridge"; path = nixosTests.nixpi-matrix-bridge; }
-            { name = "nixpi-matrix-reply"; path = nixosTests.nixpi-matrix-reply; }
             { name = "nixpi-bootstrap-mode"; path = nixosTests.nixpi-bootstrap-mode; }
             { name = "nixpi-post-setup-lockdown"; path = nixosTests.nixpi-post-setup-lockdown; }
             { name = "nixpi-broker"; path = nixosTests.nixpi-broker; }
