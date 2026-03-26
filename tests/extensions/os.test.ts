@@ -159,10 +159,10 @@ describe("handleSystemdControl", () => {
 		expect(result.isError).toBe(true);
 	});
 
-	it("runs systemctl for nixpi-element-web status", async () => {
+	it("runs systemctl for nixpi-chat status", async () => {
 		mockRun.mockResolvedValueOnce({ stdout: "active", stderr: "", exitCode: 0 });
 		const ctx = createMockExtensionContext();
-		const result = await handleSystemdControl("nixpi-element-web", "status", undefined, ctx as never);
+		const result = await handleSystemdControl("nixpi-chat", "status", undefined, ctx as never);
 		expect(result.content[0].text).toContain("active");
 	});
 });
