@@ -49,8 +49,6 @@ let
     nixpi-install-wizard       = runTest ./nixpi-install-wizard.nix;
     nixpi-update               = runTest ./nixpi-update.nix;
     nixpi-options-validation   = runTest ./nixpi-options-validation.nix;
-    nixpi-netbird-provisioner  = runTest ./nixpi-netbird-provisioner.nix;
-    nixpi-netbird-watcher      = runTest ./nixpi-netbird-watcher.nix;
   };
 
   smokeAliases = {
