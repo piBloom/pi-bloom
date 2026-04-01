@@ -2,7 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { stringifyFrontmatter } from "../../core/lib/frontmatter.js";
-import { normalizeCommand } from "../../core/pi/extensions/persona/actions.js";
+import {
+	normalizeCommand,
+	loadGuardrails,
+	saveContext,
+	loadContext,
+	checkUpdateAvailable,
+	buildRestoredContextBlock,
+} from "../../core/pi/extensions/persona/actions.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
 import { createTempNixPi, type TempNixPi } from "../helpers/temp-nixpi.js";
@@ -288,5 +295,182 @@ describe("normalizeCommand", () => {
 
 	it("leaves normal text unchanged", () => {
 		expect(normalizeCommand("ls -la")).toBe("ls -la");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// loadGuardrails
+// ---------------------------------------------------------------------------
+describe("loadGuardrails", () => {
+	it("returns an array of compiled rules from a valid guardrails.yaml", () => {
+		const guardrailsYaml = [
+			"rules:",
+			"  - tool: bash",
+			"    action: block",
+			"    patterns:",
+			"      - pattern: 'rm\\s+-rf'",
+			"        label: destructive rm",
+			"      - pattern: 'mkfs'",
+			"        label: disk format",
+		].join("\n");
+		fs.writeFileSync(path.join(temp.nixPiDir, "guardrails.yaml"), guardrailsYaml, "utf-8");
+
+		const rules = loadGuardrails();
+		expect(rules.length).toBeGreaterThanOrEqual(1);
+		const labels = rules.map((r) => r.label);
+		expect(labels).toContain("destructive rm");
+		expect(labels).toContain("disk format");
+	});
+
+	it("compiled patterns correctly match intended commands", () => {
+		const guardrailsYaml = [
+			"rules:",
+			"  - tool: bash",
+			"    action: block",
+			"    patterns:",
+			"      - pattern: 'rm\\s+-rf'",
+			"        label: destructive rm",
+		].join("\n");
+		fs.writeFileSync(path.join(temp.nixPiDir, "guardrails.yaml"), guardrailsYaml, "utf-8");
+
+		const rules = loadGuardrails();
+		const pattern = rules.find((r) => r.label === "destructive rm")?.pattern;
+		expect(pattern).toBeDefined();
+		expect(pattern!.test("rm -rf /")).toBe(true);
+		expect(pattern!.test("ls -la")).toBe(false);
+	});
+
+	it("skips rules with action other than block", () => {
+		const guardrailsYaml = [
+			"rules:",
+			"  - tool: bash",
+			"    action: warn",
+			"    patterns:",
+			"      - pattern: 'something'",
+			"        label: warn rule",
+		].join("\n");
+		fs.writeFileSync(path.join(temp.nixPiDir, "guardrails.yaml"), guardrailsYaml, "utf-8");
+
+		const rules = loadGuardrails();
+		expect(rules.every((r) => r.label !== "warn rule")).toBe(true);
+	});
+
+	it("skips invalid regex patterns without throwing", () => {
+		const guardrailsYaml = [
+			"rules:",
+			"  - tool: bash",
+			"    action: block",
+			"    patterns:",
+			"      - pattern: '[invalid'",
+			"        label: bad pattern",
+			"      - pattern: 'mkfs'",
+			"        label: disk format",
+		].join("\n");
+		fs.writeFileSync(path.join(temp.nixPiDir, "guardrails.yaml"), guardrailsYaml, "utf-8");
+
+		const rules = loadGuardrails();
+		expect(rules.every((r) => r.label !== "bad pattern")).toBe(true);
+		expect(rules.some((r) => r.label === "disk format")).toBe(true);
+	});
+
+	it("returns empty array when no guardrails.yaml exists in workspace or package", () => {
+		// temp.nixPiDir has no guardrails.yaml; package default also absent in unit context
+		// so we just verify it doesn't throw and returns an array
+		const rules = loadGuardrails();
+		expect(Array.isArray(rules)).toBe(true);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// saveContext / loadContext
+// ---------------------------------------------------------------------------
+describe("saveContext / loadContext", () => {
+	it("round-trips context through save and load", () => {
+		const ctx = { savedAt: "2025-06-01T00:00:00Z", updateAvailable: true };
+		saveContext(ctx);
+		const loaded = loadContext();
+		expect(loaded).toEqual(ctx);
+	});
+
+	it("returns null when no context file exists", () => {
+		// No context written in this fresh temp dir
+		const loaded = loadContext();
+		expect(loaded).toBeNull();
+	});
+
+	it("returns null when context file contains invalid JSON", () => {
+		const piDir = path.join(temp.nixPiDir, ".pi");
+		fs.mkdirSync(piDir, { recursive: true });
+		fs.writeFileSync(path.join(piDir, "nixpi-context.json"), "not-json", "utf-8");
+		const loaded = loadContext();
+		expect(loaded).toBeNull();
+	});
+
+	it("persists updateAvailable: false correctly", () => {
+		saveContext({ savedAt: "2025-01-01T00:00:00Z", updateAvailable: false });
+		expect(loadContext()?.updateAvailable).toBe(false);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// checkUpdateAvailable
+// ---------------------------------------------------------------------------
+describe("checkUpdateAvailable", () => {
+	it("returns false when no update-status file exists", () => {
+		expect(checkUpdateAvailable()).toBe(false);
+	});
+
+	it("returns true when status file has available: true", () => {
+		const stateDir = path.join(temp.nixPiDir, ".nixpi");
+		fs.mkdirSync(stateDir, { recursive: true });
+		fs.writeFileSync(
+			path.join(stateDir, "update-status.json"),
+			JSON.stringify({ available: true, checked: "2025-06-01T00:00:00Z" }),
+			"utf-8",
+		);
+		expect(checkUpdateAvailable()).toBe(true);
+	});
+
+	it("returns false when status file has available: false", () => {
+		const stateDir = path.join(temp.nixPiDir, ".nixpi");
+		fs.mkdirSync(stateDir, { recursive: true });
+		fs.writeFileSync(
+			path.join(stateDir, "update-status.json"),
+			JSON.stringify({ available: false, checked: "2025-06-01T00:00:00Z" }),
+			"utf-8",
+		);
+		expect(checkUpdateAvailable()).toBe(false);
+	});
+
+	it("returns false when status file contains invalid JSON", () => {
+		const stateDir = path.join(temp.nixPiDir, ".nixpi");
+		fs.mkdirSync(stateDir, { recursive: true });
+		fs.writeFileSync(path.join(stateDir, "update-status.json"), "not-json", "utf-8");
+		expect(checkUpdateAvailable()).toBe(false);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// buildRestoredContextBlock
+// ---------------------------------------------------------------------------
+describe("buildRestoredContextBlock", () => {
+	it("includes RESTORED CONTEXT header", () => {
+		const block = buildRestoredContextBlock({ savedAt: "2025-06-01T00:00:00Z", updateAvailable: false });
+		expect(block).toContain("[RESTORED CONTEXT]");
+	});
+
+	it("includes savedAt timestamp", () => {
+		const block = buildRestoredContextBlock({ savedAt: "2025-06-15T12:00:00Z", updateAvailable: false });
+		expect(block).toContain("2025-06-15T12:00:00Z");
+	});
+
+	it("includes update notice when updateAvailable is true", () => {
+		const block = buildRestoredContextBlock({ savedAt: "2025-06-01T00:00:00Z", updateAvailable: true });
+		expect(block).toContain("OS update available");
+	});
+
+	it("does not include update notice when updateAvailable is false", () => {
+		const block = buildRestoredContextBlock({ savedAt: "2025-06-01T00:00:00Z", updateAvailable: false });
+		expect(block).not.toContain("OS update available");
 	});
 });

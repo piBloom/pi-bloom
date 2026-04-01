@@ -1,3 +1,4 @@
+import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -5,11 +6,23 @@ import {
 	assertCanonicalRepo,
 	assertSupportedRebuildBranch,
 	assertValidPrimaryUser,
+	ensureDir,
+	atomicWriteFile,
 	getCanonicalRepoDir,
+	getDaemonStateDir,
 	getNixPiDir,
 	getNixPiRepoDir,
+	getNixPiStateDir,
+	getPiDir,
+	getPersonaDonePath,
 	getPrimaryUser,
+	getQuadletDir,
 	getSystemFlakeDir,
+	getSystemReadyPath,
+	getUpdateStatusPath,
+	getWizardStateDir,
+	readPackageVersion,
+	resolvePackageDir,
 	safePath,
 	validateCanonicalRepo,
 } from "../../core/lib/filesystem.js";
@@ -431,5 +444,192 @@ describe("canonical repo metadata", () => {
 		expect(() => readCanonicalRepoMetadata("codex-test-user")).toThrow(
 			"Invalid canonical repo metadata path: expected /srv/nixpi, got /home/alex/nixpi",
 		);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// ensureDir
+// ---------------------------------------------------------------------------
+describe("ensureDir", () => {
+	let tmpRoot: string;
+
+	beforeEach(() => {
+		tmpRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-ensuredir-"));
+	});
+
+	afterEach(() => {
+		rmSync(tmpRoot, { recursive: true, force: true });
+	});
+
+	it("creates a directory that does not exist", () => {
+		const target = path.join(tmpRoot, "new-dir");
+		ensureDir(target);
+		expect(existsSync(target)).toBe(true);
+	});
+
+	it("does nothing when the directory already exists", () => {
+		const target = path.join(tmpRoot, "existing");
+		mkdirSync(target);
+		expect(() => ensureDir(target)).not.toThrow();
+		expect(existsSync(target)).toBe(true);
+	});
+
+	it("creates nested directories recursively", () => {
+		const target = path.join(tmpRoot, "a", "b", "c");
+		ensureDir(target);
+		expect(existsSync(target)).toBe(true);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// atomicWriteFile
+// ---------------------------------------------------------------------------
+describe("atomicWriteFile", () => {
+	let tmpRoot: string;
+
+	beforeEach(() => {
+		tmpRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-atomic-"));
+	});
+
+	afterEach(() => {
+		rmSync(tmpRoot, { recursive: true, force: true });
+	});
+
+	it("writes content to a new file", () => {
+		const target = path.join(tmpRoot, "output.txt");
+		atomicWriteFile(target, "hello world");
+		expect(readFileSync(target, "utf-8")).toBe("hello world");
+	});
+
+	it("overwrites existing file content", () => {
+		const target = path.join(tmpRoot, "output.txt");
+		writeFileSync(target, "old content");
+		atomicWriteFile(target, "new content");
+		expect(readFileSync(target, "utf-8")).toBe("new content");
+	});
+
+	it("creates parent directories automatically", () => {
+		const target = path.join(tmpRoot, "sub", "dir", "file.txt");
+		atomicWriteFile(target, "deep content");
+		expect(readFileSync(target, "utf-8")).toBe("deep content");
+	});
+
+	it("leaves no .tmp file on success", () => {
+		const target = path.join(tmpRoot, "output.txt");
+		atomicWriteFile(target, "data");
+		expect(existsSync(`${target}.tmp`)).toBe(false);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// path helpers that depend on env vars
+// ---------------------------------------------------------------------------
+describe("env-based path helpers", () => {
+	let origStateDir: string | undefined;
+	let origPiDir: string | undefined;
+	let origDaemonDir: string | undefined;
+
+	beforeEach(() => {
+		origStateDir = process.env.NIXPI_STATE_DIR;
+		origPiDir = process.env.NIXPI_PI_DIR;
+		origDaemonDir = process.env.NIXPI_DAEMON_STATE_DIR;
+	});
+
+	afterEach(() => {
+		if (origStateDir !== undefined) process.env.NIXPI_STATE_DIR = origStateDir;
+		else delete process.env.NIXPI_STATE_DIR;
+		if (origPiDir !== undefined) process.env.NIXPI_PI_DIR = origPiDir;
+		else delete process.env.NIXPI_PI_DIR;
+		if (origDaemonDir !== undefined) process.env.NIXPI_DAEMON_STATE_DIR = origDaemonDir;
+		else delete process.env.NIXPI_DAEMON_STATE_DIR;
+	});
+
+	it("getNixPiStateDir returns NIXPI_STATE_DIR env or ~/.nixpi fallback", () => {
+		process.env.NIXPI_STATE_DIR = "/custom/state";
+		expect(getNixPiStateDir()).toBe("/custom/state");
+		delete process.env.NIXPI_STATE_DIR;
+		expect(getNixPiStateDir()).toBe(path.join(os.homedir(), ".nixpi"));
+	});
+
+	it("getPiDir returns NIXPI_PI_DIR env or ~/.pi fallback", () => {
+		process.env.NIXPI_PI_DIR = "/custom/pi";
+		expect(getPiDir()).toBe("/custom/pi");
+		delete process.env.NIXPI_PI_DIR;
+		expect(getPiDir()).toBe(path.join(os.homedir(), ".pi"));
+	});
+
+	it("getWizardStateDir is nested under getNixPiStateDir", () => {
+		process.env.NIXPI_STATE_DIR = "/s";
+		expect(getWizardStateDir()).toBe("/s/wizard-state");
+	});
+
+	it("getSystemReadyPath is inside wizard-state", () => {
+		process.env.NIXPI_STATE_DIR = "/s";
+		expect(getSystemReadyPath()).toBe("/s/wizard-state/system-ready");
+	});
+
+	it("getPersonaDonePath is inside wizard-state", () => {
+		process.env.NIXPI_STATE_DIR = "/s";
+		expect(getPersonaDonePath()).toBe("/s/wizard-state/persona-done");
+	});
+
+	it("getUpdateStatusPath is inside state dir", () => {
+		process.env.NIXPI_STATE_DIR = "/s";
+		expect(getUpdateStatusPath()).toBe("/s/update-status.json");
+	});
+
+	it("getDaemonStateDir returns NIXPI_DAEMON_STATE_DIR env or fallback under getPiDir", () => {
+		process.env.NIXPI_DAEMON_STATE_DIR = "/custom/daemon";
+		expect(getDaemonStateDir()).toBe("/custom/daemon");
+		delete process.env.NIXPI_DAEMON_STATE_DIR;
+		process.env.NIXPI_PI_DIR = "/pi";
+		expect(getDaemonStateDir()).toBe("/pi/nixpi-daemon");
+	});
+
+	it("getQuadletDir is under ~/.config/containers/systemd", () => {
+		const result = getQuadletDir();
+		expect(result).toBe(path.join(os.homedir(), ".config", "containers", "systemd"));
+	});
+});
+
+// ---------------------------------------------------------------------------
+// resolvePackageDir / readPackageVersion
+// ---------------------------------------------------------------------------
+describe("resolvePackageDir", () => {
+	it("finds a directory with package.json by walking up", () => {
+		// Use the current module URL — the actual package root should be found
+		const dir = resolvePackageDir(import.meta.url);
+		expect(existsSync(path.join(dir, "package.json"))).toBe(true);
+	});
+});
+
+describe("readPackageVersion", () => {
+	let tmpRoot: string;
+
+	beforeEach(() => {
+		tmpRoot = mkdtempSync(path.join(os.tmpdir(), "nixpi-pkgver-"));
+	});
+
+	afterEach(() => {
+		rmSync(tmpRoot, { recursive: true, force: true });
+	});
+
+	it("reads version from a valid package.json", () => {
+		writeFileSync(path.join(tmpRoot, "package.json"), JSON.stringify({ version: "1.2.3" }));
+		expect(readPackageVersion(tmpRoot)).toBe("1.2.3");
+	});
+
+	it("returns 0.1.0 when package.json has no version field", () => {
+		writeFileSync(path.join(tmpRoot, "package.json"), JSON.stringify({ name: "test" }));
+		expect(readPackageVersion(tmpRoot)).toBe("0.1.0");
+	});
+
+	it("returns 0.1.0 when package.json is absent", () => {
+		expect(readPackageVersion(tmpRoot)).toBe("0.1.0");
+	});
+
+	it("returns 0.1.0 when package.json contains invalid JSON", () => {
+		writeFileSync(path.join(tmpRoot, "package.json"), "not-json");
+		expect(readPackageVersion(tmpRoot)).toBe("0.1.0");
 	});
 });

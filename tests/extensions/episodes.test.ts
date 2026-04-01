@@ -1,6 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+	createEpisode,
+	loadEpisodes,
+	dayStamp,
+	timestampSlug,
+	episodeRef,
+	consolidateEpisodes,
+	promoteEpisode,
+} from "../../core/pi/extensions/episodes/actions.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
 import { createTempNixPi, type TempNixPi } from "../helpers/temp-nixpi.js";
@@ -242,5 +251,152 @@ describe("episodes", () => {
 		expect(result.isError).toBeFalsy();
 		expect(result.content[0].text).toContain("No conservative promotion candidates found");
 		expect(result.details).toEqual({ count: 0, applied: 0 });
+	});
+});
+
+// ---------------------------------------------------------------------------
+// dayStamp / timestampSlug / episodeRef helpers
+// ---------------------------------------------------------------------------
+describe("episode helper functions", () => {
+	it("dayStamp extracts YYYY-MM-DD from ISO string", () => {
+		expect(dayStamp("2025-06-15T12:30:00Z")).toBe("2025-06-15");
+	});
+
+	it("timestampSlug replaces colons with hyphens", () => {
+		expect(timestampSlug("2025-06-15T12:30:00Z")).toBe("2025-06-15T12-30-00Z");
+	});
+
+	it("episodeRef formats episode reference string", () => {
+		expect(episodeRef("2025-06-15T12-30-00Z")).toBe("episode/2025-06-15T12-30-00Z");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// loadEpisodes — day filter and limit
+// ---------------------------------------------------------------------------
+describe("loadEpisodes filters", () => {
+	it("only returns episodes from the specified day", () => {
+		const result1 = createEpisode({ title: "Today's episode", body: "body" });
+		expect(result1.isError).toBeFalsy();
+
+		const id = (result1.details as { id: string }).id;
+		const day = id.slice(0, 10);
+
+		const loaded = loadEpisodes({ day });
+		expect(loaded.length).toBeGreaterThanOrEqual(1);
+		expect(loaded.every((e) => e.relpath.startsWith(day))).toBe(true);
+	});
+
+	it("returns no episodes for a non-matching day", () => {
+		createEpisode({ title: "Episode", body: "body" });
+		const loaded = loadEpisodes({ day: "1900-01-01" });
+		expect(loaded).toHaveLength(0);
+	});
+
+	it("respects the limit parameter", () => {
+		for (let i = 0; i < 5; i++) {
+			createEpisode({ title: `Episode ${i}`, body: "body", room: `room-${i}` });
+		}
+		const loaded = loadEpisodes({ limit: 2 });
+		expect(loaded).toHaveLength(2);
+	});
+
+	it("clamps limit to minimum of 1", () => {
+		createEpisode({ title: "Episode", body: "body" });
+		const loaded = loadEpisodes({ limit: 0 });
+		expect(loaded).toHaveLength(1);
+	});
+
+	it("filters by kind", () => {
+		createEpisode({ title: "Observation", body: "body", kind: "observation", room: "room-obs" });
+		createEpisode({ title: "Resolution", body: "body", kind: "resolution", room: "room-res" });
+		const loaded = loadEpisodes({ kind: "resolution" });
+		expect(loaded.every((e) => e.attributes.kind === "resolution")).toBe(true);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// consolidateEpisodes — inferPromotionType behavior via propose
+// ---------------------------------------------------------------------------
+describe("consolidateEpisodes — promotion type inference", () => {
+	it("infers preference type from tags", () => {
+		createEpisode({
+			title: "User prefers dark mode",
+			body: "User said they prefer dark mode.",
+			kind: "observation",
+			importance: "high",
+			tags: ["preference"],
+		});
+		const result = consolidateEpisodes({ mode: "propose" });
+		expect(result.content[0].text).toContain("preference/");
+	});
+
+	it("infers procedure type from resolution kind", () => {
+		createEpisode({
+			title: "Recovery steps for nixpi-chat",
+			body: "Restart the service and verify it comes back.",
+			kind: "resolution",
+			importance: "high",
+			tags: ["recovery"],
+		});
+		const result = consolidateEpisodes({ mode: "propose" });
+		expect(result.content[0].text).toContain("procedure/");
+	});
+
+	it("infers decision type from decision-point kind", () => {
+		createEpisode({
+			title: "Decided to use NixOS flakes",
+			body: "The team decided to adopt flakes for reproducibility.",
+			kind: "decision-point",
+			importance: "high",
+			tags: ["decision"],
+		});
+		const result = consolidateEpisodes({ mode: "propose" });
+		expect(result.content[0].text).toContain("decision/");
+	});
+
+	it("skips low-importance episodes with unrecognised kind", () => {
+		createEpisode({
+			title: "Minor note",
+			body: "Just a minor observation.",
+			kind: "observation",
+			importance: "low",
+			tags: [],
+		});
+		const result = consolidateEpisodes({ mode: "propose" });
+		expect(result.content[0].text).toContain("No conservative promotion candidates found");
+	});
+
+	it("skips speculative episodes even when high importance", () => {
+		createEpisode({
+			title: "Maybe the user prefers vim",
+			body: "Maybe the user might prefer vim over emacs.",
+			kind: "observation",
+			importance: "high",
+			tags: ["preference"],
+		});
+		const result = consolidateEpisodes({ mode: "propose" });
+		expect(result.content[0].text).toContain("No conservative promotion candidates found");
+	});
+
+	it("skips already-promoted episodes", () => {
+		const created = createEpisode({
+			title: "CLI Style Preference",
+			body: "User prefers concise CLI examples.",
+			kind: "observation",
+			importance: "high",
+			tags: ["preference"],
+		});
+		const episodeId = (created.details as { id: string }).id;
+
+		// Promote once to mark as derived
+		promoteEpisode({
+			episode_id: episodeId,
+			target: { type: "preference", slug: "cli-style" },
+		});
+
+		// Consolidate — should no longer propose this episode
+		const result = consolidateEpisodes({ mode: "propose" });
+		expect(result.content[0].text).not.toContain("preference/cli-style");
 	});
 });

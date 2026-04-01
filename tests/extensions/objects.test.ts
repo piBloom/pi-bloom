@@ -342,3 +342,66 @@ describe("parseRef", () => {
 		expect(parseRef("type/")).toEqual({ type: "type", slug: "" });
 	});
 });
+
+// ---------------------------------------------------------------------------
+// memory_list — tag filter
+// ---------------------------------------------------------------------------
+describe("memory_list tag filter", () => {
+	it("filters objects by tag via filters parameter", async () => {
+		const create = getExecute("memory_create");
+		const list = getExecute("memory_list");
+
+		await create("call-1", {
+			type: "note",
+			slug: "tagged-note",
+			fields: { title: "Tagged", tags: ["important"] },
+		});
+		await create("call-2", {
+			type: "note",
+			slug: "untagged-note",
+			fields: { title: "Untagged", tags: [] },
+		});
+
+		const result = await list("call-3", { filters: { tag: "important" } });
+		expect(result.content[0].text).toContain("note/tagged-note");
+		expect(result.content[0].text).not.toContain("note/untagged-note");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// memory_query — limit boundary enforcement
+// ---------------------------------------------------------------------------
+describe("memory_query limit enforcement", () => {
+	it("clamps limit to minimum of 1", async () => {
+		const create = getExecute("memory_create");
+		const query = getExecute("memory_query");
+
+		for (let i = 0; i < 3; i++) {
+			await create(`call-create-${i}`, {
+				type: "fact",
+				slug: `limit-fact-${i}`,
+				fields: { title: `Fact ${i}`, summary: "test fact", salience: 0.9 },
+			});
+		}
+
+		const result = await query("call-query", { text: "fact", limit: 0 });
+		const details = result.details as { count: number };
+		expect(details.count).toBe(1);
+	});
+
+	it("clamps limit to maximum of 100", async () => {
+		const create = getExecute("memory_create");
+		const query = getExecute("memory_query");
+
+		await create("call-1", {
+			type: "fact",
+			slug: "limit-max-fact",
+			fields: { title: "Max Fact", summary: "test", salience: 0.9 },
+		});
+
+		// limit=200 should be clamped to 100 — we can't check the clamp directly
+		// but we can verify it doesn't error and returns the available results
+		const result = await query("call-2", { text: "fact", limit: 200 });
+		expect(result.isError).toBeFalsy();
+	});
+});

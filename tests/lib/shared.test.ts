@@ -12,7 +12,7 @@ import {
 	resolveInteractionReply,
 } from "../../core/lib/interactions.js";
 import { createLogger } from "../../core/lib/logging.js";
-import { errorResult, nowIso } from "../../core/lib/utils.js";
+import { errorResult, nowIso, textToolResult, registerTools } from "../../core/lib/utils.js";
 import { guardServiceName } from "../../core/lib/validation.js";
 
 afterEach(() => {
@@ -597,5 +597,54 @@ describe("guardServiceName", () => {
 
 	it("accepts alternate prefixes when requested", () => {
 		expect(guardServiceName("agent-router", "agent")).toBeNull();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// textToolResult
+// ---------------------------------------------------------------------------
+describe("textToolResult", () => {
+	it("returns the expected shape with default empty details", () => {
+		const result = textToolResult("hello");
+		expect(result).toEqual({
+			content: [{ type: "text", text: "hello" }],
+			details: {},
+		});
+	});
+
+	it("includes provided details in the result", () => {
+		const result = textToolResult("msg", { count: 3, flag: true });
+		expect(result.details).toEqual({ count: 3, flag: true });
+		expect(result.content[0].text).toBe("msg");
+	});
+
+	it("does not set isError", () => {
+		const result = textToolResult("ok");
+		expect("isError" in result).toBe(false);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// registerTools
+// ---------------------------------------------------------------------------
+describe("registerTools", () => {
+	it("calls registerTool once per tool", () => {
+		const registerTool = vi.fn();
+		const fakeApi = { registerTool } as never;
+		const tools = [
+			{ name: "tool_a", description: "a", execute: vi.fn() },
+			{ name: "tool_b", description: "b", execute: vi.fn() },
+		] as never;
+		registerTools(fakeApi, tools);
+		expect(registerTool).toHaveBeenCalledTimes(2);
+		expect(registerTool).toHaveBeenNthCalledWith(1, tools[0]);
+		expect(registerTool).toHaveBeenNthCalledWith(2, tools[1]);
+	});
+
+	it("does nothing for an empty tools array", () => {
+		const registerTool = vi.fn();
+		const fakeApi = { registerTool } as never;
+		registerTools(fakeApi, []);
+		expect(registerTool).not.toHaveBeenCalled();
 	});
 });
