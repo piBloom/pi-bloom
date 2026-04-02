@@ -4,10 +4,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { textToolResult } from "../../../lib/utils.js";
 import { getNixPiDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter } from "../../../lib/frontmatter.js";
-import { errorResult, truncate } from "../../../lib/utils.js";
+import { errorResult, textToolResult, truncate } from "../../../lib/utils.js";
 import { walkMdFiles } from "./actions.js";
 import { readMemoryRecord, type ScopePreference, scoreRecord } from "./memory.js";
 

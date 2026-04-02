@@ -25,9 +25,9 @@ Built-in services such as `nixpi-chat`, the local web chat on `:8080`, and the P
 ## 🔒 Trust Model
 
 1. Nixpkgs revision is pinned in `flake.lock`
-2. npm dependencies are pinned in `package-lock.json`
-3. Both lockfiles should be committed to version control
-4. Review changes to lockfiles as part of normal PR review
+2. npm dependencies are resolved from `package.json` version constraints
+3. The Nixpkgs `flake.lock` is committed; npm lockfiles are generated artifacts and excluded from version control
+4. Review changes to `flake.lock` and `package.json` version pins as part of normal PR review
 
 ## Related
 

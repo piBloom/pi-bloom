@@ -4,10 +4,10 @@
  */
 
 export interface RetryOptions {
-	maxRetries?: number;      // default: 5
-	baseDelayMs?: number;     // default: 1000
-	maxDelayMs?: number;      // default: 30_000
-	jitter?: boolean;         // default: true
+	maxRetries?: number; // default: 5
+	baseDelayMs?: number; // default: 1000
+	maxDelayMs?: number; // default: 30_000
+	jitter?: boolean; // default: true
 	shouldRetry?: (error: unknown) => boolean;
 	onError?: () => Promise<void>;
 	onRetry?: (attempt: number, delayMs: number, error: unknown) => void;
@@ -28,10 +28,7 @@ function getRetryAfterMs(error: unknown): number | undefined {
 	return undefined;
 }
 
-export async function withRetry<T>(
-	fn: () => Promise<T>,
-	opts: RetryOptions = {},
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions = {}): Promise<T> {
 	const {
 		maxRetries = 5,
 		baseDelayMs = 1000,

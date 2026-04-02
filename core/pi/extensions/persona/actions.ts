@@ -2,7 +2,7 @@
  * Handler / business logic for persona.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import jsYaml from "js-yaml";
 import {
 	getNixPiDir,
@@ -14,7 +14,7 @@ import {
 	resolvePackageDir,
 } from "../../../lib/filesystem.js";
 import { createLogger } from "../../../lib/logging.js";
-import type { NixPiContext, GuardrailsConfig } from "./types.js";
+import type { GuardrailsConfig, NixPiContext } from "./types.js";
 
 const log = createLogger("persona");
 

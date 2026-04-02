@@ -10,14 +10,6 @@ export function truncate(text: string): string {
 	return truncateHead(text, { maxLines: 2000, maxBytes: 50000 }).content;
 }
 
-export function errorResult(message: string) {
-	return {
-		content: [{ type: "text" as const, text: message }],
-		details: {},
-		isError: true,
-	};
-}
-
 export function nowIso(): string {
 	return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 }
@@ -27,11 +19,16 @@ export function nowIso(): string {
 export type RegisteredExtensionTool = Parameters<ExtensionAPI["registerTool"]>[0];
 export const EmptyToolParams = Type.Object({});
 
-export function textToolResult(text: string, details: Record<string, unknown> = {}) {
+export function textToolResult(text: string, details: Record<string, unknown> = {}, isError?: boolean) {
 	return {
 		content: [{ type: "text" as const, text }],
 		details,
+		...(isError !== undefined ? { isError } : {}),
 	};
+}
+
+export function errorResult(message: string) {
+	return textToolResult(message, {}, true);
 }
 
 export function registerTools(pi: ExtensionAPI, tools: readonly RegisteredExtensionTool[]): void {

@@ -1,8 +1,9 @@
 /**
  * System health handler for os.
  */
-import { textToolResult, truncate } from "../../../lib/utils.js";
+
 import { run } from "../../../lib/exec.js";
+import { textToolResult, truncate } from "../../../lib/utils.js";
 
 function nixosSection(result: Awaited<ReturnType<typeof run>>): string {
 	if (result.exitCode !== 0) return "## OS\n(nixos-rebuild unavailable)";

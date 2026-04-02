@@ -44,12 +44,7 @@ describe("os nixos_update handler", () => {
 
 		expect(ctx.ui.confirm).toHaveBeenCalled();
 		expect(runMock).toHaveBeenNthCalledWith(1, "git", ["-C", "/srv/nixpi", "branch", "--show-current"], undefined);
-		expect(runMock).toHaveBeenNthCalledWith(
-			2,
-			"nixpi-brokerctl",
-			["nixos-update", "apply", expectedFlake],
-			undefined,
-		);
+		expect(runMock).toHaveBeenNthCalledWith(2, "nixpi-brokerctl", ["nixos-update", "apply", expectedFlake], undefined);
 		expect(result.isError).toBe(false);
 		expect(result.content[0].text).toContain(`from ${expectedFlake}`);
 	});

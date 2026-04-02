@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
 import { createTempNixPi, type TempNixPi } from "../helpers/temp-nixpi.js";
@@ -11,11 +11,11 @@ vi.mock("../../core/lib/exec.js", () => ({
 
 import * as execModule from "../../core/lib/exec.js";
 import {
+	checkPendingUpdates,
 	handleNixosUpdate,
+	handleScheduleReboot,
 	handleSystemdControl,
 	handleUpdateStatus,
-	handleScheduleReboot,
-	checkPendingUpdates,
 } from "../../core/pi/extensions/os/actions.js";
 import { handleSystemHealth } from "../../core/pi/extensions/os/actions-health.js";
 
@@ -409,8 +409,8 @@ describe("checkPendingUpdates", () => {
 
 		const result = await checkPendingUpdates("BASE PROMPT");
 		expect(result).toBeDefined();
-		expect(result!.systemPrompt).toContain("BASE PROMPT");
-		expect(result!.systemPrompt).toContain("NixPI update is available");
+		expect(result?.systemPrompt).toContain("BASE PROMPT");
+		expect(result?.systemPrompt).toContain("NixPI update is available");
 
 		// Verify notified flag was set
 		const updated = JSON.parse(fs.readFileSync(statusPath, "utf-8"));

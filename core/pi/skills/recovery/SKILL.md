@@ -44,7 +44,7 @@ Use these procedures when diagnosing and recovering from common system issues. A
 3. Common causes:
    - Broken flake input: retry `nix_config_proposal(action="update_flake_lock")`
    - Invalid module import or option: inspect the changed files under `flake.nix` and `core/os/`
-   - Wrong repo path: confirm the local clone exists at `~/.nixpi/pi-nixpi`
+   - Wrong repo path: confirm the local clone exists at `/srv/nixpi`
 4. Do not apply or publish until local validation passes and the diff is reviewed
 
 ## Pi Startup Issues

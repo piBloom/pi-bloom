@@ -12,6 +12,6 @@
 		"composite": true,
 		"sourceMap": true
 	},
-	"include": ["core/**/*.ts", "core/pi/extensions/**/*.ts", "cli/**/*.ts", "tests/**/*.ts"],
+	"include": ["core/**/*.ts", "tests/**/*.ts"],
 	"exclude": ["node_modules", "dist", "core/chat-server/frontend"]
 }

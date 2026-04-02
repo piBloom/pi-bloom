@@ -27,7 +27,7 @@ While forcing the approval boundary to stay with the human and the external cont
 
 NixPI assumes the local working clone lives at:
 
-- `~/.nixpi/pi-nixpi`
+- `/srv/nixpi`
 
 Recommended workflow:
 
@@ -59,7 +59,7 @@ Recommended workflow:
 
 ### Current Repo Assumptions
 
-- Local path is `~/.nixpi/pi-nixpi`
+- Local path is `/srv/nixpi`
 - The clone is a working area for proposals and review
 - Remote publishing is handled by the human or an external controller
 

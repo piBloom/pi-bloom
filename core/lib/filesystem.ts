@@ -115,9 +115,8 @@ export function getPrimaryUser(): string {
 	return assertValidPrimaryUser(currentUser);
 }
 
-/** Resolve the canonical working repo path for the primary user. */
-export function getCanonicalRepoDir(primaryUser = getPrimaryUser()): string {
-	assertValidPrimaryUser(primaryUser);
+/** Resolve the canonical working repo path. */
+export function getCanonicalRepoDir(): string {
 	return CANONICAL_REPO_DIR;
 }
 
@@ -144,11 +143,6 @@ export function getSystemFlakeDir(): string {
 /** Resolve the dedicated daemon state directory. */
 export function getDaemonStateDir(): string {
 	return process.env.NIXPI_DAEMON_STATE_DIR ?? path.join(getPiDir(), "nixpi-daemon");
-}
-
-/** Path to the local repo clone used for local-only proposal workflows. */
-export function getNixPiRepoDir(): string {
-	return getCanonicalRepoDir();
 }
 
 /** Supported rebuilds only run from the canonical repo on main. */
@@ -199,11 +193,6 @@ export function assertCanonicalRepo(args: CanonicalRepoValidationArgs): void {
 			`Canonical repo branch mismatch: expected ${expectedBranch ?? "(missing)"}, got ${actualBranch ?? "(missing)"}`,
 		);
 	}
-}
-
-/** Backward-compatible alias for canonical repo policy checks. */
-export function validateCanonicalRepo(args: CanonicalRepoValidationArgs): void {
-	assertCanonicalRepo(args);
 }
 
 /** Resolve the package root by walking up from the current module URL. */

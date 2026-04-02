@@ -4,10 +4,9 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { textToolResult } from "../../../lib/utils.js";
 import { readPackageVersion, resolvePackageDir, safePath } from "../../../lib/filesystem.js";
 import { stringifyFrontmatter } from "../../../lib/frontmatter.js";
-import { errorResult, nowIso, truncate } from "../../../lib/utils.js";
+import { errorResult, nowIso, textToolResult, truncate } from "../../../lib/utils.js";
 import { readBlueprintVersions } from "./actions-blueprints.js";
 
 const NIXPI_DIRS = ["Persona", "Skills", "Evolutions", "Objects", "Episodes", "Agents", "audit"];
@@ -47,7 +46,10 @@ export function handleNixPiStatus(nixPiDir: string) {
 	return textToolResult(truncate(lines.join("\n")));
 }
 
-export function handleSkillCreate(workspaceDir: string, params: { name: string; description: string; content: string }) {
+export function handleSkillCreate(
+	workspaceDir: string,
+	params: { name: string; description: string; content: string },
+) {
 	let skillDir: string;
 	try {
 		skillDir = safePath(workspaceDir, "Skills", params.name);

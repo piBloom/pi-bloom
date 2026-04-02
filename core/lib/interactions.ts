@@ -70,7 +70,9 @@ function getPendingRecords(): InteractionRecord[] {
 }
 
 function findLatestMatchingPending(kind: InteractionKind, key: string): InteractionRecord | undefined {
-	return [...store.values()].reverse().find((entry) => entry.kind === kind && entry.key === key && entry.status === "pending");
+	return [...store.values()]
+		.reverse()
+		.find((entry) => entry.kind === kind && entry.key === key && entry.status === "pending");
 }
 
 function normalizeReplyText(text: string, token?: string): string {

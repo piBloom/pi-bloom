@@ -51,7 +51,7 @@
 		"test:system:smoke": "nix build .#checks.x86_64-linux.nixos-smoke --no-link -L",
 		"test:system:full": "nix build .#checks.x86_64-linux.nixos-full --no-link -L",
 		"test:system:destructive": "nix build .#checks.x86_64-linux.nixos-destructive --no-link -L",
-		"test:ci": "npm run test:unit && npm run test:integration && npm run test:e2e && npm run test:coverage && npm run test:system:smoke",
+		"test:ci": "npm run test:coverage && npm run test:system:smoke",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
 		"build": "rm -rf dist && tsc --build && vite build",

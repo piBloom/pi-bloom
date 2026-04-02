@@ -20,7 +20,7 @@ switch:
 
 # Apply the installed NixPI checkout
 update:
-    sudo nixos-rebuild switch --flake ~/nixpi
+    sudo nixos-rebuild switch --flake /srv/nixpi
 
 # Roll back to the previous NixOS generation
 rollback:

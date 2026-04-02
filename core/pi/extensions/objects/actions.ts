@@ -4,10 +4,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { textToolResult } from "../../../lib/utils.js";
 import { getNixPiDir, safePath } from "../../../lib/filesystem.js";
 import { parseFrontmatter, stringifyFrontmatter } from "../../../lib/frontmatter.js";
-import { errorResult, nowIso, truncate } from "../../../lib/utils.js";
+import { errorResult, nowIso, textToolResult, truncate } from "../../../lib/utils.js";
 import { defaultObjectBody, mergeObjectState, readMemoryRecord, writeMemoryRecord } from "./memory.js";
 
 /** Parse a `type/slug` reference string into its components. Throws if format is invalid. */
@@ -34,7 +33,9 @@ export function createObject(params: {
 	const workspaceDir = getNixPiDir();
 	let filepath: string;
 	try {
-		filepath = params.path ? safePath(os.homedir(), params.path) : safePath(workspaceDir, "Objects", `${params.slug}.md`);
+		filepath = params.path
+			? safePath(os.homedir(), params.path)
+			: safePath(workspaceDir, "Objects", `${params.slug}.md`);
 	} catch {
 		return errorResult("Path traversal blocked: invalid path");
 	}

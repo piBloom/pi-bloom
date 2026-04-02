@@ -7,12 +7,8 @@
  * @see {@link ../../AGENTS.md#nixpi} Extension reference
  */
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import {
-	EmptyToolParams,
-	type RegisteredExtensionTool,
-	registerTools,
-} from "../../../lib/utils.js";
 import { getNixPiDir } from "../../../lib/filesystem.js";
+import { EmptyToolParams, type RegisteredExtensionTool, registerTools } from "../../../lib/utils.js";
 import { discoverSkillPaths, ensureNixPi, getPackageDir, handleNixPiStatus } from "./actions.js";
 import { handleUpdateBlueprints, readBlueprintVersions, seedBlueprints } from "./actions-blueprints.js";
 

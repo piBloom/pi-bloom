@@ -8,11 +8,7 @@
 import { StringEnum } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { type Static, Type } from "@sinclair/typebox";
-import {
-	EmptyToolParams,
-	type RegisteredExtensionTool,
-	registerTools,
-} from "../../../lib/utils.js";
+import { EmptyToolParams, type RegisteredExtensionTool, registerTools } from "../../../lib/utils.js";
 import {
 	checkPendingUpdates,
 	handleNixosUpdate,

@@ -3,12 +3,12 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { stringifyFrontmatter } from "../../core/lib/frontmatter.js";
 import {
-	normalizeCommand,
-	loadGuardrails,
-	saveContext,
-	loadContext,
-	checkUpdateAvailable,
 	buildRestoredContextBlock,
+	checkUpdateAvailable,
+	loadContext,
+	loadGuardrails,
+	normalizeCommand,
+	saveContext,
 } from "../../core/pi/extensions/persona/actions.js";
 import { createMockExtensionAPI, type MockExtensionAPI } from "../helpers/mock-extension-api.js";
 import { createMockExtensionContext } from "../helpers/mock-extension-context.js";
@@ -336,8 +336,8 @@ describe("loadGuardrails", () => {
 		const rules = loadGuardrails();
 		const pattern = rules.find((r) => r.label === "destructive rm")?.pattern;
 		expect(pattern).toBeDefined();
-		expect(pattern!.test("rm -rf /")).toBe(true);
-		expect(pattern!.test("ls -la")).toBe(false);
+		expect(pattern?.test("rm -rf /")).toBe(true);
+		expect(pattern?.test("ls -la")).toBe(false);
 	});
 
 	it("skips rules with action other than block", () => {

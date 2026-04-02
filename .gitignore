@@ -10,3 +10,6 @@ cosign.key
 result
 core/scripts/prefill.env
 .vitepress/
+# Generated artifacts — not committed to keep repo footprint small
+package-lock.json
+core/os/pkgs/pi/package-lock.json

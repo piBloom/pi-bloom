@@ -10,10 +10,7 @@ describe("withRetry", () => {
 	});
 
 	it("retries on transient failure then succeeds", async () => {
-		const fn = vi
-			.fn()
-			.mockRejectedValueOnce(new Error("fail"))
-			.mockResolvedValue("ok");
+		const fn = vi.fn().mockRejectedValueOnce(new Error("fail")).mockResolvedValue("ok");
 		const result = await withRetry(fn, {
 			baseDelayMs: 0,
 			jitter: false,
@@ -49,10 +46,7 @@ describe("withRetry", () => {
 
 	it("calls onError teardown before each retry", async () => {
 		const teardown = vi.fn().mockResolvedValue(undefined);
-		const fn = vi
-			.fn()
-			.mockRejectedValueOnce(new Error("fail"))
-			.mockResolvedValue("ok");
+		const fn = vi.fn().mockRejectedValueOnce(new Error("fail")).mockResolvedValue("ok");
 		await withRetry(fn, {
 			baseDelayMs: 0,
 			jitter: false,
@@ -64,10 +58,7 @@ describe("withRetry", () => {
 
 	it("calls onRetry with attempt number, delay, and error", async () => {
 		const onRetry = vi.fn();
-		const fn = vi
-			.fn()
-			.mockRejectedValueOnce(new Error("fail"))
-			.mockResolvedValue("ok");
+		const fn = vi.fn().mockRejectedValueOnce(new Error("fail")).mockResolvedValue("ok");
 		await withRetry(fn, {
 			baseDelayMs: 0,
 			jitter: false,
@@ -103,11 +94,8 @@ describe("withRetry", () => {
 		const retryAfterErr = Object.assign(new Error("rate limited"), {
 			data: { retry_after_ms: 5000 },
 		});
-		let resolveDelay!: () => void;
-		const fn = vi
-			.fn()
-			.mockRejectedValueOnce(retryAfterErr)
-			.mockResolvedValue("ok");
+		let _resolveDelay!: () => void;
+		const fn = vi.fn().mockRejectedValueOnce(retryAfterErr).mockResolvedValue("ok");
 
 		const resultPromise = withRetry(fn, {
 			jitter: false,
@@ -123,10 +111,7 @@ describe("withRetry", () => {
 
 	it("respects maxDelayMs cap on computed delay", async () => {
 		vi.useFakeTimers();
-		const fn = vi
-			.fn()
-			.mockRejectedValueOnce(new Error("fail"))
-			.mockResolvedValue("ok");
+		const fn = vi.fn().mockRejectedValueOnce(new Error("fail")).mockResolvedValue("ok");
 
 		const resultPromise = withRetry(fn, {
 			baseDelayMs: 100000,

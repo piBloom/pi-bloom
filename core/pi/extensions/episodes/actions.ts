@@ -137,16 +137,20 @@ function updateEpisodeDerivedObjects(filepath: string, ref: string) {
 	}
 }
 
+function episodeStringField(episode: Record<string, unknown>, key: string, fallback: string): string {
+	return typeof episode[key] === "string" ? (episode[key] as string) : fallback;
+}
+
 function episodeKind(episode: Record<string, unknown>): string {
-	return typeof episode.kind === "string" ? episode.kind : "observation";
+	return episodeStringField(episode, "kind", "observation");
 }
 
 function episodeImportance(episode: Record<string, unknown>): string {
-	return typeof episode.importance === "string" ? episode.importance : "medium";
+	return episodeStringField(episode, "importance", "medium");
 }
 
 function episodeRoom(episode: Record<string, unknown>): string {
-	return typeof episode.room === "string" ? episode.room : "";
+	return episodeStringField(episode, "room", "");
 }
 
 function episodeTags(episode: Record<string, unknown>): string[] {

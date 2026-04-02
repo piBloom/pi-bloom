@@ -42,14 +42,14 @@
 	"files": {
 		"includes": [
 			"**",
-			"**/!node_modules/**",
-			"**/!dist/**",
-			"**/!services/**/*/node_modules/**",
-			"**/!.worktrees",
-			"**/!core/os/output/**",
-			"**/!.pi",
-			"!.claude",
-			"**/!coverage/**"
+			"!**/node_modules",
+			"!**/dist",
+			"!**/services/**/node_modules",
+			"!**/.worktrees",
+			"!**/core/os/output",
+			"!**/.pi",
+			"!**/.claude",
+			"!**/coverage"
 		]
 	},
 	"overrides": [

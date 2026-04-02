@@ -51,7 +51,7 @@ When extending capabilities, prefer the lightest option: **Skill â†’ Extension â
 
 When NixPI identifies a code-level fix or improvement to its own OS/extensions, it should prepare the change locally for human review.
 
-**Local repo path**: `~/.nixpi/pi-nixpi`
+**Local repo path**: `/srv/nixpi`
 
 ### Process
 

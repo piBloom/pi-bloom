@@ -21,12 +21,12 @@ export function createTempNixPi(): TempNixPi {
 			if (origResolved !== undefined) {
 				process.env._NIXPI_DIR_RESOLVED = origResolved;
 			} else {
-				process.env._NIXPI_DIR_RESOLVED = undefined;
+				delete process.env._NIXPI_DIR_RESOLVED;
 			}
 			if (origNixPiDir !== undefined) {
 				process.env.NIXPI_DIR = origNixPiDir;
 			} else {
-				process.env.NIXPI_DIR = undefined;
+				delete process.env.NIXPI_DIR;
 			}
 			rmSync(nixPiDir, { recursive: true, force: true });
 		},

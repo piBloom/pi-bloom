@@ -3,13 +3,13 @@
  */
 
 import fs from "node:fs";
-import path from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
 import {
 	assertSupportedRebuildBranch,
-	getNixPiRepoDir,
+	getCanonicalRepoDir,
 	getSystemFlakeDir,
 	getUpdateStatusPath,
 } from "../../../lib/filesystem.js";
@@ -57,7 +57,7 @@ export async function handleNixosUpdate(
 			`System flake not found at ${flake}. Supported rebuilds use /etc/nixos with the canonical repo at /srv/nixpi; switch to main in /srv/nixpi and ensure ${flake}/flake.nix exists.`,
 		);
 	}
-	const repoDir = getNixPiRepoDir();
+	const repoDir = getCanonicalRepoDir();
 	const branchResult = await run("git", ["-C", repoDir, "branch", "--show-current"], signal);
 	if (branchResult.exitCode !== 0) {
 		return errorResult(`Failed to determine canonical repo branch at ${repoDir}: ${branchResult.stderr}`);
@@ -154,8 +154,7 @@ export async function checkPendingUpdates(systemPrompt: string): Promise<{ syste
 			status.notified = true;
 			await writeFile(statusFile, JSON.stringify(status), "utf-8");
 			const note =
-				"\n\n[SYSTEM] A NixPI update is available. " +
-				"Inform the user and ask if they'd like to review and apply it.";
+				"\n\n[SYSTEM] A NixPI update is available. " + "Inform the user and ask if they'd like to review and apply it.";
 			return { systemPrompt: systemPrompt + note };
 		}
 	} catch {

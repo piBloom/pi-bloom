@@ -12,7 +12,7 @@ import {
 	resolveInteractionReply,
 } from "../../core/lib/interactions.js";
 import { createLogger } from "../../core/lib/logging.js";
-import { errorResult, nowIso, textToolResult, registerTools } from "../../core/lib/utils.js";
+import { errorResult, nowIso, registerTools, textToolResult } from "../../core/lib/utils.js";
 import { guardServiceName } from "../../core/lib/validation.js";
 
 afterEach(() => {
@@ -374,7 +374,7 @@ describe("requestSelection", () => {
 		// Resolve the pending interaction directly
 		const pending = getPendingInteractions(fakeCtx);
 		expect(pending).toHaveLength(1);
-		resolveInteractionReply(fakeCtx, `2 ${pending[0]!.token}`);
+		resolveInteractionReply(fakeCtx, `2 ${pending[0]?.token}`);
 
 		const second = await requestSelection(fakeCtx, "pick-action", "Choose action", ["init", "status"]);
 		expect(second.value).toBe("status");
@@ -389,7 +389,7 @@ describe("requestTextInput", () => {
 
 		const pending = getPendingInteractions(fakeCtx);
 		expect(pending).toHaveLength(1);
-		resolveInteractionReply(fakeCtx, `hello world ${pending[0]!.token}`);
+		resolveInteractionReply(fakeCtx, `hello world ${pending[0]?.token}`);
 
 		const second = await requestTextInput(fakeCtx, "note", "Enter a short note");
 		expect(second.value).toBe("hello world");
