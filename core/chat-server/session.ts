@@ -102,7 +102,7 @@ export class ChatSessionManager {
 		let done = false;
 
 		const unsub = entry.piSession.subscribe((event: AgentSessionEvent) => {
-			const events = chatEventsFromAgentEvent(event);
+			const events = chatEventsFromAgentEvent(event, sessionId);
 			if (events.length > 0) {
 				queue.push(...events);
 				notify?.();
