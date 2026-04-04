@@ -11,5 +11,6 @@
     ./shell.nix
     ./firstboot
     ./ttyd.nix
+    ./setup-apply.nix
   ];
 }

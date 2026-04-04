@@ -20,6 +20,7 @@
       installerHelper = pkgs.callPackage ./core/os/pkgs/installer {
         inherit nixpiSource piAgent appPackage;
       };
+      setupApplyPackage = pkgs.callPackage ./core/os/pkgs/nixpi-setup-apply {};
       # pkgsUnfree is used only for boot nixosTest.  pkgs.testers.nixosTest
       # injects its own pkgs as nixpkgs.pkgs for test nodes, which means modules
       # cannot set nixpkgs.config (NixOS assertion).  Using a pkgs already created
@@ -28,12 +29,13 @@
       piAgent = pkgs.callPackage ./core/os/pkgs/pi {};
       appPackage = pkgs.callPackage ./core/os/pkgs/app { inherit piAgent; };
 
-      specialArgs = { inherit piAgent appPackage self installerHelper disko; };
+      specialArgs = { inherit piAgent appPackage self installerHelper disko setupApplyPackage; };
     in {
       packages.${system} = {
         pi = piAgent;
         app = appPackage;
         nixpi-installer = installerHelper;
+        nixpi-setup-apply = setupApplyPackage;
         installerIso = self.nixosConfigurations.installer-iso.config.system.build.isoImage;
       };
 
