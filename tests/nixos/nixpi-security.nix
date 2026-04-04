@@ -1,4 +1,4 @@
-{ nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
+{ nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
 
 let
   mkNode = { hostName, username, prefill ? false }: { pkgs, ... }: let
@@ -8,7 +8,7 @@ let
       ../../core/os/modules/firstboot
       mkTestFilesystems
     ];
-    _module.args = { inherit piAgent appPackage setupPackage; };
+    _module.args = { inherit piAgent appPackage; };
 
     nixpi.primaryUser = username;
     nixpi.security.enforceServiceFirewall = true;

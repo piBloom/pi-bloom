@@ -1,4 +1,4 @@
-{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkManagedUserConfig, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, mkManagedUserConfig, ... }:
 
 {
   name = "nixpi-post-setup-lockdown";
@@ -13,7 +13,7 @@
         ../../core/os/modules/firstboot
         mkTestFilesystems
       ];
-      _module.args = { inherit piAgent appPackage setupPackage; };
+      _module.args = { inherit piAgent appPackage; };
 
       networking.hostName = "nixpi-steady";
       nixpi.security.enforceServiceFirewall = true;

@@ -6,7 +6,6 @@ in
   _module.args = {
     piAgent = @piAgent@;
     appPackage = @appPackage@;
-    setupPackage = @setupPackage@;
   };
 
   imports = [
@@ -16,8 +15,6 @@ in
     @shellModule@
     @updateModule@
   ];
-
-  environment.systemPackages = [ @setupPackage@ ];
 
   nixpi.primaryUser = "@@username@@";
   nixpi.security.ssh.passwordAuthentication = true;

@@ -1,4 +1,4 @@
-{ nixPiModulesNoShell, mkTestFilesystems, mkManagedUserConfig, piAgent, appPackage, setupPackage, ... }:
+{ nixPiModulesNoShell, mkTestFilesystems, mkManagedUserConfig, piAgent, appPackage, ... }:
 
 {
   name = "nixpi-options-validation";
@@ -9,7 +9,7 @@
         mkTestFilesystems
         (mkManagedUserConfig { username = "pi"; })
       ];
-      _module.args = { inherit piAgent appPackage setupPackage; };
+      _module.args = { inherit piAgent appPackage; };
 
       networking.hostName = "nixpi-defaults-test";
 
@@ -29,7 +29,7 @@
         mkTestFilesystems
         (mkManagedUserConfig { username = "pi"; })
       ];
-      _module.args = { inherit piAgent appPackage setupPackage; };
+      _module.args = { inherit piAgent appPackage; };
 
       networking.hostName = "nixpi-overrides-test";
 

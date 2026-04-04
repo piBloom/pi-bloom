@@ -1,4 +1,4 @@
-{ lib, nixPiModulesNoShell, mkTestFilesystems, piAgent, appPackage, setupPackage, ... }:
+{ lib, nixPiModulesNoShell, mkTestFilesystems, piAgent, appPackage, ... }:
 
 let
   commonNodeModule = { ... }: {
@@ -31,7 +31,7 @@ in
 
       systemNew = (import "${pkgs.path}/nixos/lib/eval-config.nix" {
         inherit system;
-        specialArgs = { inherit piAgent appPackage setupPackage; };
+        specialArgs = { inherit piAgent appPackage; };
         modules = nixPiModulesNoShell ++ [
           mkTestFilesystems
           commonNodeModule
@@ -100,7 +100,7 @@ in
         mkTestFilesystems
         commonNodeModule
       ];
-      _module.args = { inherit piAgent appPackage setupPackage; };
+      _module.args = { inherit piAgent appPackage; };
 
       virtualisation.diskSize = 20480;
       virtualisation.memorySize = 4096;

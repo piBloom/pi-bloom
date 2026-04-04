@@ -1,4 +1,4 @@
-{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
 
 let
   repoSource = lib.cleanSource ../..;
@@ -24,7 +24,7 @@ let
         ../../core/os/modules/firstboot
         mkTestFilesystems
       ];
-      _module.args = { inherit piAgent appPackage setupPackage; };
+      _module.args = { inherit piAgent appPackage; };
       nixpi.primaryUser = username;
 
       virtualisation.diskSize = 20480;

@@ -1,4 +1,4 @@
-{ config, pkgs, lib, piAgent, appPackage, setupPackage, ... }:
+{ config, pkgs, lib, piAgent, appPackage, ... }:
 
 let
   primaryUser = config.nixpi.primaryUser;
@@ -114,11 +114,10 @@ EOF
       # with the local checkout and are never GC-vulnerable store paths.
       piAgent = pkgs.callPackage (repoDir + "/core/os/pkgs/pi") {};
       appPackage = pkgs.callPackage (repoDir + "/core/os/pkgs/app") { inherit piAgent; };
-      setupPackage = pkgs.callPackage (repoDir + "/core/os/pkgs/setup") {};
     in {
       nixosConfigurations.nixpi = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit piAgent appPackage setupPackage; };
+        specialArgs = { inherit piAgent appPackage; };
         modules = [
           (repoDir + "/core/os/hosts/x86_64.nix")
           ./configuration.nix

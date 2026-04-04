@@ -1,4 +1,4 @@
-{ lib, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, mkManagedUserConfig, ... }:
+{ lib, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, mkManagedUserConfig, ... }:
 
 {
   name = "nixpi-bootstrap-mode";
@@ -12,7 +12,7 @@
         ../../core/os/modules/firstboot
         mkTestFilesystems
       ];
-      _module.args = { inherit piAgent appPackage setupPackage; };
+      _module.args = { inherit piAgent appPackage; };
       networking.hostName = "nixpi-bootstrap";
 
       nixpi.security.enforceServiceFirewall = true;
@@ -54,7 +54,7 @@
 
     bootstrap.start()
     bootstrap.wait_for_unit("multi-user.target", timeout=300)
-    bootstrap.succeed("command -v setup-wizard.sh")
+    bootstrap.succeed("command -v nixpi-bootstrap")
     bootstrap.wait_until_succeeds("test ! -f /home/pi/.nixpi/wizard-state/system-ready", timeout=60)
 
     client.start()

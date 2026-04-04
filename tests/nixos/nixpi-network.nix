@@ -1,4 +1,4 @@
-{ nixPiModules, nixPiModulesNoShell, piAgent, appPackage, setupPackage, mkTestFilesystems, ... }:
+{ nixPiModules, nixPiModulesNoShell, piAgent, appPackage, mkTestFilesystems, ... }:
 
 {
   name = "nixpi-network";
@@ -6,7 +6,7 @@
   nodes = {
     nixpi1 = { ... }: {
       imports = nixPiModules ++ [ mkTestFilesystems ];
-      _module.args = { inherit piAgent appPackage setupPackage; };
+      _module.args = { inherit piAgent appPackage; };
       nixpi.primaryUser = "tester1";
 
       virtualisation.diskSize = 10240;
@@ -23,7 +23,7 @@
 
     nixpi2 = { ... }: {
       imports = nixPiModules ++ [ mkTestFilesystems ];
-      _module.args = { inherit piAgent appPackage setupPackage; };
+      _module.args = { inherit piAgent appPackage; };
       nixpi.primaryUser = "tester2";
 
       virtualisation.diskSize = 10240;

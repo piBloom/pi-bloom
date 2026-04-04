@@ -1,7 +1,6 @@
 { pkgs, makeWrapper, nixpiSource, piAgent, appPackage }:
 
 let
-  setupPackage = pkgs.callPackage ../setup {};
   layoutsDir = ../../installer/layouts;
 in
 
@@ -25,7 +24,6 @@ pkgs.stdenvNoCC.mkDerivation {
     substituteInPlace "$out/share/nixpi-installer/nixpi-install-module.nix.in" \
       --replace-fail "@piAgent@" "${piAgent}" \
       --replace-fail "@appPackage@" "${appPackage}" \
-      --replace-fail "@setupPackage@" "${setupPackage}" \
       --replace-fail "@firstbootModule@" "${nixpiSource}/core/os/modules/firstboot/default.nix" \
       --replace-fail "@desktopXfceModule@" "${nixpiSource}/core/os/modules/desktop-xfce.nix" \
       --replace-fail "@networkModule@" "${nixpiSource}/core/os/modules/network.nix" \

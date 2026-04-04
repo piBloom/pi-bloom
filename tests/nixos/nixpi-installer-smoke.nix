@@ -132,11 +132,11 @@
             installer.fail("lsblk -nrpo LABEL " + target_disk_device + " | grep -qx swap")
 
         installer.succeed("nixos-enter --root " + target_mount + " -c 'getent passwd installer'")
-        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v setup-wizard.sh'")
-        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v wizard-identity.sh'")
-        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v wizard-services.sh'")
-        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v wizard-repo.sh'")
-        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v wizard-promote.sh'")
+        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v nixpi-bootstrap'")
+        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v nixpi-finalize'")
+        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v nixpi-bootstrap-ensure-repo-target'")
+        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v nixpi-bootstrap-prepare-repo'")
+        installer.succeed("nixos-enter --root " + target_mount + " -c 'command -v nixpi-bootstrap-nixos-rebuild-switch'")
         installer.fail("nixos-enter --root " + target_mount + " -c 'test -e /etc/nixos/flake.nix'")
         installer.fail("nixos-enter --root " + target_mount + " -c 'getent passwd agent'")
 

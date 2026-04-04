@@ -20,7 +20,6 @@
       installerHelper = pkgs.callPackage ./core/os/pkgs/installer {
         inherit nixpiSource piAgent appPackage;
       };
-      setupPackage = pkgs.callPackage ./core/os/pkgs/setup {};
       # pkgsUnfree is used only for boot nixosTest.  pkgs.testers.nixosTest
       # injects its own pkgs as nixpkgs.pkgs for test nodes, which means modules
       # cannot set nixpkgs.config (NixOS assertion).  Using a pkgs already created
@@ -29,13 +28,12 @@
       piAgent = pkgs.callPackage ./core/os/pkgs/pi {};
       appPackage = pkgs.callPackage ./core/os/pkgs/app { inherit piAgent; };
 
-      specialArgs = { inherit piAgent appPackage self installerHelper setupPackage disko; };
+      specialArgs = { inherit piAgent appPackage self installerHelper disko; };
     in {
       packages.${system} = {
         pi = piAgent;
         app = appPackage;
         nixpi-installer = installerHelper;
-        nixpi-setup = setupPackage;
         installerIso = self.nixosConfigurations.installer-iso.config.system.build.isoImage;
       };
 
@@ -47,7 +45,6 @@
         nixpi-base-no-shell = { ... }: {
           imports = [
             ./core/os/modules/options.nix
-            ./core/os/modules/setup.nix
             ./core/os/modules/network.nix
             ./core/os/modules/update.nix
           ];
@@ -188,7 +185,6 @@
                   "${nixpiSource}/core/os/modules/update.nix"
                 ];
 
-                environment.systemPackages = [ setupPackage ];
                 networking.hostName = hostName;
                 time.timeZone = "UTC";
                 i18n.defaultLocale = "en_US.UTF-8";
@@ -226,7 +222,7 @@
           # Using pkgsUnfree so tests can use packages that require allowUnfree
           nixosTests = import ./tests/nixos {
             pkgs = pkgsUnfree;
-            inherit lib piAgent appPackage self installerHelper setupPackage;
+            inherit lib piAgent appPackage self installerHelper;
           };
           bootCheck = pkgsUnfree.testers.runNixOSTest {
             name = "boot";
@@ -235,7 +231,7 @@
               imports = [
                 ./core/os/hosts/x86_64.nix
               ];
-              _module.args = { inherit piAgent appPackage setupPackage self; };
+              _module.args = { inherit piAgent appPackage self; };
 
               nixpi.primaryUser = "alex";
 
@@ -252,10 +248,10 @@
               nixpi.start()
               nixpi.wait_for_unit("multi-user.target", timeout=300)
 
-              # Basic sanity: the default operator exists and setup tooling is installed
+              # Basic sanity: the default operator exists and bootstrap tooling is installed
               nixpi.succeed("id alex")
 
-              nixpi.succeed("command -v setup-wizard.sh")
+              nixpi.succeed("command -v nixpi-bootstrap")
 
               # NetworkManager is running
               nixpi.succeed("systemctl is-active NetworkManager")
@@ -317,8 +313,6 @@
             bootDevice = "/dev/sda1";
           };
 
-          # Regression guard for the local desktop VM path used by `just qcow2`.
-          desktop-vm = self.nixosConfigurations.desktop-vm.config.system.build.vm;
           installer-iso = self.nixosConfigurations.installer-iso.config.system.build.isoImage;
 
           # Thorough: boot the installed system in a NixOS test VM and verify
@@ -328,20 +322,16 @@
           nixos-smoke = mkCheckLane "nixos-smoke" [
             { name = "disko-layouts"; path = diskoLayoutsCheck; }
             { name = "smoke-firstboot"; path = nixosTests.smoke-firstboot; }
-            { name = "smoke-install-wizard"; path = nixosTests.smoke-install-wizard; }
             { name = "smoke-security"; path = nixosTests.smoke-security; }
             { name = "smoke-broker"; path = nixosTests.smoke-broker; }
-            { name = "smoke-desktop"; path = nixosTests.smoke-desktop; }
             { name = "installer-smoke"; path = nixosTests.installer-smoke; }
           ];
 
           nixos-full = mkCheckLane "nixos-full" [
             { name = "boot"; path = bootCheck; }
             { name = "nixpi-firstboot"; path = nixosTests.nixpi-firstboot; }
-            { name = "nixpi-install-wizard"; path = nixosTests.nixpi-install-wizard; }
             { name = "nixpi-network"; path = nixosTests.nixpi-network; }
             { name = "nixpi-e2e"; path = nixosTests.nixpi-e2e; }
-            { name = "nixpi-desktop"; path = nixosTests.nixpi-desktop; }
             { name = "nixpi-rdp"; path = nixosTests.nixpi-rdp; }
             { name = "nixpi-security"; path = nixosTests.nixpi-security; }
             { name = "nixpi-modular-services"; path = nixosTests.nixpi-modular-services; }

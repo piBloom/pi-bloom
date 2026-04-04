@@ -1,4 +1,4 @@
-{ pkgs, lib, piAgent, appPackage, self, installerHelper ? null, setupPackage }:
+{ pkgs, lib, piAgent, appPackage, self, installerHelper ? null }:
 
 let
   testLib = import ./lib.nix { inherit pkgs lib self; };
@@ -6,7 +6,7 @@ let
   # self is forwarded independently (not from testLib) so test node modules
   # can reference self.nixosModules.* via _module.args.
   sharedArgs = {
-    inherit piAgent appPackage setupPackage self;
+    inherit piAgent appPackage self;
     inherit (testLib)
       nixPiModules
       nixPiModulesNoShell
@@ -30,7 +30,6 @@ let
     nixpi-chat                 = runTest ./nixpi-chat.nix;
     nixpi-network              = runTest ./nixpi-network.nix;
     nixpi-e2e                  = runTest ./nixpi-e2e.nix;
-    nixpi-desktop              = runTest ./nixpi-desktop.nix;
     nixpi-rdp                  = runTest ./nixpi-rdp.nix;
     nixpi-security             = runTest ./nixpi-security.nix;
     nixpi-modular-services     = runTest ./nixpi-modular-services.nix;
@@ -38,7 +37,6 @@ let
     nixpi-post-setup-lockdown  = runTest ./nixpi-post-setup-lockdown.nix;
     nixpi-broker               = runTest ./nixpi-broker.nix;
     nixpi-installer-smoke      = runInstallerTest ./nixpi-installer-smoke.nix;
-    nixpi-install-wizard       = runTest ./nixpi-install-wizard.nix;
     nixpi-update               = runTest ./nixpi-update.nix;
     nixpi-options-validation   = runTest ./nixpi-options-validation.nix;
   };
@@ -46,10 +44,8 @@ let
   smokeAliases = {
     smoke-firstboot        = tests.nixpi-firstboot;
     smoke-chat            = tests.nixpi-chat;
-    smoke-install-wizard   = tests.nixpi-install-wizard;
     smoke-security  = tests.nixpi-security;
     smoke-broker    = tests.nixpi-broker;
-    smoke-desktop   = tests.nixpi-desktop;
     installer-smoke = tests.nixpi-installer-smoke;
   };
 in

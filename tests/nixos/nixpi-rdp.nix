@@ -1,4 +1,4 @@
-{ nixPiModules, piAgent, appPackage, setupPackage, ... }:
+{ nixPiModules, piAgent, appPackage, ... }:
 
 {
   name = "nixpi-rdp";
@@ -12,7 +12,7 @@
         fileSystems."/boot" = { device = "/dev/vda1"; fsType = "vfat"; };
       }
     ] ++ nixPiModules;
-    _module.args = { inherit piAgent appPackage setupPackage; };
+    _module.args = { inherit piAgent appPackage; };
 
     services.xserver.xkb = { layout = "us"; variant = ""; };
     console.keyMap = "us";
