@@ -43,7 +43,15 @@
       "mcp__exa__crawling_exa",
       "Bash(ssh:*)",
       "Bash(ssh-keygen -R \"[localhost]:2222\")",
-      "Bash(nc -z -w3 localhost 2222)"
+      "Bash(nc -z -w3 localhost 2222)",
+      "Bash(xargs basename:*)",
+      "Bash(qemu-img info:*)",
+      "Read(//tmp/**)",
+      "Bash(kill -9 67265)",
+      "Bash(pkill -9 -f \"qemu-system-x86_64.*nixpi-install-vm\")",
+      "Bash(ps -p 67477 -o pid,ppid,comm,args)",
+      "Bash(xargs -r ps -p)",
+      "Bash(qemu-img resize:*)"
     ]
   }
 }

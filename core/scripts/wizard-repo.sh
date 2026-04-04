@@ -30,6 +30,12 @@ print_recent_appliance_log() {
 	done <<< "$recent_log"
 }
 
+_remove_partial_nixpi_checkout() {
+	local dir="$1"
+	echo "Removing partial checkout at ${dir} to allow retry..." >&2
+	rm -rf "$dir"
+}
+
 clone_nixpi_checkout() {
 	local primary_user="$1"
 	local actual_remote actual_branch repo_preexisted=0
@@ -46,23 +52,26 @@ clone_nixpi_checkout() {
 	if [[ -d "$NIXPI_DIR/.git" ]]; then
 		actual_remote="$(git -C "$NIXPI_DIR" remote get-url origin 2>/dev/null || true)"
 		if [[ "$actual_remote" != "$NIXPI_BOOTSTRAP_REPO" ]]; then
-			echo "Existing checkout has unexpected origin URL: ${actual_remote:-<missing>} (expected ${NIXPI_BOOTSTRAP_REPO})" >&2
-			return 1
-		fi
+			# Remote is wrong or missing — partial clone, not a user customisation.
+			echo "Partial checkout detected (origin: ${actual_remote:-<missing>}); removing for retry." >&2
+			_remove_partial_nixpi_checkout "$NIXPI_DIR"
+			repo_preexisted=0
+		else
+			actual_branch="$(git -C "$NIXPI_DIR" branch --show-current 2>/dev/null || true)"
+			if [[ "$actual_branch" != "$NIXPI_BOOTSTRAP_BRANCH" ]]; then
+				echo "Existing checkout is on branch ${actual_branch:-<detached>} (expected ${NIXPI_BOOTSTRAP_BRANCH})" >&2
+				return 1
+			fi
 
-		actual_branch="$(git -C "$NIXPI_DIR" branch --show-current 2>/dev/null || true)"
-		if [[ "$actual_branch" != "$NIXPI_BOOTSTRAP_BRANCH" ]]; then
-			echo "Existing checkout is on branch ${actual_branch:-<detached>} (expected ${NIXPI_BOOTSTRAP_BRANCH})" >&2
-			return 1
+			echo "Using existing checkout at ${NIXPI_DIR}."
+			return 0
 		fi
-
-		echo "Using existing checkout at ${NIXPI_DIR}."
-		return 0
 	fi
 
 	if [[ "$repo_preexisted" -eq 1 ]]; then
-		echo "canonical repo checkout is missing .git: ${NIXPI_DIR}" >&2
-		return 1
+		# Directory exists but no .git — clone was killed before git could initialise.
+		echo "Partial checkout detected (no .git); removing for retry." >&2
+		_remove_partial_nixpi_checkout "$NIXPI_DIR"
 	fi
 
 	root_command /run/current-system/sw/bin/nixpi-bootstrap-ensure-repo-target "$NIXPI_DIR" "$primary_user"
