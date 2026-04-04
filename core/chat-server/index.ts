@@ -114,8 +114,22 @@ export function createChatServer(opts: ChatServerOptions): http.Server {
 	return server;
 }
 
+export function isMainModule(argv1: string | undefined, moduleUrl: string): boolean {
+	if (!argv1) {
+		return false;
+	}
+
+	const modulePath = fileURLToPath(moduleUrl);
+
+	try {
+		return fs.realpathSync(argv1) === fs.realpathSync(modulePath);
+	} catch {
+		return path.resolve(argv1) === path.resolve(modulePath);
+	}
+}
+
 // Entry point when run as a service.
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(process.argv[1], import.meta.url)) {
 	const port = parseInt(process.env.NIXPI_CHAT_PORT ?? "8080", 10);
 	const nixpiShareDir = process.env.NIXPI_SHARE_DIR ?? "/usr/local/share/nixpi";
 	const piDir = process.env.PI_DIR ?? `${process.env.HOME}/.pi`;

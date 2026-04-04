@@ -15,17 +15,18 @@ HOST_NIXPI_PATH="${NIXPI_VM_HOST_STATE_PATH:-$HOME/.nixpi}"
 PREFILL_SOURCE="${NIXPI_VM_PREFILL_SOURCE:-core/scripts/prefill.env}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 DEV_KEY_PATH="${NIXPI_VM_DEV_KEY_PATH:-${SCRIPT_DIR}/dev-key}"
+VM_UNIT="${NIXPI_VM_UNIT:-nixpi-vm}"
 
 resolve_runner() {
     local preferred="${OUTPUT}/bin/run-nixos-vm"
     if [[ -x "$preferred" ]]; then
-        printf '%s\n' "$preferred"
+        readlink -f "$preferred"
         return 0
     fi
 
     local candidates=("${OUTPUT}"/bin/run-*-vm)
     if [[ ${#candidates[@]} -eq 1 && -x "${candidates[0]}" ]]; then
-        printf '%s\n' "${candidates[0]}"
+        readlink -f "${candidates[0]}"
         return 0
     fi
 
@@ -113,7 +114,7 @@ done
 export QEMU_NET_OPTS
 QEMU_NET_OPTS="$(IFS=,; echo "${net_opts[*]}")"
 
-if pgrep -f "[r]un-nixos-vm|[q]emu-system-x86_64.*${DISK}" >/dev/null; then
+if systemctl --user --quiet is-active "${VM_UNIT}.service" || pgrep -f "[r]un-nixos-vm|[q]emu-system-x86_64.*${DISK}" >/dev/null; then
     echo "VM already running. Use 'just vm-ssh' to connect or 'just vm-stop' to stop."
     exit 1
 fi
@@ -122,7 +123,11 @@ echo "Starting VM in background..."
 echo "  - Log file: ${LOG_FILE}"
 echo "  - Connect:  just vm-ssh"
 echo "  - Stop:     just vm-stop"
-nohup "$RUNNER" >"${LOG_FILE}" 2>&1 &
+systemd-run --user --unit "${VM_UNIT}" --collect \
+    --setenv=NIX_DISK_IMAGE="${NIX_DISK_IMAGE}" \
+    --setenv=QEMU_OPTS="${QEMU_OPTS}" \
+    --setenv=QEMU_NET_OPTS="${QEMU_NET_OPTS}" \
+    /usr/bin/bash -lc 'exec "$1" </dev/null >"$2" 2>&1' bash "$RUNNER" "${LOG_FILE}" >/dev/null
 
 echo "Waiting for VM to boot..."
 temp_key=""

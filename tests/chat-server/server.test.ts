@@ -17,7 +17,7 @@ vi.mock("../../core/chat-server/session.js", () => ({
 	}),
 }));
 
-import { createChatServer } from "../../core/chat-server/index.js";
+import { createChatServer, isMainModule } from "../../core/chat-server/index.js";
 
 let server: http.Server;
 let port: number;
@@ -101,5 +101,21 @@ describe("GET /", () => {
 	it("returns 200 or 404 (frontend dist may not exist in test environment)", async () => {
 		const res = await fetch(`http://127.0.0.1:${port}/`);
 		expect([200, 404]).toContain(res.status);
+	});
+});
+
+describe("isMainModule", () => {
+	it("returns true when argv[1] resolves through a symlink to the module path", () => {
+		const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-chat-entrypoint-test-"));
+		try {
+			const entryFile = path.join(fixtureDir, "entry.js");
+			const symlinkFile = path.join(fixtureDir, "entry-link.js");
+			fs.writeFileSync(entryFile, "// test fixture\n");
+			fs.symlinkSync(entryFile, symlinkFile);
+
+			expect(isMainModule(symlinkFile, new URL(`file://${entryFile}`).href)).toBe(true);
+		} finally {
+			fs.rmSync(fixtureDir, { recursive: true, force: true });
+		}
 	});
 });
