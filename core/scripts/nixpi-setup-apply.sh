@@ -10,7 +10,9 @@ log() { printf '[setup] %s\n' "$*"; }
 
 if [[ -n "${SETUP_NETBIRD_KEY:-}" ]]; then
   log "Configuring Netbird..."
-  netbird up --setup-key "${SETUP_NETBIRD_KEY}" --foreground=false
+  if ! netbird up --setup-key "${SETUP_NETBIRD_KEY}" --foreground=false; then
+    log "Netbird setup failed; continuing without mesh connectivity"
+  fi
 fi
 
 mkdir -p "$(dirname "${SYSTEM_READY_FILE}")"
