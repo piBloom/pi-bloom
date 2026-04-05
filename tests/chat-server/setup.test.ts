@@ -119,6 +119,7 @@ describe("setup gate integration", () => {
 		prefillFile = path.join(scriptsDir, "prefill.env");
 		originalPath = process.env.PATH ?? "";
 		process.env.PATH = `${scriptsDir}:${originalPath}`;
+		process.env.NIXPI_SETUP_SUDO = sudoScript;
 
 		const { createChatServer } = await import("../../core/chat-server/index.js");
 		gatelessServer = createChatServer({
@@ -142,6 +143,7 @@ describe("setup gate integration", () => {
 	afterAll(() => {
 		gatelessServer.close();
 		process.env.PATH = originalPath;
+		delete process.env.NIXPI_SETUP_SUDO;
 		fs.rmSync(scriptsDir, { recursive: true, force: true });
 	});
 

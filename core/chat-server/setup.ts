@@ -91,7 +91,8 @@ export async function handleSetupApply(
 		res.write(`data: ${line}\n\n`);
 	};
 
-	const child = spawn("sudo", ["-n", "--preserve-env=SETUP_NETBIRD_KEY", opts.applyScript], {
+	const sudoCommand = process.env.NIXPI_SETUP_SUDO ?? "/run/wrappers/bin/sudo";
+	const child = spawn(sudoCommand, ["-n", "--preserve-env=SETUP_NETBIRD_KEY", opts.applyScript], {
 		env: {
 			PATH: process.env.PATH ?? "",
 			SETUP_NETBIRD_KEY: netbirdKey,
