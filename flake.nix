@@ -101,18 +101,6 @@
         ];
       };
 
-      # Local VM/dev profile that adds VM-only mounts on top of the desktop profile.
-      nixosConfigurations.desktop-vm = nixpkgs.lib.nixosSystem {
-        inherit system specialArgs;
-        modules = [
-          ./core/os/hosts/x86_64-vm.nix
-          {
-            nixpkgs.hostPlatform = system;
-            nixpkgs.config.allowUnfree = true;
-          }
-        ];
-      };
-
       # Raspberry Pi 4 target (aarch64-linux).
       # Build on native aarch64 hardware or with binfmt/QEMU:
       #   nix build .#nixosConfigurations.rpi4.config.system.build.toplevel
@@ -320,6 +308,15 @@
             ! grep -F 'git clone' "${./core/scripts/nixpi-setup-apply.sh}"
             ! grep -F 'nixos-rebuild switch' "${./core/scripts/nixpi-setup-apply.sh}"
             ! grep -F 'jq --arg key' "${./core/scripts/nixpi-setup-apply.sh}"
+            touch "$out"
+          '';
+
+          flake-topology = pkgs.runCommandLocal "flake-topology-check" { } ''
+            ! grep -F 'desktop-vm' ${./flake.nix}
+            ! test -e ${./.}/core/os/hosts/x86_64-vm.nix
+            ! test -e ${./.}/tools/run-qemu.sh
+            grep -F 'self.nixosConfigurations.desktop.config.system.build.toplevel' ${./core/os/hosts/installer-iso.nix} >/dev/null
+            grep -F 'services.fail2ban.enable = lib.mkForce false;' ${./core/os/hosts/installer-iso.nix} >/dev/null
             touch "$out"
           '';
 

@@ -99,10 +99,6 @@ check-boot:
 check-nixos-smoke:
     nix {{ nix_vm_lane_opts }} build {{ flake }}#checks.{{ system }}.nixos-smoke --no-link -L
 
-# Host-driven desktop interaction lane using the desktop-vm runner and an SSH probe.
-check-desktop-interaction:
-    bash tools/check-desktop-interaction.sh
-
 # Comprehensive NixOS VM lane.
 check-nixos-full:
     nix {{ nix_vm_lane_opts }} build {{ flake }}#checks.{{ system }}.nixos-full --no-link -L

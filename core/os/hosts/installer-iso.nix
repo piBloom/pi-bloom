@@ -25,6 +25,7 @@
   networking.networkmanager.enable = true;
   time.timeZone = "UTC";
   i18n.defaultLocale = "en_US.UTF-8";
+  services.fail2ban.enable = lib.mkForce false;
   services.getty.autologinUser = lib.mkForce "root";
   systemd.services."serial-getty@ttyS0".enable = true;
   systemd.services."serial-getty@ttyS0".serviceConfig.ExecStart = [
