@@ -141,7 +141,7 @@ if (isMainModule(process.argv[1], import.meta.url)) {
 	const systemReadyFile =
 		process.env.NIXPI_SYSTEM_READY_FILE ?? `/home/${primaryUser}/.nixpi/wizard-state/system-ready`;
 	const applyScript = process.env.NIXPI_SETUP_APPLY_SCRIPT ?? "/run/current-system/sw/bin/nixpi-setup-apply";
-	const prefillFile = process.env.NIXPI_SETUP_PREFILL_FILE ?? `${piDir}/prefill.env`;
+	const prefillFile = process.env.NIXPI_SETUP_PREFILL_FILE ?? `/home/${primaryUser}/.nixpi/prefill.env`;
 	const chatSessionsDir = `${piDir}/chat-sessions`;
 	const staticDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "frontend/dist");
 
