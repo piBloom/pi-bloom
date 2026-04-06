@@ -14,7 +14,7 @@ pkgs.stdenvNoCC.mkDerivation {
     install -m 0755 ${./nixpi-bootstrap-vps.sh} "$out/share/nixpi-bootstrap/nixpi-bootstrap-vps.sh"
 
     makeWrapper ${pkgs.bash}/bin/bash "$out/bin/nixpi-bootstrap-vps" \
-      --prefix PATH : "${lib.makeBinPath [ pkgs.coreutils pkgs.git pkgs.sudo ]}" \
+      --prefix PATH : "${lib.makeBinPath [ pkgs.coreutils pkgs.git ]}" \
       --add-flags "$out/share/nixpi-bootstrap/nixpi-bootstrap-vps.sh"
 
     runHook postInstall
