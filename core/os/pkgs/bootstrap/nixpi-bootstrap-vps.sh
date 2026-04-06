@@ -13,7 +13,11 @@ run_as_root() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
   else
-    sudo env "PATH=$PATH" "$@"
+    if [ -x /run/wrappers/bin/sudo ]; then
+      /run/wrappers/bin/sudo env "PATH=$PATH" "$@"
+    else
+      sudo env "PATH=$PATH" "$@"
+    fi
   fi
 }
 
