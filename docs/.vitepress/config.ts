@@ -3,6 +3,7 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
 	title: "NixPI",
 	description: "Pi-native AI companion OS on NixOS",
+	base: "/NixPI/",
 	lang: "en-US",
 	appearance: false,
 	cleanUrls: true,
