@@ -30,5 +30,5 @@ npm run build
 npm run docs:dev
 
 # Rebuild on host
-sudo nixos-rebuild switch --flake /srv/nixpi#nixpi
+sudo nixos-rebuild switch --flake /etc/nixos --impure
 ```

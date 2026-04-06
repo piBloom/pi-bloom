@@ -37,12 +37,15 @@
       system.activationScripts.nixpi-e2e-bootstrap = lib.stringAfter [ "users" ] ''
         mkdir -p ${homeDir}/.nixpi
         install -d -m 0755 /etc/nixos
-        cat > /etc/nixos/nixpi-install.nix <<'EOF'
+        cat > /etc/nixos/configuration.nix <<'EOF'
     { ... }:
     {
       networking.hostName = "pi";
-      nixpi.primaryUser = "${username}";
     }
+    EOF
+        cat > /etc/nixos/hardware-configuration.nix <<'EOF'
+    { ... }:
+    {}
     EOF
         chown -R ${username}:${username} ${homeDir}/.nixpi
         chmod 755 ${homeDir}/.nixpi
@@ -79,7 +82,8 @@
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
     nixpi.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/setup | grep -q 'NixPI Setup'", timeout=60)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/ | grep -q 'nixpi-shell'", timeout=60)
+    nixpi.succeed("nixpi-bootstrap write-host-nix pi pi UTC us")
     
     client.start()
     client.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
@@ -87,9 +91,7 @@
     client.succeed("ping -c 3 pi")
 
     apply_output = nixpi.succeed(
-        "curl -sS -X POST -H 'Content-Type: application/json' "
-        + "--data '{\"netbirdKey\":\"\"}' "
-        + "http://127.0.0.1:8080/api/setup/apply | tee /tmp/setup-apply.out"
+        "env NIXPI_PRIMARY_USER=pi nixpi-setup-apply | tee /tmp/setup-apply.out"
     )
     print(apply_output)
     assert "SETUP_FAILED" not in apply_output, apply_output
@@ -108,7 +110,9 @@
     nixpi.succeed("test -d " + home + "/.pi")
     nixpi.succeed("test ! -L " + home + "/.pi")
     nixpi.succeed("test -d /usr/local/share/nixpi")
-    nixpi.fail("test -e /etc/nixos/flake.nix")
+    nixpi.succeed("test -f /etc/nixos/flake.nix")
+    nixpi.succeed("test -f /etc/nixos/nixpi-host.nix")
+    nixpi.succeed("test -f /etc/nixos/nixpi-integration.nix")
     nixpi.fail("command -v nixpi-bootstrap-ensure-repo-target")
     nixpi.fail("command -v nixpi-bootstrap-prepare-repo")
     nixpi.fail("command -v nixpi-bootstrap-nixos-rebuild-switch")

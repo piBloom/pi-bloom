@@ -6,6 +6,7 @@ let
   stateDir = config.nixpi.stateDir;
   systemReadyFile = "${primaryHome}/.nixpi/wizard-state/system-ready";
   bootstrapPrimaryPasswordFile = "${stateDir}/bootstrap/primary-user-password";
+  hostFlakeInitializer = "${../../../scripts/nixpi-init-host-flake.sh}";
 
   # Single dispatcher for all bootstrap-guarded operations.
   # All subcommands check the system-ready marker and exit 1 if setup is complete.
@@ -59,16 +60,8 @@ let
           echo "invalid keyboard layout: $kb" >&2
           exit 1
         fi
-        install -d -m 0755 /etc/nixos
-        cat > /etc/nixos/nixpi-host.nix <<EOF
-    { ... }:
-    {
-      networking.hostName = "$hostname";
-      nixpi.primaryUser = "$primary_user";
-      nixpi.timezone = "$tz";
-      nixpi.keyboard = "$kb";
-    }
-    EOF
+        exec /run/current-system/sw/bin/bash ${hostFlakeInitializer} \
+          /srv/nixpi "$hostname" "$primary_user" "$tz" "$kb"
         ;;
       *)
         echo "usage: nixpi-bootstrap <read-primary-password|remove-primary-password|netbird-up|netbird-systemctl|service-systemctl|sshd-systemctl|passwd|chpasswd|brokerctl|write-host-nix> [args...]" >&2

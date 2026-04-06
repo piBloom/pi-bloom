@@ -27,11 +27,11 @@ This section covers the headless operator workflow for NixPI:
 # Fresh VPS bootstrap
 nix run github:alexradunet/nixpi#nixpi-bootstrap-vps
 
-# Rebuild from the canonical installed checkout
+# Rebuild through the host-owned system flake
 cd /srv/nixpi
 git fetch origin
 git rebase origin/main
-sudo nixos-rebuild switch --flake /srv/nixpi#nixpi
+sudo nixos-rebuild switch --flake /etc/nixos --impure
 sudo nixos-rebuild switch --rollback
 
 # Service inspection

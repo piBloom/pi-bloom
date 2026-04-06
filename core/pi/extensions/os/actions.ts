@@ -62,7 +62,8 @@ function ensureSystemFlakeExists(flake: string): OsActionResult | null {
 	}
 
 	return errorResult(
-		`System flake not found at ${flake}. Supported rebuilds use /etc/nixos with the canonical repo at /srv/nixpi; switch to main in /srv/nixpi and ensure ${flake}/flake.nix exists.`,
+		`System flake not found at ${flake}. NixPI now rebuilds through a host-owned flake in /etc/nixos. ` +
+			`Run bootstrap again or initialize /etc/nixos/flake.nix so it imports /srv/nixpi before applying updates.`,
 	);
 }
 

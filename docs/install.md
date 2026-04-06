@@ -26,10 +26,10 @@ If you want to force the freshest copy from GitHub (skip flake fetch cache), use
 nix --extra-experimental-features 'nix-command flakes' run --refresh github:alexradunet/nixpi?ref=main#nixpi-bootstrap-vps
 ```
 
-The bootstrap process prepares `/srv/nixpi` and runs:
+The bootstrap process prepares `/srv/nixpi`, initializes a host-owned flake in `/etc/nixos`, and runs:
 
 ```bash
-sudo nixos-rebuild switch --flake /srv/nixpi#nixpi
+sudo nixos-rebuild switch --flake /etc/nixos --impure
 ```
 
 On a monitor-attached mini PC, the installed system also keeps a local `tty1` login prompt after reboot, so local recovery remains available if remote access is unavailable.
@@ -42,7 +42,7 @@ Operate from the canonical checkout:
 cd /srv/nixpi
 git fetch origin
 git rebase origin/main
-sudo nixos-rebuild switch --flake /srv/nixpi#nixpi
+sudo nixos-rebuild switch --flake /etc/nixos --impure
 ```
 
 Check core services:

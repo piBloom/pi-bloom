@@ -7,13 +7,13 @@ set -euo pipefail
 LOCAL_HOST="$(hostname -s)"
 NIXPI_PRIMARY_USER="${NIXPI_PRIMARY_USER:-pi}"
 NIXPI_PRIMARY_HOME="/home/${NIXPI_PRIMARY_USER}"
-LOCAL_FLAKE_DIR="${NIXPI_SYSTEM_FLAKE_DIR:-${NIXPI_PRIMARY_HOME}/nixpi}"
+LOCAL_FLAKE_DIR="${NIXPI_SYSTEM_FLAKE_DIR:-/etc/nixos}"
 STATUS_DIR="${NIXPI_PRIMARY_HOME}/.nixpi"
 STATUS_FILE="$STATUS_DIR/update-status.json"
 CHECKED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 if [[ ! -f "${LOCAL_FLAKE_DIR}/flake.nix" ]]; then
-  echo "Missing ${LOCAL_FLAKE_DIR}/flake.nix; NixPI updates require the local NixPI flake checkout." >&2
+  echo "Missing ${LOCAL_FLAKE_DIR}/flake.nix; NixPI updates require a host-owned flake in /etc/nixos that imports /srv/nixpi." >&2
   exit 1
 fi
 
@@ -56,7 +56,7 @@ chown "${NIXPI_PRIMARY_USER}" "$STATUS_FILE"
 
 # Apply if available
 if [[ "$AVAILABLE" = "true" ]]; then
-  if nixos-rebuild switch --flake "$FLAKE"; then
+  if nixos-rebuild switch --flake "$FLAKE" --impure; then
     NEW_GEN=$(nix-env --list-generations -p /nix/var/nix/profiles/system 2>/dev/null | grep current | awk '{print $1}' || echo "0")
     jq -n \
       --arg checked "$CHECKED" \

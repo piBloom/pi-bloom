@@ -36,6 +36,7 @@ let
 
   tests = {
     nixpi-firstboot = runTest ./nixpi-firstboot.nix;
+    nixpi-host-owned-flake = runTest ./nixpi-host-owned-flake.nix;
     nixpi-vps-bootstrap = runTest ./nixpi-vps-bootstrap.nix;
     nixpi-chat = runTest ./nixpi-chat.nix;
     nixpi-network = runTest ./nixpi-network.nix;

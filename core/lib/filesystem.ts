@@ -6,6 +6,9 @@ import { fileURLToPath } from "node:url";
 
 export const CANONICAL_REPO_DIR = "/srv/nixpi";
 export const SYSTEM_FLAKE_DIR = "/etc/nixos";
+export const SYSTEM_FLAKE_FILE = "/etc/nixos/flake.nix";
+export const SYSTEM_NIXPI_INTEGRATION_FILE = "/etc/nixos/nixpi-integration.nix";
+export const SYSTEM_NIXPI_HOST_FILE = "/etc/nixos/nixpi-host.nix";
 
 /** Ensure a directory exists. */
 export function ensureDir(dir: string, mode?: number): void {

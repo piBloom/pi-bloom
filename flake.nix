@@ -355,6 +355,10 @@
               path = nixosTests.nixpi-firstboot;
             }
             {
+              name = "nixpi-host-owned-flake";
+              path = nixosTests.nixpi-host-owned-flake;
+            }
+            {
               name = "nixpi-network";
               path = nixosTests.nixpi-network;
             }

@@ -44,12 +44,15 @@ let
         ''
           mkdir -p ${homeDir}/.nixpi
           install -d -m 0755 /etc/nixos
-          cat > /etc/nixos/nixpi-install.nix <<'EOF'
+          cat > /etc/nixos/configuration.nix <<'EOF'
         { ... }:
         {
           networking.hostName = "${hostName}";
-          nixpi.primaryUser = "${username}";
         }
+        EOF
+          cat > /etc/nixos/hardware-configuration.nix <<'EOF'
+        { ... }:
+        {}
         EOF
           chown -R ${username}:${username} ${homeDir}/.nixpi
           chmod 755 ${homeDir}/.nixpi
@@ -82,6 +85,7 @@ in
         timeout=60,
     )
     nixpi.wait_until_succeeds("curl -sf http://127.0.0.1/terminal/ >/dev/null", timeout=60)
+    nixpi.succeed("nixpi-bootstrap write-host-nix nixpi-firstboot-test pi UTC us")
 
     nixpi.succeed("test -d " + home + "/.nixpi")
     nixpi.wait_until_succeeds("test ! -f " + home + "/.nixpi/wizard-state/system-ready", timeout=60)
@@ -94,8 +98,9 @@ in
     nixpi.fail("test -e " + home + "/nixpi/.git")
     nixpi.fail("test -e " + home + "/nixpi/flake.nix")
     nixpi.fail("test -e /var/lib/nixpi/pi-nixpi")
-    nixpi.fail("test -f /etc/nixos/flake.lock")
-    nixpi.fail("test -e /etc/nixos/flake.nix")
+    nixpi.succeed("test -f /etc/nixos/flake.nix")
+    nixpi.succeed("test -f /etc/nixos/nixpi-host.nix")
+    nixpi.succeed("test -f /etc/nixos/nixpi-integration.nix")
     nixpi.fail("test -e /etc/nixpi/canonical-repo.json")
     nixpi.fail("command -v nixpi-bootstrap-ensure-repo-target")
     nixpi.fail("command -v nixpi-bootstrap-prepare-repo")

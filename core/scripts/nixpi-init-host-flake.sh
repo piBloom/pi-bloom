@@ -6,12 +6,28 @@ HOSTNAME_VALUE="${2:?hostname required}"
 PRIMARY_USER_VALUE="${3:?primary user required}"
 TIMEZONE_VALUE="${4:?timezone required}"
 KEYBOARD_VALUE="${5:?keyboard required}"
+SYSTEM_VALUE="${6:-}"
 NIXOS_DIR="/etc/nixos"
 HOST_FILE="$NIXOS_DIR/nixpi-host.nix"
 INTEGRATION_FILE="$NIXOS_DIR/nixpi-integration.nix"
 FLAKE_FILE="$NIXOS_DIR/flake.nix"
 
 install -d -m 0755 "$NIXOS_DIR"
+
+if [ -z "$SYSTEM_VALUE" ]; then
+  case "$(uname -m)" in
+    x86_64)
+      SYSTEM_VALUE="x86_64-linux"
+      ;;
+    aarch64|arm64)
+      SYSTEM_VALUE="aarch64-linux"
+      ;;
+    *)
+      echo "unsupported machine architecture: $(uname -m)" >&2
+      exit 1
+      ;;
+  esac
+fi
 
 cat > "$HOST_FILE" <<EOF_HOST
 { ... }:
@@ -45,7 +61,7 @@ if [ ! -f "$FLAKE_FILE" ]; then
 
   outputs = { nixpkgs, nixpi, ... }:
     let
-      system = builtins.currentSystem;
+      system = "${SYSTEM_VALUE}";
       lib = nixpkgs.lib;
       existingModules =
         lib.optionals (builtins.pathExists ./configuration.nix) [ ./configuration.nix ]
@@ -55,9 +71,9 @@ if [ ! -f "$FLAKE_FILE" ]; then
         inherit system;
         specialArgs = {
           self = nixpi;
-          piAgent = nixpi.packages.${system}.pi;
-          appPackage = nixpi.packages.${system}.app;
-          setupApplyPackage = nixpi.packages.${system}.nixpi-setup-apply;
+          piAgent = nixpi.packages.\${system}.pi;
+          appPackage = nixpi.packages.\${system}.app;
+          setupApplyPackage = nixpi.packages.\${system}.nixpi-setup-apply;
         };
         modules = existingModules ++ [
           (import ./nixpi-integration.nix { inherit nixpi; })

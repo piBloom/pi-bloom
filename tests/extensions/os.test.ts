@@ -155,8 +155,9 @@ describe("handleNixosUpdate — apply (missing system flake)", () => {
 		const result = await handleNixosUpdate("apply", undefined, ctx as never);
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("System flake not found at /etc/nixos");
+		expect(result.content[0].text).toContain("host-owned flake");
 		expect(result.content[0].text).toContain("/srv/nixpi");
-		expect(result.content[0].text).toContain("switch to main");
+		expect(result.content[0].text).toContain("bootstrap");
 	});
 });
 

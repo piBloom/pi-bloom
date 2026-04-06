@@ -79,8 +79,9 @@ describe("os nixos_update handler", () => {
 		expect(runMock).not.toHaveBeenCalled();
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("System flake not found at /etc/nixos");
+		expect(result.content[0].text).toContain("host-owned flake");
 		expect(result.content[0].text).toContain("/srv/nixpi");
-		expect(result.content[0].text).toContain("switch to main");
+		expect(result.content[0].text).toContain("bootstrap");
 	});
 
 	it("returns error result when apply exits non-zero", async () => {

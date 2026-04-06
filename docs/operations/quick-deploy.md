@@ -50,7 +50,10 @@ The bootstrap package:
 
 - clones the repo into `/srv/nixpi` if it does not exist
 - refreshes that checkout from `origin/main`
-- runs `sudo nixos-rebuild switch --flake /srv/nixpi#nixpi`
+- initializes a host-owned flake in `/etc/nixos`
+- runs `sudo nixos-rebuild switch --flake /etc/nixos --impure`
+
+`/etc/nixos` remains the host-owned system layer for hardware, boot, filesystems, display, and desktop settings. `/srv/nixpi` provides the NixPI layer imported by that host flake, so rebuilds preserve machine-specific behavior instead of replacing it.
 
 On monitor-attached hardware, the resulting system keeps a `tty1` login prompt after reboot. The remote web app remains the primary operator surface; the monitor is a recovery path.
 
@@ -86,7 +89,7 @@ Apply local changes manually:
 
 ```bash
 cd /srv/nixpi
-sudo nixos-rebuild switch --flake /srv/nixpi#nixpi
+sudo nixos-rebuild switch --flake /etc/nixos --impure
 ```
 
 Sync with the default remote and rebuild:
@@ -95,7 +98,7 @@ Sync with the default remote and rebuild:
 cd /srv/nixpi
 git fetch origin
 git rebase origin/main
-sudo nixos-rebuild switch --flake /srv/nixpi#nixpi
+sudo nixos-rebuild switch --flake /etc/nixos --impure
 ```
 
 Roll back if needed:
