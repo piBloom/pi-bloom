@@ -18,7 +18,6 @@ Use it to verify that setup and local chat behavior still match the shipped docu
 
 For VM validation:
 
-- Use `just vm-install-iso` for the simple local VM path.
 - Use it to validate installer flow, desktop startup, and the local chat/runtime path inside the guest.
 - Treat any host-side forwards as optional debugging aids, not part of the active local-only test path.
 

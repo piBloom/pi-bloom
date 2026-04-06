@@ -56,7 +56,7 @@ export async function handleNixConfigProposal(
 		const [branch, status, diff] = await Promise.all([
 			run("git", ["branch", "--show-current"], signal, repoDir),
 			run("git", ["status", "--short"], signal, repoDir),
-			run("git", ["diff", "--stat", "--", "flake.nix", "flake.lock", "core/os", "justfile"], signal, repoDir),
+			run("git", ["diff", "--stat", "--", "flake.nix", "flake.lock", "core/os"], signal, repoDir),
 		]);
 
 		const lines = [
@@ -68,7 +68,7 @@ export async function handleNixConfigProposal(
 			status.stdout.trim() || "Clean",
 			"",
 			"Nix-related diff:",
-			diff.stdout.trim() || "No diff in flake.nix, flake.lock, core/os, or justfile.",
+			diff.stdout.trim() || "No diff in flake.nix, flake.lock, or core/os.",
 		];
 
 		return {

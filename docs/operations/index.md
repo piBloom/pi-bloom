@@ -41,7 +41,7 @@ systemctl status nginx.service
 systemctl status netbird.service
 
 # Validation
-just check-config
+nix --option substituters https://cache.nixos.org/ build .#checks.x86_64-linux.config --no-link
 nix build .#checks.x86_64-linux.nixpi-vps-bootstrap --no-link -L
 ```
 

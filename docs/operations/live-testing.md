@@ -20,7 +20,7 @@ Use it to verify that bootstrap, the remote app surface, and the canonical `/srv
 2. Run `nix run github:alexradunet/nixpi#nixpi-bootstrap-vps`.
 3. Confirm the command prepares `/srv/nixpi` and completes `sudo nixos-rebuild switch --flake /srv/nixpi#nixpi`.
 
-If you are validating a branch from a local checkout instead of GitHub, `just bootstrap-vps` is the equivalent repo-local path.
+If you are validating a branch from a local checkout instead of GitHub, `nix run .#nixpi-bootstrap-vps` is the equivalent repo-local path.
 
 ### First Remote Validation
 

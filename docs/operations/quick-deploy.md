@@ -43,7 +43,7 @@ nix run github:alexradunet/nixpi#nixpi-bootstrap-vps
 If you already have a local checkout of this branch, you can use the repo-local command instead:
 
 ```bash
-just bootstrap-vps
+nix run .#nixpi-bootstrap-vps
 ```
 
 The bootstrap package:
@@ -130,7 +130,7 @@ Expected result:
 For repo-side validation during development:
 
 ```bash
-just check-config
+nix --option substituters https://cache.nixos.org/ build .#checks.x86_64-linux.config --no-link
 nix build .#checks.x86_64-linux.nixpi-vps-bootstrap --no-link -L
 ```
 

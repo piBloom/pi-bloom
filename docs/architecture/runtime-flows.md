@@ -16,8 +16,8 @@ Understanding how control and data move through NixPI helps with:
 | Entry Point | Command | Purpose |
 |-------------|---------|---------|
 | Local build | `nix build .#app` | Build the packaged app and bundled assets |
-| System switch | `just switch` | Apply the local flake to the running machine |
-| Remote update | `just update` | Pull and apply the configured remote flake |
+| System switch | `sudo nixos-rebuild switch --flake .#nixpi` | Apply the local flake to the running machine |
+| Remote update | `sudo nixos-rebuild switch --flake /srv/nixpi` | Pull and apply the configured remote flake |
 
 ### Flow Steps
 

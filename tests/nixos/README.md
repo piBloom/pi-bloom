@@ -41,12 +41,12 @@ nix build .#checks.x86_64-linux.nixpi-vps-bootstrap --no-link -L
 nix build .#checks.x86_64-linux.nixpi-chat --no-link -L
 ```
 
-Equivalent `just` recipes:
+Common direct commands:
 ```bash
-just check-config
-just check-nixos-smoke
-just check-nixos-full
-just check-nixos-destructive
+nix --option substituters https://cache.nixos.org/ build .#checks.x86_64-linux.config --no-link
+nix --option substituters https://cache.nixos.org/ --max-jobs 1 build .#checks.x86_64-linux.nixos-smoke --no-link -L
+nix --option substituters https://cache.nixos.org/ --max-jobs 1 build .#checks.x86_64-linux.nixos-full --no-link -L
+nix --option substituters https://cache.nixos.org/ --max-jobs 1 build .#checks.x86_64-linux.nixos-destructive --no-link -L
 ```
 
 ### Interactive test driver
