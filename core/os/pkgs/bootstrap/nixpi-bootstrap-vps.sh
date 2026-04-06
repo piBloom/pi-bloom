@@ -65,7 +65,7 @@ if ! run_as_root grep -q 'experimental-features' "$NIXCONF" 2>/dev/null; then
 fi
 
 log "Initializing host-owned /etc/nixos flake"
-run_as_root bash "$REPO_DIR/core/scripts/nixpi-init-host-flake.sh" \
+run_as_root env "NIXPI_NIXPKGS_FLAKE_URL=${NIXPI_NIXPKGS_FLAKE_URL:-}" bash "$REPO_DIR/core/scripts/nixpi-init-host-flake.sh" \
   "$REPO_DIR" \
   "$HOSTNAME_VALUE" \
   "$PRIMARY_USER_VALUE" \

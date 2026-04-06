@@ -11,8 +11,33 @@ NIXOS_DIR="/etc/nixos"
 HOST_FILE="$NIXOS_DIR/nixpi-host.nix"
 INTEGRATION_FILE="$NIXOS_DIR/nixpi-integration.nix"
 FLAKE_FILE="$NIXOS_DIR/flake.nix"
+NIXPKGS_FLAKE_URL="${NIXPI_NIXPKGS_FLAKE_URL:-}"
 
 install -d -m 0755 "$NIXOS_DIR"
+
+resolve_nixpkgs_flake_url() {
+  if [ -n "$NIXPKGS_FLAKE_URL" ]; then
+    printf '%s\n' "$NIXPKGS_FLAKE_URL"
+    return 0
+  fi
+
+  for candidate in \
+    /nix/var/nix/profiles/per-user/root/channels/nixos \
+    /nix/var/nix/profiles/system/channels/nixos \
+    /root/.nix-defexpr/channels/nixos
+  do
+    if [ -f "$candidate/flake.nix" ]; then
+      printf 'path:%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  echo "could not determine the host nixpkgs flake source" >&2
+  echo "set NIXPI_NIXPKGS_FLAKE_URL to the nixpkgs flake you want /etc/nixos to follow" >&2
+  return 1
+}
+
+NIXPKGS_FLAKE_URL="$(resolve_nixpkgs_flake_url)"
 
 if [ -z "$SYSTEM_VALUE" ]; then
   case "$(uname -m)" in
@@ -55,7 +80,7 @@ if [ ! -f "$FLAKE_FILE" ]; then
   description = "Host-owned NixOS flake with NixPI layered on top";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "${NIXPKGS_FLAKE_URL}";
     nixpi.url = "path:${REPO_DIR}";
   };
 

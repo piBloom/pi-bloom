@@ -32,6 +32,8 @@ The bootstrap process prepares `/srv/nixpi`, initializes a host-owned flake in `
 sudo nixos-rebuild switch --flake /etc/nixos --impure
 ```
 
+The generated `/etc/nixos/flake.nix` follows the host's existing NixOS `nixpkgs` source so hardware, graphics, and desktop packages stay on the host-owned base instead of being switched to NixPI's repo pin. If you need a different base explicitly, set `NIXPI_NIXPKGS_FLAKE_URL` before running bootstrap.
+
 On a monitor-attached mini PC, the installed system also keeps a local `tty1` login prompt after reboot, so local recovery remains available if remote access is unavailable.
 
 ## After install
