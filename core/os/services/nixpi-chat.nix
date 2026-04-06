@@ -60,7 +60,7 @@ in
       };
       serviceConfig = {
         Environment = [
-          "PATH=${lib.makeBinPath [ config.nixpi-chat.package pkgs.nodejs ]}:/run/current-system/sw/bin"
+          "PATH=${lib.makeBinPath [ config.nixpi-chat.package pkgs.nodejs ]}:/run/wrappers/bin:/run/current-system/sw/bin"
         ];
         User = config.nixpi-chat.primaryUser;
         Group = config.nixpi-chat.primaryUser;
