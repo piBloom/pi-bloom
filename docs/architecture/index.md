@@ -90,11 +90,11 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 
 ## Security Boundaries
 
-### NetBird as Security Perimeter
+### WireGuard as Security Perimeter
 
-The `wt0` interface (NetBird WireGuard tunnel) is the only trusted interface in the firewall. Services are only accessible through this interface.
+The `wg0` interface (native WireGuard tunnel) is the only trusted interface for the remote app surface. Services are only accessible through this interface.
 
-**Critical**: Without NetBird running, services are exposed to the local network.
+**Critical**: Without WireGuard peers configured, the remote app surface stays closed and only SSH plus the WireGuard UDP port remain reachable.
 
 ### Privilege Separation
 

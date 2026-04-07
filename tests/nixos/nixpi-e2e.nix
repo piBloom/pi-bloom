@@ -113,7 +113,7 @@ in
 
     client.succeed("nc -z -w 2 pi 22")
 
-    services = ["netbird", "NetworkManager"]
+    services = ["wireguard-wg0", "NetworkManager"]
     for svc in services:
         nixpi.succeed("systemctl is-active " + svc + ".service")
 
@@ -135,12 +135,12 @@ in
     assert "wheel" in groups, "User not in wheel group: " + groups
     assert "networkmanager" in groups, "User not in networkmanager group: " + groups
 
-    nixpi.succeed("systemctl is-active netbird.service")
+    nixpi.succeed("systemctl is-active wireguard-wg0.service")
 
     for port in [8080, 8081, 5000, 8443]:
         client.succeed(f"! nc -z -w 2 pi {port}")
 
-    packages = ["git", "curl", "jq", "htop", "netbird"]
+    packages = ["git", "curl", "jq", "htop", "wg"]
     for pkg in packages:
         nixpi.succeed("command -v " + pkg)
 
@@ -156,7 +156,7 @@ in
     print("Verified:")
     print("  - Web setup apply completed")
     print("  - SSH remains reachable on the LAN after setup")
-    print("  - App ports stay closed without wt0")
+    print("  - App ports stay closed without wg0 access")
     print("  - Setup API completes")
     print("  - All core services start correctly")
     print("  - Network connectivity between nodes")

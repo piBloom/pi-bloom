@@ -1,4 +1,4 @@
-{ stdenvNoCC, makeWrapper, netbird }:
+{ stdenvNoCC, makeWrapper }:
 
 stdenvNoCC.mkDerivation {
   pname = "nixpi-setup-apply";
@@ -12,8 +12,7 @@ stdenvNoCC.mkDerivation {
     runHook preInstall
     mkdir -p "$out/bin"
     install -m 0755 ${../../../scripts/nixpi-setup-apply.sh} "$out/bin/nixpi-setup-apply"
-    wrapProgram "$out/bin/nixpi-setup-apply" \
-      --prefix PATH : ${netbird}/bin
+    wrapProgram "$out/bin/nixpi-setup-apply"
     runHook postInstall
   '';
 }

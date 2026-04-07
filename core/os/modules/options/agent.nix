@@ -3,7 +3,11 @@
 {
   options.nixpi.agent = {
     autonomy = lib.mkOption {
-      type = lib.types.enum [ "observe" "maintain" "admin" ];
+      type = lib.types.enum [
+        "observe"
+        "maintain"
+        "admin"
+      ];
       default = "maintain";
       description = ''
         Default privileged autonomy level granted to the always-on agent.
@@ -13,7 +17,7 @@
     allowedUnits = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [
-        "netbird.service"
+        "wireguard-wg0.service"
         "nixpi-chat.service"
         "nixpi-update.service"
       ];
@@ -67,6 +71,5 @@
     };
   };
 
-  config.nixpi.agent.workspaceDir =
-    lib.mkDefault "/home/${config.nixpi.primaryUser}/nixpi";
+  config.nixpi.agent.workspaceDir = lib.mkDefault "/home/${config.nixpi.primaryUser}/nixpi";
 }

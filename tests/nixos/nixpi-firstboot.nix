@@ -75,7 +75,7 @@ in
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
     nixpi.wait_for_unit("network-online.target", timeout=60)
-    nixpi.wait_for_unit("netbird.service", timeout=60)
+    nixpi.wait_for_unit("wireguard-wg0.service", timeout=60)
     nixpi.wait_for_unit("nixpi-chat.service", timeout=120)
     nixpi.wait_for_unit("nixpi-ttyd.service", timeout=120)
     nixpi.wait_for_unit("nginx.service", timeout=120)

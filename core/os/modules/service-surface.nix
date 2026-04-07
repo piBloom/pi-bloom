@@ -1,10 +1,17 @@
-{ pkgs, lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 
 let
   cfg = config.nixpi.services;
+  wgCfg = config.nixpi.wireguard;
   tlsDir = "/var/lib/nixpi-tls";
   tlsCertPath = "${tlsDir}/nixpi-secure.crt";
   tlsKeyPath = "${tlsDir}/nixpi-secure.key";
+  wireguardIp = if wgCfg.enable then builtins.head (lib.splitString "/" wgCfg.address) else "";
   terminalProxyLocation = {
     proxyPass = "http://127.0.0.1:7681/";
     extraConfig = ''
@@ -16,66 +23,58 @@ let
     '';
   };
   secureWebTlsSetup = pkgs.writeShellScript "nixpi-secure-web-tls-setup" ''
-    set -euo pipefail
+        set -euo pipefail
 
-    tls_dir="${tlsDir}"
-    cert_path="${tlsCertPath}"
-    key_path="${tlsKeyPath}"
-    host_name="${config.networking.hostName}"
+        tls_dir="${tlsDir}"
+        cert_path="${tlsCertPath}"
+        key_path="${tlsKeyPath}"
+        host_name="${config.networking.hostName}"
+        wireguard_ip="${wireguardIp}"
 
-    fqdn=""
-    mesh_ip=""
-    if command -v netbird >/dev/null 2>&1; then
-      status_json="$(netbird status --json 2>/dev/null || true)"
-      if [ -n "$status_json" ]; then
-        fqdn="$(printf '%s' "$status_json" | ${pkgs.jq}/bin/jq -r '.fqdn // empty')"
-        mesh_ip="$(printf '%s' "$status_json" | ${pkgs.jq}/bin/jq -r '.netbirdIp // empty | split("/")[0]')"
-      fi
-    fi
+        fqdn=""
+        common_name="$host_name"
+        if [ -n "$fqdn" ]; then
+          common_name="$fqdn"
+        fi
 
-    common_name="$host_name"
-    if [ -n "$fqdn" ]; then
-      common_name="$fqdn"
-    fi
+        san_entries="DNS:$host_name,DNS:localhost,IP:127.0.0.1"
+        if [ -n "$fqdn" ]; then
+          san_entries="$san_entries,DNS:$fqdn"
+        fi
+        if [ -n "$wireguard_ip" ]; then
+          san_entries="$san_entries,IP:$wireguard_ip"
+        fi
 
-    san_entries="DNS:$host_name,DNS:localhost,IP:127.0.0.1"
-    if [ -n "$fqdn" ]; then
-      san_entries="$san_entries,DNS:$fqdn"
-    fi
-    if [ -n "$mesh_ip" ]; then
-      san_entries="$san_entries,IP:$mesh_ip"
-    fi
+        install -d -m 0750 -o nginx -g nginx "$tls_dir"
+        tmp_conf="$(mktemp)"
+        cat > "$tmp_conf" <<EOF
+    [req]
+    distinguished_name = dn
+    x509_extensions = v3_req
+    prompt = no
 
-    install -d -m 0750 -o nginx -g nginx "$tls_dir"
-    tmp_conf="$(mktemp)"
-    cat > "$tmp_conf" <<EOF
-[req]
-distinguished_name = dn
-x509_extensions = v3_req
-prompt = no
+    [dn]
+    CN = $common_name
 
-[dn]
-CN = $common_name
+    [v3_req]
+    subjectAltName = $san_entries
+    basicConstraints = CA:FALSE
+    keyUsage = digitalSignature, keyEncipherment
+    extendedKeyUsage = serverAuth
+    EOF
 
-[v3_req]
-subjectAltName = $san_entries
-basicConstraints = CA:FALSE
-keyUsage = digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth
-EOF
+        ${pkgs.openssl}/bin/openssl req \
+          -x509 \
+          -nodes \
+          -newkey rsa:2048 \
+          -days 3650 \
+          -keyout "$key_path" \
+          -out "$cert_path" \
+          -config "$tmp_conf"
 
-    ${pkgs.openssl}/bin/openssl req \
-      -x509 \
-      -nodes \
-      -newkey rsa:2048 \
-      -days 3650 \
-      -keyout "$key_path" \
-      -out "$cert_path" \
-      -config "$tmp_conf"
-
-    rm -f "$tmp_conf"
-    chown nginx:nginx "$cert_path" "$key_path"
-    chmod 0640 "$cert_path" "$key_path"
+        rm -f "$tmp_conf"
+        chown nginx:nginx "$cert_path" "$key_path"
+        chmod 0640 "$cert_path" "$key_path"
   '';
 in
 {
@@ -90,13 +89,17 @@ in
     ];
 
     systemd.tmpfiles.settings = lib.mkIf cfg.secureWeb.enable {
-      nixpi-tls."${tlsDir}".d = { mode = "0750"; user = "nginx"; group = "nginx"; };
+      nixpi-tls."${tlsDir}".d = {
+        mode = "0750";
+        user = "nginx";
+        group = "nginx";
+      };
     };
 
     systemd.services.nixpi-secure-web-tls = lib.mkIf cfg.secureWeb.enable {
       description = "Generate self-signed TLS certificate for secure NixPI web entry point";
-      after = [ "network-online.target" "netbird.service" ];
-      wants = [ "network-online.target" "netbird.service" ];
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
       before = [ "nginx.service" ];
       serviceConfig = {

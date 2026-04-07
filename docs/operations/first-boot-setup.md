@@ -34,7 +34,7 @@ A fresh system should come up with one remote operator surface:
 systemctl status nixpi-chat.service
 systemctl status nixpi-ttyd.service
 systemctl status nginx.service
-systemctl status netbird.service
+systemctl status wireguard-wg0.service
 ```
 
 Expected result: all four services are active or activatable without any desktop login step.
@@ -58,19 +58,21 @@ Expected result:
 - the browser terminal responds on `/terminal/`
 - `http://127.0.0.1:8080/` responds as the internal chat backend health probe
 
-### 3. Verify NetBird Before Normal Use
+### 3. Verify WireGuard Before Normal Use
 
 ```bash
-netbird status
-ip link show wt0
+systemctl status wireguard-wg0.service
+wg show wg0
+ip link show wg0
 ```
 
 Expected result:
 
-- NetBird reports a connected peer when enrollment is complete
-- `wt0` exists before you rely on the deployment as your secure operator path
+- `wireguard-wg0.service` is active
+- `wg0` exists before you rely on the deployment as your secure operator path
+- `wg show wg0` lists at least one peer once you have added your admin device
 
-If NetBird is not enrolled yet, finish that step before treating the host as ready for routine remote access.
+If WireGuard peers are not configured yet, finish that step before treating the host as ready for routine remote access.
 
 ### 4. Verify the Canonical Repo Flow
 
@@ -103,7 +105,7 @@ After first boot, keep these boundaries in mind:
 | `nixpi-chat.service` | Main remote app runtime |
 | `nixpi-ttyd.service` | Browser terminal backend |
 | `nginx.service` | HTTP/HTTPS entry point |
-| `netbird.service` | Mesh networking and remote security boundary |
+| `wireguard-wg0.service` | WireGuard remote-access boundary |
 
 ### Current Behavior
 

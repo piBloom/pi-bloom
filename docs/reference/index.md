@@ -20,7 +20,7 @@ This section contains detailed reference documentation for NixPI:
 | [Memory Model](./memory-model) | Storage and promotion rules |
 | [Security Model](./security-model) | Perimeter and threat model |
 | [Supply Chain](./supply-chain) | Dependency trust |
-| [Infrastructure](./infrastructure) | Built-in services and NetBird |
+| [Infrastructure](./infrastructure) | Built-in services and WireGuard |
 
 ## Related
 

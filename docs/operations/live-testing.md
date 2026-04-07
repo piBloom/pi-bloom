@@ -24,10 +24,10 @@ If you are validating a branch from a local checkout instead of GitHub, `nix run
 
 ### First Remote Validation
 
-1. Confirm `nixpi-chat.service`, `nixpi-ttyd.service`, `nginx.service`, and `netbird.service` reach their expected state.
+1. Confirm `nixpi-chat.service`, `nixpi-ttyd.service`, `nginx.service`, and `wireguard-wg0.service` reach their expected state.
 2. Verify the public HTTP surface responds on `http://127.0.0.1/` and `http://127.0.0.1/terminal/`.
 3. Use `http://127.0.0.1:8080/` only as the internal chat backend health probe when you need to distinguish backend availability from the public nginx surface.
-4. Confirm outbound networking works and finish NetBird enrollment before treating the host as ready for routine remote use.
+4. Confirm outbound networking works and add at least one WireGuard peer before treating the host as ready for routine remote use.
 5. Reboot once and repeat the public-surface checks.
 6. On monitor-attached hardware, confirm the machine also presents a local `tty1` login prompt after reboot.
 

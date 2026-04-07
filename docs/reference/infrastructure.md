@@ -32,29 +32,30 @@ sudo systemctl restart nixpi-chat.service
 sudo systemctl restart nixpi-ttyd.service
 ```
 
-## Access Network (NetBird)
+## Access Network (WireGuard)
 
-NetBird is the required remote-access layer for the supported deployment path.
+WireGuard is the supported remote-access layer for the default deployment path.
 
 ### Setup
 
-NetBird is configured during bootstrap or first-boot setup. You can connect with:
+NixPI enables a native WireGuard hub interface by default. You complete the operator path by:
 
-- **Web login (OAuth)** for interactive enrollment
-- **Setup key** for headless or automated setup
-- **Manual later setup** with `sudo netbird up`
+1. reading the host public key with `wg show wg0 public-key`
+2. generating a keypair for your laptop/phone/admin device
+3. adding that device as a peer in NixOS
+4. deploying and connecting outbound from the device to the host UDP port
 
 ### Adding Peers
 
-Install NetBird on your laptop, phone, or admin workstation from <https://netbird.io/download> and sign in with the same account. Devices on the same account can then reach the NixPI host through the private mesh.
+Configure a standard WireGuard client on your laptop, phone, or admin workstation and point it at the NixPI host. Once connected, the device can reach the NixPI host through the private tunnel.
 
 ### Operations
 
 ```bash
-netbird status
-journalctl -u netbird.service -n 100
-sudo netbird up
-sudo systemctl restart netbird.service
+systemctl status wireguard-wg0.service
+journalctl -u wireguard-wg0.service -n 100
+wg show wg0
+sudo systemctl restart wireguard-wg0.service
 ```
 
 ## Related

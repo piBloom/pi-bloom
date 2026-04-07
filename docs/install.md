@@ -53,7 +53,7 @@ Check core services:
 systemctl status nixpi-chat.service
 systemctl status nixpi-ttyd.service
 systemctl status nginx.service
-systemctl status netbird.service
+systemctl status wireguard-wg0.service
 ```
 
 Rollback if needed:

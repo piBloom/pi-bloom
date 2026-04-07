@@ -6,11 +6,11 @@
 
 Operators and maintainers deploying NixPI onto a NixOS-capable x86_64 VPS, headless VM, or mini PC.
 
-## Security Note: NetBird Is Mandatory
+## Security Note: WireGuard Is the Remote-Access Boundary
 
-NetBird is the network security boundary for NixPI services. The firewall trusts only the NetBird interface (`wt0`). Without NetBird running, the remote app is exposed to whatever network can reach the host.
+WireGuard is the network security boundary for NixPI services. The firewall trusts only the WireGuard interface (`wg0`) for app traffic, while SSH remains separately controlled.
 
-**Complete NetBird setup and verify `wt0` is active before treating the deployment as ready for normal use.** See [Security Model](../reference/security-model) for the full threat model.
+**Complete WireGuard peer setup and verify `wg0` is active before treating the deployment as ready for normal use.** See [Security Model](../reference/security-model) for the full threat model.
 
 ## Canonical Deployment Path
 
@@ -68,19 +68,19 @@ After the switch completes, NixPI runs as a remote-first service set. The defaul
 - `/` — main chat surface
 - `/terminal/` — browser terminal
 
-Preferred access is over NetBird. In practice that means:
+Preferred access is over WireGuard. In practice that means:
 
-1. enroll the host in NetBird
-2. confirm `netbird status` reports a connected peer
-3. verify the `wt0` interface exists
-4. open the remote app over the NetBird-reachable host name or IP
+1. add your admin device as a WireGuard peer
+2. confirm `wireguard-wg0.service` is active
+3. verify the `wg0` interface exists
+4. open the remote app over the WireGuard-reachable host IP
 
 Useful checks:
 
 ```bash
-systemctl status netbird.service
-netbird status
-ip link show wt0
+systemctl status wireguard-wg0.service
+wg show wg0
+ip link show wg0
 ```
 
 ## 4. Operate from `/srv/nixpi`

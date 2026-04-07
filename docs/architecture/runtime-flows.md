@@ -55,7 +55,7 @@ systemd boot
     ↓
 multi-user.target
     ↓
-├─ netbird.service
+├─ wireguard-wg0.service
 ├─ nixpi-app-setup.service
 ├─ nixpi-chat.service
 ├─ nixpi-update.service
@@ -112,7 +112,7 @@ setup-wizard.sh
 ├─ Clone canonical repo checkout
 ├─ Write host config
 ├─ nixos-rebuild switch
-├─ NetBird enrollment
+├─ WireGuard peer setup
 ├─ Seed local Pi settings
 └─ Mark system ready
 ```

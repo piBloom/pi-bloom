@@ -1,5 +1,10 @@
 # core/os/modules/network.nix
-{ pkgs, lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 
 let
   primaryUser = config.nixpi.primaryUser;
@@ -8,19 +13,29 @@ let
   systemReadyFile = "${primaryHome}/.nixpi/wizard-state/system-ready";
   cfg = config.nixpi.services;
   securityCfg = config.nixpi.security;
+  wgCfg = config.nixpi.wireguard;
   sshAllowUsers =
     if securityCfg.ssh.allowUsers != [ ] then
       securityCfg.ssh.allowUsers
     else
       lib.optional (primaryUser != "") primaryUser;
   bindsLocally =
-    cfg.bindAddress == "127.0.0.1"
-    || cfg.bindAddress == "::1"
-    || cfg.bindAddress == "localhost";
+    cfg.bindAddress == "127.0.0.1" || cfg.bindAddress == "::1" || cfg.bindAddress == "localhost";
   exposedPorts =
-    lib.optionals cfg.home.enable [ 80 ]
-    ++ lib.optionals cfg.secureWeb.enable [ cfg.secureWeb.port ]
-    ++ lib.optionals config.nixpi.netbird.ssh.enable [ 22022 ];
+    lib.optionals cfg.home.enable [ 80 ] ++ lib.optionals cfg.secureWeb.enable [ cfg.secureWeb.port ];
+  wireguardPeers = map (
+    peer:
+    {
+      inherit (peer) publicKey allowedIPs;
+    }
+    // lib.optionalAttrs (peer.name != "") { inherit (peer) name; }
+    // lib.optionalAttrs (peer.endpoint != null) { inherit (peer) endpoint; }
+    // lib.optionalAttrs (peer.presharedKeyFile != null) { inherit (peer) presharedKeyFile; }
+    // lib.optionalAttrs (peer.persistentKeepalive != null) { inherit (peer) persistentKeepalive; }
+    // lib.optionalAttrs (peer.dynamicEndpointRefreshSeconds != null) {
+      inherit (peer) dynamicEndpointRefreshSeconds;
+    }
+  ) wgCfg.peers;
   preferWifi = pkgs.writeShellScriptBin "nixpi-prefer-wifi" ''
     set -euo pipefail
 
@@ -76,8 +91,6 @@ in
       ];
 
       hardware.enableAllFirmware = true;
-      services.netbird.enable = true;
-      services.netbird.clients.default.config.DisableAutoConnect = lib.mkForce true;
 
       services.openssh = {
         enable = true;
@@ -106,14 +119,24 @@ in
 
       networking.firewall.enable = true;
       networking.firewall.allowedTCPPorts = [ 22 ];
-      # trustedInterface defaults to "wt0" (NetBird mesh interface).
-      # These firewall rules are inert until NetBird connects and wt0 exists.
-      # During first-boot setup, SSH access relies on the physical interface,
+      networking.firewall.allowedUDPPorts = lib.optionals wgCfg.enable [ wgCfg.listenPort ];
+      # trustedInterface defaults to "wg0" (the native WireGuard interface).
+      # These firewall rules are inert until WireGuard brings the interface up.
+      # During first-boot setup, SSH access still relies on the physical interface,
       # which is opened separately via nixpi.security.ssh options.
       networking.firewall.interfaces = lib.mkIf securityCfg.enforceServiceFirewall {
         "${securityCfg.trustedInterface}".allowedTCPPorts = exposedPorts;
       };
       networking.networkmanager.enable = true;
+      networking.wireguard.interfaces = lib.mkIf wgCfg.enable {
+        "${wgCfg.interface}" = {
+          ips = [ wgCfg.address ];
+          listenPort = wgCfg.listenPort;
+          privateKeyFile = wgCfg.privateKeyFile;
+          generatePrivateKeyFile = wgCfg.generatePrivateKeyFile;
+          peers = wireguardPeers;
+        };
+      };
 
       systemd.services.nixpi-prefer-wifi = {
         description = "Prefer WiFi profiles over Ethernet in NetworkManager";
@@ -138,23 +161,22 @@ in
       };
 
       systemd.tmpfiles.settings.nixpi-workspace = {
-        "${config.nixpi.agent.workspaceDir}".d = { mode = "2775"; user = primaryUser; group = primaryUser; };
+        "${config.nixpi.agent.workspaceDir}".d = {
+          mode = "2775";
+          user = primaryUser;
+          group = primaryUser;
+        };
       };
 
       environment.systemPackages = with pkgs; [
         jq
-        netbird
         preferWifi
       ];
-      warnings =
-        lib.optional (!securityCfg.enforceServiceFirewall && !bindsLocally) ''
-          NixPI's built-in service surface is bound to `${cfg.bindAddress}` without
-          the trusted-interface firewall restriction. Backend service ports may
-          be reachable on all network interfaces.
-        '';
+      warnings = lib.optional (!securityCfg.enforceServiceFirewall && !bindsLocally) ''
+        NixPI's built-in service surface is bound to `${cfg.bindAddress}` without
+        the trusted-interface firewall restriction. Backend service ports may
+        be reachable on all network interfaces.
+      '';
     }
-    (lib.mkIf config.nixpi.netbird.ssh.enable {
-      services.netbird.clients.default.config.SSHAllowed = true;
-    })
   ];
 }

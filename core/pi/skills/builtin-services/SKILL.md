@@ -23,9 +23,9 @@ NixPI ships these services as part of the base NixOS system. They are not option
 
 ## URLs
 
-Preferred access is over NetBird:
+Preferred access is over WireGuard:
 
-- `https://<netbird-host>/`
+- `https://<wireguard-host>/`
 
 Localhost is recovery-only on the machine:
 

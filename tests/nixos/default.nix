@@ -37,6 +37,7 @@ let
     nixpi-network = runTest ./nixpi-network.nix;
     nixpi-e2e = runTest ./nixpi-e2e.nix;
     nixpi-security = runTest ./nixpi-security.nix;
+    nixpi-wireguard = runTest ./nixpi-wireguard.nix;
     nixpi-modular-services = runTest ./nixpi-modular-services.nix;
     nixpi-post-setup-lockdown = runTest ./nixpi-post-setup-lockdown.nix;
     nixpi-broker = runTest ./nixpi-broker.nix;

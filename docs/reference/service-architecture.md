@@ -19,7 +19,7 @@ The current built-in service set is:
 | `nginx` | `:80`, `:443` | Public entrypoint for the web app and browser terminal |
 | `nixpi-chat.service` | `127.0.0.1:8080` | Internal chat backend used by the web app |
 | `nixpi-ttyd.service` | proxied via `/terminal/` | Browser terminal session |
-| `netbird.service` | mesh-managed | Required remote-access and firewall trust boundary |
+| `wireguard-wg0.service` | native WireGuard | Required remote-access and firewall trust boundary |
 
 These services are declared in the OS layer and are expected to exist on every deployed NixPI host.
 
@@ -27,7 +27,7 @@ These services are declared in the OS layer and are expected to exist on every d
 
 - The public operator surface is `/` for chat and `/terminal/` for the browser terminal.
 - `127.0.0.1:8080` is the internal backend probe, not the primary operator URL.
-- Use `systemctl status nixpi-chat.service`, `nixpi-ttyd.service`, `nginx.service`, and `netbird.service` for host-level inspection.
+- Use `systemctl status nixpi-chat.service`, `nixpi-ttyd.service`, `nginx.service`, and `wireguard-wg0.service` for host-level inspection.
 - Use `journalctl -u <unit>` when you need service logs during deployment or troubleshooting.
 
 ## Related

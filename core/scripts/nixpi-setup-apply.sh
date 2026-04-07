@@ -42,9 +42,3 @@ mkdir -p "$(dirname "${SYSTEM_READY_FILE}")"
 touch "${SYSTEM_READY_FILE}"
 chown "${PRIMARY_USER}:${PRIMARY_USER}" "${SYSTEM_READY_FILE}"
 log "System ready"
-
-if [[ -n "${SETUP_NETBIRD_KEY:-}" ]]; then
-  log "Starting Netbird setup in background..."
-  nohup netbird up --setup-key "${SETUP_NETBIRD_KEY}" --foreground=false \
-    >/tmp/nixpi-netbird-setup.log 2>&1 &
-fi

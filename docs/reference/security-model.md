@@ -8,19 +8,19 @@ Operators deploying NixPI and template forkers who need to understand the securi
 
 ## Core Security Model
 
-**NetBird is the load-bearing security boundary.**
+**WireGuard is the load-bearing remote-access boundary.**
 
-NixPI is designed as a NixOS-based personal AI-first OS where the primary security perimeter is a NetBird WireGuard mesh network. This is explicitly codified in the firewall configuration:
+NixPI is designed as a NixOS-based personal AI-first OS where the primary operator path is a native WireGuard interface. This is explicitly codified in the firewall configuration:
 
 ```nix
-networking.firewall.trustedInterfaces = [ "wt0" ];
+networking.firewall.interfaces.wg0.allowedTCPPorts = [ 80 443 ];
 ```
 
-The `wt0` interface is the NetBird tunnel interface. Only mesh peers can reach NixPI services. Everything behind the mesh is relatively trusted.
+The `wg0` interface is the WireGuard tunnel interface. Only WireGuard peers can reach the remote NixPI app surface. Everything behind the tunnel is relatively trusted.
 
-## What NetBird Protects
+## What WireGuard Protects
 
-When NetBird is active and the `wt0` interface is up, the following services are accessible **only** to peers on the NetBird mesh:
+When WireGuard is active and the `wg0` interface is up, the following services are accessible **only** to WireGuard peers:
 
 | Service | Port | Purpose |
 |---------|------|---------|
@@ -28,26 +28,26 @@ When NetBird is active and the `wt0` interface is up, the following services are
 | Browser terminal | `/terminal/` via nginx | Operator shell access |
 | Internal backend probe | `127.0.0.1:8080` | Host-local health check for `nixpi-chat.service` |
 
-## What Happens If NetBird Is Absent
+## What Happens If WireGuard Peers Are Missing
 
-If NetBird is not running or not configured:
+If WireGuard is enabled but you have not configured any peers yet:
 
-1. The `wt0` interface does not exist
-2. The firewall rule `trustedInterfaces = ["wt0"]` provides **no protection**
-3. The remote web app and browser terminal are exposed to the **reachable network**
-4. Any device on that network can interact with Pi through the browser runtime and potentially trigger OS tools (`nixos_update`, `systemd_control`) via prompt injection
+1. The `wg0` interface may still exist locally, but no remote device can use it
+2. The app ports remain closed on untrusted interfaces when `nixpi.security.enforceServiceFirewall = true`
+3. The public exposure is limited to SSH and the WireGuard UDP listen port
+4. Remote browser access is unavailable until you add at least one trusted peer
 
-**This is a complete loss of the security perimeter.**
+This is an availability problem, not a silent app exposure, as long as the interface-restricted firewall remains enabled.
 
 ## Threat Actors Within Scope
 
 The security model addresses the following threats:
 
-1. **Compromised device on the NetBird mesh** — A peer that has been compromised can attempt to interact with NixPI services or brute-force SSH.
+1. **Compromised device on the WireGuard network** — A peer that has been compromised can attempt to interact with NixPI services or brute-force SSH.
 
 2. **Compromised service container** — A container running on the host (inside the mesh) that has been compromised can attempt to pivot to the host or manipulate NixPI state.
 
-3. **Template forker without NetBird** — A user who deploys NixPI without configuring NetBird or with it misconfigured has no security perimeter and is fully exposed to the local network.
+3. **Template forker without WireGuard peers** — A user who deploys NixPI without configuring any WireGuard peers will not have the intended remote operator path and will fall back to SSH-only administration.
 
 ## SSH Access
 
@@ -99,9 +99,10 @@ There is no separate first-boot helper sudo surface anymore. Privileged operatio
 
 Before exposing a NixPI host to any network:
 
-- [ ] NetBird is enrolled and connected (`netbird status` shows "Connected")
-- [ ] The `wt0` interface exists (`ip link show wt0`)
-- [ ] You have verified services are NOT accessible from non-mesh devices
+- [ ] `wireguard-wg0.service` is active
+- [ ] The `wg0` interface exists (`ip link show wg0`)
+- [ ] `wg show wg0` lists your expected peers
+- [ ] You have verified services are NOT accessible from non-WireGuard devices
 - [ ] SSH keys are provisioned (recommended)
 
 ## Related

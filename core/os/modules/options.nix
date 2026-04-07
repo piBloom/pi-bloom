@@ -3,7 +3,8 @@
 { lib, ... }:
 
 let
-  mkPortOption = default: description:
+  mkPortOption =
+    default: description:
     lib.mkOption {
       type = lib.types.port;
       inherit default description;
@@ -14,6 +15,7 @@ in
     ./options/core.nix
     ./options/security.nix
     ./options/agent.nix
+    ./options/wireguard.nix
   ];
 
   options.nixpi = {
@@ -23,15 +25,6 @@ in
       description = ''
         Whether SSH should remain reachable after first-boot setup
         completes. By default SSH is treated as a bootstrap-only path.
-      '';
-    };
-
-    netbird.ssh.enable = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = ''
-        Whether to enable NetBird's built-in SSH daemon on the Pi (port 22022).
-        Authentication uses NetBird peer identity (WireGuard key).
       '';
     };
 
@@ -63,12 +56,16 @@ in
       };
 
       home = {
-        enable = lib.mkEnableOption "NixPI Chat service" // { default = true; };
+        enable = lib.mkEnableOption "NixPI Chat service" // {
+          default = true;
+        };
         port = mkPortOption 8080 "TCP port for the NixPI Chat server.";
       };
 
       secureWeb = {
-        enable = lib.mkEnableOption "canonical HTTPS gateway for NixPI Chat" // { default = true; };
+        enable = lib.mkEnableOption "canonical HTTPS gateway for NixPI Chat" // {
+          default = true;
+        };
         port = mkPortOption 443 "TCP port for the canonical HTTPS NixPI entry point.";
       };
     };

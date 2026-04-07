@@ -15,7 +15,7 @@ This section covers the headless operator workflow for NixPI:
 
 | Topic | Description |
 |-------|-------------|
-| [Quick Deploy](./quick-deploy) | Bootstrap a VPS, enroll NetBird, and open the remote app |
+| [Quick Deploy](./quick-deploy) | Bootstrap a VPS, configure WireGuard, and open the remote app |
 | [First Boot Setup](./first-boot-setup) | Validate the public app surface plus the internal backend probe |
 | [Live Testing](./live-testing) | Release-time validation for the headless VPS operator path |
 
@@ -38,7 +38,7 @@ sudo nixos-rebuild switch --rollback
 systemctl status nixpi-chat.service
 systemctl status nixpi-ttyd.service
 systemctl status nginx.service
-systemctl status netbird.service
+systemctl status wireguard-wg0.service
 
 # Validation
 nix --option substituters https://cache.nixos.org/ build .#checks.x86_64-linux.config --no-link
