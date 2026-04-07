@@ -16,7 +16,7 @@
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${pkgs.ttyd}/bin/ttyd --port 7681 --interface 127.0.0.1 ${pkgs.bash}/bin/bash";
+        ExecStart = "${pkgs.ttyd}/bin/ttyd --writable --port 7681 --interface 127.0.0.1 ${pkgs.bash}/bin/bash";
         User = config.nixpi.primaryUser;
         Group = config.nixpi.primaryUser;
         Restart = "on-failure";
