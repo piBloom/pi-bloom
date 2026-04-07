@@ -4,17 +4,23 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.11";
   };
 
   outputs =
     {
       self,
       nixpkgs,
+      nixpkgs-stable,
       ...
     }:
     let
       system = "x86_64-linux";
       inherit (nixpkgs) lib;
+      stableNixOSRelease = "25.11";
+      stableNixpkgsFlakeUrl = "github:NixOS/nixpkgs/nixos-${stableNixOSRelease}";
+      bootstrapSystemFlakeScript = builtins.readFile ./core/scripts/nixpi-init-system-flake.sh;
+      flakeSource = builtins.readFile ./flake.nix;
       supportedSystems = [
         system
         "aarch64-linux"
@@ -59,7 +65,25 @@
             }
           ];
         };
+      mkConfiguredStableSystem =
+        {
+          system,
+          modules,
+        }:
+        nixpkgs-stable.lib.nixosSystem {
+          inherit system;
+          modules = modules ++ [
+            {
+              nixpkgs.hostPlatform = system;
+              nixpkgs.config.allowUnfree = true;
+            }
+          ];
+        };
     in
+    assert lib.hasInfix
+      "NIXPI_STABLE_NIXOS_RELEASE=\"\${NIXPI_STABLE_NIXOS_RELEASE:-${stableNixOSRelease}}\""
+      bootstrapSystemFlakeScript;
+    assert lib.hasInfix "nixpkgs-stable.url = \"${stableNixpkgsFlakeUrl}\";" flakeSource;
     {
       packages = forAllSystems (
         system:
@@ -236,6 +260,44 @@
           # errors, module conflicts, bad package references, and NixOS
           # evaluation failures without touching QEMU.
           config = self.nixosConfigurations.installed-test.config.system.build.toplevel;
+
+          # Fast stable-path proof for the documented bootstrap flake contract.
+          config-stable-bootstrap =
+            (
+              mkConfiguredStableSystem {
+                inherit system;
+                modules = [
+                  self.nixosModules.nixpi
+                  {
+                    nixpi.primaryUser = "alex";
+                    networking.hostName = "nixos";
+                    system.stateVersion = "25.05";
+                    boot.loader = {
+                      systemd-boot.enable = true;
+                      efi.canTouchEfiVariables = true;
+                    };
+                    fileSystems = {
+                      "/" = {
+                        device = "/dev/vda";
+                        fsType = "ext4";
+                      };
+                      "/boot" = {
+                        device = "/dev/vda1";
+                        fsType = "vfat";
+                      };
+                    };
+                  }
+                ];
+              }
+            ).config.system.build.toplevel;
+
+          bootstrap-stable-alignment = pkgs.runCommandLocal "bootstrap-stable-alignment-check" { } ''
+            expected_default='NIXPI_STABLE_NIXOS_RELEASE="''${NIXPI_STABLE_NIXOS_RELEASE:-${stableNixOSRelease}}"'
+            grep -F "$expected_default" ${./core/scripts/nixpi-init-system-flake.sh} >/dev/null
+            expected_flake_url='nixpkgs-stable.url = "${stableNixpkgsFlakeUrl}";'
+            grep -F "$expected_flake_url" ${./flake.nix} >/dev/null
+            touch "$out"
+          '';
 
           setup-apply-package = pkgs.runCommandLocal "setup-apply-package-check" { } ''
             bash -n "${./core/scripts/nixpi-setup-apply.sh}"
