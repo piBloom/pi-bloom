@@ -33,6 +33,23 @@ nix build .#checks.x86_64-linux.nixpi-bootstrap-fresh-install-stable --no-link -
 
 These commands validate the same stable `nixos-25.11` bootstrap line that the generated `/etc/nixos/flake.nix` uses by default.
 
+### Manual QEMU Lab
+
+Scratch installer lab:
+
+```bash
+nix run .#qemu-installer
+```
+
+Reusable preinstalled stable disk:
+
+```bash
+nix run .#qemu-prepare-preinstalled-stable
+nix run .#qemu-preinstalled-stable
+```
+
+These commands standardize the host-side QEMU environment only. Install, bootstrap, reboot, and service validation remain manual inside the guest. See `tools/qemu/README.md` for the exact disk paths and scratch-to-reusable image flow.
+
 ### First Remote Validation
 
 1. Confirm `nixpi-chat.service`, `nixpi-ttyd.service`, `nginx.service`, and `wireguard-wg0.service` reach their expected state.

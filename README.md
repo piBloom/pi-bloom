@@ -38,6 +38,7 @@ sudo nixos-rebuild switch --rollback
 - Operations: https://alexradunet.github.io/NixPI/operations/
 - Architecture: https://alexradunet.github.io/NixPI/architecture/
 - Reference: https://alexradunet.github.io/NixPI/reference/
+- Manual QEMU lab: `tools/qemu/README.md`
 - Internal notes (non-public): `internal/`
 
 Run docs locally:

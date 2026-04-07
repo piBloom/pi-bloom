@@ -522,6 +522,20 @@
             exec ${./tools/qemu}/run-installer.sh "$@"
           ''}";
         };
+
+        qemu-preinstalled-stable = {
+          type = "app";
+          program = "${pkgs.writeShellScript "qemu-preinstalled-stable" ''
+            exec ${./tools/qemu}/run-preinstalled-stable.sh "$@"
+          ''}";
+        };
+
+        qemu-prepare-preinstalled-stable = {
+          type = "app";
+          program = "${pkgs.writeShellScript "qemu-prepare-preinstalled-stable" ''
+            exec ${./tools/qemu}/prepare-preinstalled-stable.sh "$@"
+          ''}";
+        };
       };
 
       devShells = forAllSystems (
