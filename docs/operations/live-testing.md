@@ -22,6 +22,17 @@ Use it to verify that bootstrap, the remote app surface, and the canonical `/srv
 
 If you are validating a branch from a local checkout instead of GitHub, `nix run .#nixpi-bootstrap-vps` is the equivalent repo-local path.
 
+### Stable Bootstrap Regression Gate
+
+Before shipping bootstrap-related changes from a local checkout, verify both:
+
+```bash
+nix build .#checks.x86_64-linux.config-stable-bootstrap --no-link -L
+nix build .#checks.x86_64-linux.nixpi-bootstrap-fresh-install-stable --no-link -L
+```
+
+These commands validate the same stable `nixos-25.11` bootstrap line that the generated `/etc/nixos/flake.nix` uses by default.
+
 ### First Remote Validation
 
 1. Confirm `nixpi-chat.service`, `nixpi-ttyd.service`, `nginx.service`, and `wireguard-wg0.service` reach their expected state.

@@ -5,6 +5,7 @@ This directory contains NixOS integration tests for the NixPI platform. These te
 ## Test Lanes
 
 - `config`: fast non-VM closure build for the default headless VPS system
+- `config-stable-bootstrap`: fast non-VM closure build for the documented stable bootstrap target
 - `vps-topology`: fast flake-shape check for the canonical `vps` host profile
 - `nixos-smoke`: PR-oriented headless VPS VM subset
   - `nixpi-chat`
@@ -22,6 +23,7 @@ This directory contains NixOS integration tests for the NixPI platform. These te
 ```bash
 nix build .#checks.x86_64-linux.vps-topology --no-link
 nix build .#checks.x86_64-linux.config --no-link
+nix build .#checks.x86_64-linux.config-stable-bootstrap --no-link -L
 nix build .#checks.x86_64-linux.nixos-smoke --no-link -L
 ```
 
@@ -38,6 +40,7 @@ nix build .#checks.x86_64-linux.nixos-destructive --no-link -L
 ### Run a specific test
 ```bash
 nix build .#checks.x86_64-linux.nixpi-vps-bootstrap --no-link -L
+nix build .#checks.x86_64-linux.nixpi-bootstrap-fresh-install-stable --no-link -L
 nix build .#checks.x86_64-linux.nixpi-chat --no-link -L
 ```
 
@@ -73,6 +76,7 @@ tests/nixos/
 ├── default.nix          # Test suite entry point
 ├── nixpi-broker.nix              # broker autonomy and privilege boundaries
 ├── nixpi-bootstrap-fresh-install.nix # fresh-install bootstrap contract on a pristine VM
+├── nixpi-bootstrap-fresh-install-stable.nix # stable-default bootstrap contract on a pristine VM
 ├── nixpi-bootstrap-fresh-install-external.nix # external harness for a real offline guest rebuild attempt
 ├── nixpi-chat.nix                # built-in local chat surface test
 ├── nixpi-e2e.nix                 # end-to-end integration test
