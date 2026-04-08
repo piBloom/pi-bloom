@@ -57,7 +57,7 @@ description: Why this project exists, what it optimizes for, and how it differs 
 
 - NixOS modules for provisioning and service composition
 - A resident daemon that keeps Pi available outside terminal sessions
-- A built-in local web chat service for on-box conversation
+- A built-in Pi terminal surface for browser, SSH, and local-shell operation
 - Markdown-native durable memory and append-only episodic capture
 - First-boot setup flows and proposal-based local system evolution
 

@@ -404,10 +404,10 @@
               | grep -F 'self.nixosModules.nixpi' >/dev/null
             smoke_block="$(sed -n '/nixos-smoke = mkCheckLane "nixos-smoke" \[/,/nixos-full = mkCheckLane "nixos-full" \[/p' ${./flake.nix})"
             ! printf '%s\n' "$smoke_block" | grep -F 'name = "nixpi-vps-bootstrap";' >/dev/null
-            printf '%s\n' "$smoke_block" | grep -F 'name = "nixpi-chat";' >/dev/null
+            printf '%s\n' "$smoke_block" | grep -F 'name = "nixpi-terminal";' >/dev/null
             printf '%s\n' "$smoke_block" | grep -F 'name = "nixpi-security";' >/dev/null
             printf '%s\n' "$smoke_block" | grep -F 'name = "nixpi-broker";' >/dev/null
-            chat_line="$(printf '%s\n' "$smoke_block" | grep -nF 'name = "nixpi-chat";' | cut -d: -f1)"
+            chat_line="$(printf '%s\n' "$smoke_block" | grep -nF 'name = "nixpi-terminal";' | cut -d: -f1)"
             security_line="$(printf '%s\n' "$smoke_block" | grep -nF 'name = "nixpi-security";' | cut -d: -f1)"
             broker_line="$(printf '%s\n' "$smoke_block" | grep -nF 'name = "nixpi-broker";' | cut -d: -f1)"
             test "$chat_line" -lt "$security_line"
@@ -432,8 +432,8 @@
 
           nixos-smoke = mkCheckLane "nixos-smoke" [
             {
-              name = "nixpi-chat";
-              path = nixosTests.nixpi-chat;
+              name = "nixpi-terminal";
+              path = nixosTests.nixpi-terminal;
             }
             {
               name = "nixpi-security";

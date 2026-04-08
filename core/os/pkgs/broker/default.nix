@@ -19,7 +19,7 @@ buildNpmPackage {
           || lib.hasSuffix ".iso" rel);
   };
 
-  npmDepsHash = "sha256-GLC/G319Si5xYAm68ZdBBeApB2tA2Ddveuznn4ZwZoU=";
+  npmDepsHash = "sha256-FKRPimOKEiSPczn4pCa7V0Gn6S4/3YH41EKReF8E4P0=";
   nativeBuildInputs = [ makeWrapper ];
 
   buildPhase = ''

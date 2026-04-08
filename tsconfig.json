@@ -13,5 +13,5 @@
 		"sourceMap": true
 	},
 	"include": ["core/**/*.ts", "tests/**/*.ts"],
-	"exclude": ["node_modules", "dist", "core/chat-server/frontend"]
+	"exclude": ["node_modules", "dist"]
 }

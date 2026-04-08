@@ -12,15 +12,16 @@ let
   tlsCertPath = "${tlsDir}/nixpi-secure.crt";
   tlsKeyPath = "${tlsDir}/nixpi-secure.key";
   wireguardIp = if wgCfg.enable then builtins.head (lib.splitString "/" wgCfg.address) else "";
+  terminalProxyExtraConfig = ''
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+  '';
   terminalProxyLocation = {
     proxyPass = "http://127.0.0.1:7681/";
-    extraConfig = ''
-      proxy_http_version 1.1;
-      proxy_set_header Upgrade $http_upgrade;
-      proxy_set_header Connection "upgrade";
-      proxy_read_timeout 3600s;
-      proxy_send_timeout 3600s;
-    '';
+    extraConfig = terminalProxyExtraConfig;
   };
   secureWebTlsSetup = pkgs.writeShellScript "nixpi-secure-web-tls-setup" ''
         set -euo pipefail
@@ -123,12 +124,14 @@ in
             }
           ];
           locations."/terminal" = terminalProxyLocation;
-          locations."/".proxyPass = "http://127.0.0.1:${toString cfg.home.port}";
-          locations."/".extraConfig = lib.optionalString cfg.secureWeb.enable ''
-            if ($host !~* ^(localhost|127\.0\.0\.1)$) {
-              return 308 https://$host$request_uri;
-            }
-          '';
+          locations."/" = {
+            proxyPass = terminalProxyLocation.proxyPass;
+            extraConfig = terminalProxyExtraConfig + lib.optionalString cfg.secureWeb.enable ''
+              if ($host !~* ^(localhost|127\.0\.0\.1)$) {
+                return 308 https://$host$request_uri;
+              }
+            '';
+          };
         };
       })
       (lib.mkIf cfg.secureWeb.enable {
@@ -147,7 +150,7 @@ in
           sslCertificate = tlsCertPath;
           sslCertificateKey = tlsKeyPath;
           locations."/terminal" = terminalProxyLocation;
-          locations."/".proxyPass = "http://127.0.0.1:${toString cfg.home.port}";
+          locations."/" = terminalProxyLocation;
         };
       })
     ];

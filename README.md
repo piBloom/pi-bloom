@@ -4,7 +4,7 @@ NixPI is a VPS-first, headless AI companion OS built on NixOS.
 
 It combines:
 - a canonical system checkout at `/srv/nixpi`
-- a remote web app for chat and browser terminal access
+- a browser-accessible Pi terminal surface backed by ttyd
 - host automation through NixOS and systemd
 - Pi runtime + extensions in one deployable system
 

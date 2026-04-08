@@ -155,7 +155,7 @@ in
     nixpi.wait_for_unit("multi-user.target", timeout=300)
     nixpi.wait_for_unit("wireguard-wg0.service", timeout=120)
     nixpi.wait_for_unit("nginx.service", timeout=120)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/ | grep -q 'nixpi-shell'", timeout=60)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1/ | grep -q 'nixpi-shell'", timeout=60)
 
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)

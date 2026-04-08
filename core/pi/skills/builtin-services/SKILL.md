@@ -9,17 +9,17 @@ NixPI ships these services as part of the base NixOS system. They are not option
 
 ## Always Available
 
-- `NixPI Chat` behind the canonical web entry point at `/`
+- `NixPI Terminal` behind the canonical web entry point at `/`
 
 ## Operational Notes
 
-- This service is managed as a declarative systemd unit
+- This surface is managed as a declarative systemd service plus nginx proxying
 - Use `systemd_control` for status, restart, and stop/start operations
 - It should be treated as a stable base OS capability, not as an optional service package
 
 ## Expected Unit Names
 
-- `nixpi-chat`
+- `nixpi-ttyd`
 
 ## URLs
 
@@ -27,6 +27,6 @@ Preferred access is over WireGuard:
 
 - `https://<wireguard-host>/`
 
-Localhost is recovery-only on the machine:
+Localhost remains valid on the machine itself:
 
 - `http://localhost/`

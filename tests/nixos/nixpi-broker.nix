@@ -58,11 +58,11 @@
     assert observe_status["effectiveAutonomy"] == "observe", observe_status
 
     # Observe can inspect allowed units but cannot mutate them.
-    observe.succeed("nixpi-brokerctl systemd status nixpi-chat.service >/dev/null")
-    observe.fail("nixpi-brokerctl systemd restart nixpi-chat.service")
+    observe.succeed("nixpi-brokerctl systemd status nixpi-ttyd.service >/dev/null")
+    observe.fail("nixpi-brokerctl systemd restart nixpi-ttyd.service")
 
     # Maintain can manage allowed units but cannot use admin-only operations.
-    maintain.succeed("nixpi-brokerctl systemd restart nixpi-chat.service")
+    maintain.succeed("nixpi-brokerctl systemd restart nixpi-ttyd.service")
     maintain.fail("nixpi-brokerctl systemd status sshd.service")
     maintain.fail("nixpi-brokerctl nixos-update rollback")
 

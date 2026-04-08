@@ -15,8 +15,8 @@ This section covers the headless operator workflow for NixPI:
 
 | Topic | Description |
 |-------|-------------|
-| [Quick Deploy](./quick-deploy) | Bootstrap a VPS, configure WireGuard, and open the remote app |
-| [First Boot Setup](./first-boot-setup) | Validate the public app surface plus the internal backend probe |
+| [Quick Deploy](./quick-deploy) | Bootstrap a VPS, configure WireGuard, and open the Pi terminal surface |
+| [First Boot Setup](./first-boot-setup) | Validate the public Pi terminal surface and service readiness |
 | [Live Testing](./live-testing) | Release-time validation for the headless VPS operator path |
 
 ## Quick Reference
@@ -35,7 +35,6 @@ sudo nixpi-rebuild
 sudo nixos-rebuild switch --rollback
 
 # Service inspection
-systemctl status nixpi-chat.service
 systemctl status nixpi-ttyd.service
 systemctl status nginx.service
 systemctl status wireguard-wg0.service

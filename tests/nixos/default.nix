@@ -34,7 +34,7 @@ let
     nixpi-firstboot = runTest ./nixpi-firstboot.nix;
     nixpi-system-flake = runTest ./nixpi-system-flake.nix;
     nixpi-vps-bootstrap = runTest ./nixpi-vps-bootstrap.nix;
-    nixpi-chat = runTest ./nixpi-chat.nix;
+    nixpi-terminal = runTest ./nixpi-chat.nix;
     nixpi-network = runTest ./nixpi-network.nix;
     nixpi-e2e = runTest ./nixpi-e2e.nix;
     nixpi-security = runTest ./nixpi-security.nix;
@@ -48,7 +48,7 @@ let
 
   smokeAliases = {
     smoke-firstboot = tests.nixpi-vps-bootstrap;
-    smoke-chat = tests.nixpi-chat;
+    smoke-terminal = tests.nixpi-terminal;
     smoke-security = tests.nixpi-security;
     smoke-broker = tests.nixpi-broker;
   };

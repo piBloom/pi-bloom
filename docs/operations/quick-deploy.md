@@ -1,6 +1,6 @@
 # Quick Deploy
 
-> Bootstrap NixPI onto a VPS, headless VM, or mini PC and operate it from the remote web app
+> Bootstrap NixPI onto a VPS, headless VM, or mini PC and operate it from the Pi terminal surface
 
 ## Audience
 
@@ -18,7 +18,7 @@ NixPI is bootstrap-first and remote-first. The standard public deployment flow i
 
 1. provision a NixOS-capable x86_64 machine
 2. run the bootstrap command once
-3. open the remote web app for chat and terminal access
+3. open the browser Pi terminal
 4. keep operating from the canonical checkout at `/srv/nixpi`
 
 ## 1. Provision a NixOS-Capable Machine
@@ -57,23 +57,23 @@ The bootstrap package:
 
 The generated system flake also follows the configured stable NixOS line by default. Today that means `nixos-25.11`, which prevents bootstrap from silently jumping onto `nixos-unstable` or a 26.x pre-release line while NixPI is layered on top.
 
-On monitor-attached hardware, the resulting system keeps a `tty1` login prompt after reboot. The remote web app remains the primary operator surface; the monitor is a recovery path.
+On monitor-attached hardware, the resulting system keeps a `tty1` login prompt after reboot. The browser Pi terminal remains the primary operator surface; the monitor is a recovery path.
 
 > Warning: rerunning the bootstrap command on a host with local commits in `/srv/nixpi` will reset that checkout to `origin/main`. Commit or export local work first.
 
-## 3. Connect to the Remote App
+## 3. Connect to the Pi Terminal
 
-After the switch completes, NixPI runs as a remote-first service set. The default operator surface is the remote web app:
+After the switch completes, NixPI runs as a remote-first service set. The default operator surface is the Pi terminal exposed through the browser:
 
-- `/` — main chat surface
-- `/terminal/` — browser terminal
+- `/` — primary Pi terminal surface
+- `/terminal/` — alias to the same ttyd session
 
 Preferred access is over WireGuard. In practice that means:
 
 1. add your admin device as a WireGuard peer
 2. confirm `wireguard-wg0.service` is active
 3. verify the `wg0` interface exists
-4. open the remote app over the WireGuard-reachable host IP
+4. open the Pi terminal over the WireGuard-reachable host IP
 
 Useful checks:
 
@@ -107,26 +107,21 @@ sudo nixos-rebuild switch --rollback
 
 ## 5. Validate the Headless Surface
 
-Smoke-check the core services on a running host. Keep the public HTTP surface separate from the internal chat backend probe:
+Smoke-check the core services on a running host:
 
 ```bash
-systemctl status nixpi-chat.service
 systemctl status nixpi-ttyd.service
 systemctl status nginx.service
 
 # Public surface through nginx
 curl -I http://127.0.0.1/
 curl -I http://127.0.0.1/terminal/
-
-# Internal chat backend health probe (bypasses nginx)
-curl -I http://127.0.0.1:8080/
 ```
 
 Expected result:
 
-- `/` responds from the main chat surface
-- `/terminal/` responds from the browser terminal route
-- `http://127.0.0.1:8080/` responds as the internal chat backend health probe
+- `/` responds from the Pi terminal surface
+- `/terminal/` responds as an alias to the same ttyd session
 
 For repo-side validation during development:
 

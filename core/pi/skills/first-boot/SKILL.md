@@ -1,48 +1,32 @@
 ---
 name: first-boot
-description: Post-wizard persona customization — Pi helps the user personalize their NixPI experience
+description: Pi-guided first boot and onboarding for a terminal-first NixPI machine
 ---
 
-# First-Boot: Persona Customization
+# First-Boot: Terminal-First Onboarding
 
 ## Prerequisite
 
-The bash wizard (`setup-wizard.sh`) has already completed OS-level setup: password, network, local chat setup, git identity, and services. The sentinel file `~/.nixpi/wizard-state/system-ready` exists.
+This skill applies while `~/.nixpi/wizard-state/system-ready` does **not** exist.
 
-If `~/.nixpi/wizard-state/persona-done` exists, persona customization is also done. Skip this skill entirely. You can still help the user reconfigure their persona if they ask.
+The browser surface is ttyd, not a separate chat app. The same setup should also work from SSH or a local terminal.
 
 ## How This Works
 
-This flow no longer uses a separate setup extension or `setup-state.json`.
-
-1. On session start, check whether `~/.nixpi/wizard-state/persona-done` exists
-2. If persona setup is still pending, start it immediately and do not switch to unrelated topics yet
-3. Guide the user through the single `persona` step below
-4. When persona customization is complete, write a timestamp to `~/.nixpi/wizard-state/persona-done`
-5. After that marker exists, resume normal conversation
+1. If Pi is not authenticated yet, guide the user through `/login`
+2. If a model is not selected yet, guide the user through `/model`
+3. Once Pi is ready, keep the user in setup mode until onboarding is complete
+4. Guide the user through:
+   - git identity setup for `/srv/nixpi`
+   - WireGuard configuration
+   - OS security configuration
+   - a short NixPI intro/tutorial
+5. Only when the full flow is complete should Pi write `~/.nixpi/wizard-state/system-ready`
 
 ## Conversation Style
 
-- **Warm and natural** — this is the user's first conversation with their AI companion
-- **One thing at a time** — never dump a list of steps
-- **Pi speaks first** — start with a welcome and orient the user
-- **Setup first** — until setup is complete or skipped, it takes priority over any other request
-- **Respect "skip"** — persona customization is fully optional
-- **Teach the shell** — mention that `!command` runs a command directly and `!!` opens an interactive shell
-
-## Steps
-
-### persona
-Before asking persona questions, give a short orientation that covers:
-- NixPI keeps durable state in `~/nixpi/` and favors inspectable files over hidden databases
-- NixPI can propose changes to its own persona/workflows through tracked evolutions; it does not silently rewrite itself
-- Local web chat is the primary way to talk to Pi on the machine
-- If valid overlays exist in `~/nixpi/Agents/*/AGENTS.md`, NixPI can run multi-agent conversations with one Pi session per active surface and agent
-
-Ask one question, wait for answer, update the file, ask next question. Files to update:
-- `~/nixpi/Persona/SOUL.md` — name, formality, values
-- `~/nixpi/Persona/BODY.md` — channel preferences
-- `~/nixpi/Persona/FACULTY.md` — reasoning style
-
-### complete
-Congratulate the user. Mention they can chat in the terminal or through the local web chat. Let them know Pi keeps the same persona and filesystem across those surfaces. Remind them that future NixPI changes can be proposed as evolutions, and that multi-agent conversations become available when agent overlays are added under `~/nixpi/Agents/`.
+- **Pi leads the setup** — this is a Pi-native onboarding flow
+- **One step at a time** — never dump the whole checklist at once
+- **Terminal first** — all instructions should make sense in ttyd, SSH, or a local shell
+- **Verification over assumption** — check commands and system state before advancing
+- **Setup takes priority** until the completion marker exists

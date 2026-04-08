@@ -71,9 +71,8 @@ describe("persona session_start", () => {
 		expect(api._sessionName).toBe("Pi");
 	});
 
-	it("injects persona-setup guidance when machine setup is complete but persona is pending", async () => {
+	it("injects system-setup guidance when onboarding is still incomplete", async () => {
 		fs.mkdirSync(path.join(temp.nixPiDir, ".nixpi", "wizard-state"), { recursive: true });
-		fs.writeFileSync(path.join(temp.nixPiDir, ".nixpi", "wizard-state", "system-ready"), "done", "utf-8");
 
 		const result = (await api.fireEvent(
 			"before_agent_start",
@@ -83,15 +82,15 @@ describe("persona session_start", () => {
 			createMockExtensionContext(),
 		)) as { systemPrompt: string };
 
-		expect(result.systemPrompt).toContain("## Persona Setup");
+		expect(result.systemPrompt).toContain("## System Setup");
 		expect(result.systemPrompt).toContain("BASE");
-		expect(result.systemPrompt).toContain("persona-done");
+		expect(result.systemPrompt).toContain("/login");
+		expect(result.systemPrompt).toContain("/srv/nixpi");
 	});
 
-	it("does not inject persona-setup guidance after persona customization is complete", async () => {
+	it("does not inject system-setup guidance after onboarding is complete", async () => {
 		fs.mkdirSync(path.join(temp.nixPiDir, ".nixpi", "wizard-state"), { recursive: true });
 		fs.writeFileSync(path.join(temp.nixPiDir, ".nixpi", "wizard-state", "system-ready"), "done", "utf-8");
-		fs.writeFileSync(path.join(temp.nixPiDir, ".nixpi", "wizard-state", "persona-done"), "done", "utf-8");
 
 		const result = (await api.fireEvent(
 			"before_agent_start",
@@ -101,7 +100,7 @@ describe("persona session_start", () => {
 			createMockExtensionContext(),
 		)) as { systemPrompt: string };
 
-		expect(result.systemPrompt).not.toContain("## Persona Setup");
+		expect(result.systemPrompt).not.toContain("## System Setup");
 	});
 
 	it("injects a durable memory digest into the system prompt", async () => {
@@ -127,12 +126,12 @@ describe("persona session_start", () => {
 				{
 					type: "procedure",
 					slug: "chat-runtime-recovery",
-					title: "Chat Runtime Recovery",
-					summary: "Restart nixpi-chat.service, then verify local chat recovery.",
+					title: "Terminal Surface Recovery",
+					summary: "Restart nixpi-ttyd.service, then verify Pi terminal recovery.",
 					status: "active",
 					salience: 0.8,
 				},
-				"# Chat Runtime Recovery\n",
+				"# Terminal Surface Recovery\n",
 			),
 		);
 		fs.writeFileSync(

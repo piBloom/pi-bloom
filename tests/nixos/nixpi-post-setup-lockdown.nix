@@ -58,7 +58,7 @@
 
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/ | grep -q 'nixpi-shell'", timeout=60)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1/ | grep -q 'nixpi-shell'", timeout=60)
     nixpi.succeed("env NIXPI_PRIMARY_USER=pi nixpi-setup-apply | tee /tmp/setup-apply.out")
     nixpi.wait_until_succeeds("test -f /home/pi/.nixpi/wizard-state/system-ready", timeout=180)
     nixpi.fail("test -f /home/pi/.nixpi/.setup-complete")

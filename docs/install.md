@@ -50,7 +50,7 @@ sudo nixpi-rebuild
 Check core services:
 
 ```bash
-systemctl status nixpi-chat.service
+systemctl status nixpi-ttyd.service
 systemctl status nixpi-ttyd.service
 systemctl status nginx.service
 systemctl status wireguard-wg0.service

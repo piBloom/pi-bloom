@@ -5,7 +5,7 @@ Use this page to orient yourself quickly.
 ## What NixPI is
 
 NixPI is a headless NixOS system that runs Pi with:
-- a remote web app (chat + terminal)
+- a terminal-first browser surface backed by ttyd
 - a canonical repo at `/srv/nixpi`
 - host operations through `nixos-rebuild` and systemd
 

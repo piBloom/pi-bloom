@@ -109,7 +109,7 @@ describe("episodes", () => {
 			"call-1",
 			{
 				title: "Recovery Procedure",
-				body: "Restart nixpi-chat.service, then verify the local chat runtime recovers.",
+				body: "Restart nixpi-ttyd.service, then verify the Pi terminal surface recovers.",
 				kind: "resolution",
 				importance: "high",
 				tags: ["recovery", "procedure"],

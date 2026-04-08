@@ -4,16 +4,14 @@
 
 ## Operator-Facing Runtime
 
-NixPI exposes a remote web app through the built-in host services.
+NixPI exposes a Pi terminal surface through the built-in host services.
 
 ### Configuration
 
 | Setting | Value |
 |---------|-------|
-| Chat backend service | `nixpi-chat.service` |
 | Browser terminal service | `nixpi-ttyd.service` |
 | Public entrypoint | `nginx` on `/` and `/terminal/` |
-| Internal backend probe | `http://127.0.0.1:8080/` |
 
 ### Troubleshooting
 
@@ -22,13 +20,8 @@ NixPI exposes a remote web app through the built-in host services.
 systemctl status nginx.service
 systemctl status nixpi-ttyd.service
 
-# Chat backend
-systemctl status nixpi-chat.service
-journalctl -u nixpi-chat.service -n 100
-
 # Restart services
 sudo systemctl restart nginx.service
-sudo systemctl restart nixpi-chat.service
 sudo systemctl restart nixpi-ttyd.service
 ```
 

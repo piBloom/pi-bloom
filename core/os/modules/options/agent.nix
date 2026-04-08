@@ -18,7 +18,7 @@
       type = lib.types.listOf lib.types.str;
       default = [
         "wireguard-wg0.service"
-        "nixpi-chat.service"
+        "nixpi-ttyd.service"
         "nixpi-update.service"
       ];
       description = ''
@@ -66,7 +66,7 @@
       description = ''
         Root directory for the Pi agent workspace (Objects, Episodes, Skills,
         Persona, etc.). Propagated as NIXPI_DIR to the shell environment and
-        the nixpi-chat systemd service.
+        the nixpi-ttyd systemd service.
       '';
     };
   };

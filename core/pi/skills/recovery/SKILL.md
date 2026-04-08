@@ -7,20 +7,20 @@ description: Troubleshooting and recovery procedures for common NixPI system iss
 
 Use these procedures when diagnosing and recovering from common system issues. Always start with `system_health` for an overview before diving into specific playbooks.
 
-## Local Chat Runtime Issues
+## Pi Terminal Surface Issues
 
-**Symptoms**: The local chat UI is unavailable, or Pi is not responding in the on-box chat runtime.
+**Symptoms**: The ttyd/browser terminal is unavailable, or Pi is not responding in the terminal-first runtime.
 
 1. Check system health: `system_health`
-2. Check the local chat service: `systemctl status nixpi-chat.service`
-3. Check logs: `journalctl -u nixpi-chat.service -n 100`
+2. Check the terminal service: `systemctl status nixpi-ttyd.service`
+3. Check logs: `journalctl -u nixpi-ttyd.service -n 100`
 4. Common causes:
-   - Service not running: `sudo systemctl restart nixpi-chat.service`
-   - Runtime state mismatch: inspect the chat runtime working directory under `~/.pi/`
-   - Port conflict: verify nothing else is bound to the local chat port
-5. If Pi is not responding in the local runtime:
-   - Verify `~/.pi/` exists and is writable for the primary operator account
-   - Confirm the chat surface loads locally at `http://localhost:8080/`
+   - Service not running: `sudo systemctl restart nixpi-ttyd.service`
+   - Runtime state mismatch: inspect `~/.pi/` and verify the primary operator account can read/write it
+   - Proxy issue: verify nginx is healthy and `http://localhost/` reaches ttyd
+5. If Pi itself is not responding:
+   - Verify `pi` runs directly from SSH or a local shell
+   - Confirm `~/.pi/` exists and is writable for the primary operator account
 
 ## OS Update Failure
 
@@ -49,17 +49,6 @@ Use these procedures when diagnosing and recovering from common system issues. A
    - Invalid module import or option: inspect the changed files under `flake.nix` and `core/os/`
    - Wrong repo path: confirm the local clone exists at `/srv/nixpi`
 4. Do not apply or publish until local validation passes and the diff is reviewed
-
-## Pi Startup Issues
-
-**Symptoms**: Pi agent not responding or extensions failing to load.
-
-1. Check Pi process: look for `pi` in running processes
-2. Check logs: `journalctl -u pi-coding-agent --no-pager -n 50`
-3. Common causes:
-   - Extension compilation error: `npm run build` in the NixPI package
-   - Missing dependency: `npm install` in the NixPI package
-4. Recovery: restart the Pi agent service
 
 ## Disk Space Issues
 

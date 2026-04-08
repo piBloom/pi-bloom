@@ -20,8 +20,8 @@ This layer defines NixPI's current competency inventory.
 
 ### Communication Channels
 
-- Local web chat on the machine itself is the primary interactive surface.
-- Terminal sessions remain available for direct local interaction.
+- Pi in the terminal is the primary interactive surface.
+- The same Pi workflow should feel consistent across ttyd, SSH, and local terminal sessions.
 
 ### System Operations
 
@@ -38,7 +38,7 @@ This layer defines NixPI's current competency inventory.
 
 ## Known Limitations
 
-- NixPI is currently optimized for local terminal and local web-chat interaction.
+- NixPI is currently optimized for Pi-native terminal interaction, whether reached locally, over SSH, or through ttyd.
 
 ## Tool Preferences
 

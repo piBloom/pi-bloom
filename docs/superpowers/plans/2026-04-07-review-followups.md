@@ -93,21 +93,21 @@ Expected: targeted tests pass.
 ### Task 5: Reject oversized chat request bodies
 
 **Files:**
-- Modify: `core/chat-server/index.ts`
-- Modify: `tests/chat-server/server.test.ts`
+- Modify: legacy browser-runtime entrypoint (since removed)
+- Modify: legacy browser-runtime test coverage (since removed)
 
 - [ ] **Step 1: Write the failing test**
 Add a server test that posts an oversized JSON body and expects HTTP 413.
 
 - [ ] **Step 2: Run test to verify it fails**
-Run: `npm test -- tests/chat-server/server.test.ts`
+Run the legacy browser-runtime contract test (historical; runtime later removed)
 Expected: the new size-limit test fails.
 
 - [ ] **Step 3: Write minimal implementation**
 Introduce a chat body-size constant, cap buffered input in `readRequestBody`, and return 413 from the chat handler when exceeded.
 
 - [ ] **Step 4: Run test to verify it passes**
-Run: `npm test -- tests/chat-server/server.test.ts`
+Run the legacy browser-runtime contract test (historical; runtime later removed)
 Expected: targeted tests pass.
 
 ### Task 6: Final verification and hygiene
@@ -116,7 +116,7 @@ Expected: targeted tests pass.
 - Modify: touched files only as needed for formatting/import order
 
 - [ ] **Step 1: Run focused touched-suite verification**
-Run: `npm test -- tests/lib/shared.test.ts tests/extensions/objects.test.ts tests/extensions/nixpi.test.ts tests/os/broker.test.ts tests/chat-server/server.test.ts`
+Run: `npm test -- tests/lib/shared.test.ts tests/extensions/objects.test.ts tests/extensions/nixpi.test.ts tests/os/broker.test.ts`
 Expected: all targeted suites pass.
 
 - [ ] **Step 2: Run full verification**

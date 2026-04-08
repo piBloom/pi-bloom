@@ -6,7 +6,6 @@ import { join } from "node:path";
 import jsYaml from "js-yaml";
 import {
 	getNixPiDir,
-	getPersonaDonePath,
 	getPiDir,
 	getSystemReadyPath,
 	getUpdateStatusPath,
@@ -145,19 +144,20 @@ export function loadPersona(): string {
 	return `## Pi Persona\n\n${sections}`;
 }
 
-export function isPersonaSetupPending(): boolean {
-	return existsSync(getSystemReadyPath()) && !existsSync(getPersonaDonePath());
+export function isSystemSetupPending(): boolean {
+	return !existsSync(getSystemReadyPath());
 }
 
-export function buildPersonaSetupBlock(): string {
+export function buildSystemSetupBlock(): string {
 	return [
 		"",
-		"## Persona Setup",
+		"## System Setup",
 		"",
-		"The machine setup is complete, but persona customization is still pending.",
-		"Before normal conversation, guide the user through defining or confirming Pi's persona and operating style.",
-		"When the user is satisfied, create the marker file by writing a timestamp to the persona-done path.",
-		`Marker path: ${getPersonaDonePath()}`,
+		"The machine is not fully configured yet. Stay in setup mode until onboarding is complete.",
+		"Use Pi as the primary interface, starting with `/login` and `/model` if authentication or model selection is still missing.",
+		"After Pi is ready, guide the user through git identity setup for /srv/nixpi, WireGuard, OS security configuration, and a short NixPI tutorial.",
+		"Only write the final completion marker when the full onboarding flow is complete.",
+		`Completion marker: ${getSystemReadyPath()}`,
 		`Wizard state dir: ${getWizardStateDir()}`,
 	].join("\n");
 }

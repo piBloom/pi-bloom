@@ -7,10 +7,10 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { buildMemoryDigest } from "../objects/digest.js";
 import {
-	buildPersonaSetupBlock,
 	buildRestoredContextBlock,
+	buildSystemSetupBlock,
 	checkUpdateAvailable,
-	isPersonaSetupPending,
+	isSystemSetupPending,
 	loadContext,
 	loadGuardrails,
 	loadPersona,
@@ -32,8 +32,8 @@ function appendMemoryDigest(systemPrompt: string, memoryDigest: string | undefin
 	return memoryDigest ? systemPrompt + memoryDigest : systemPrompt;
 }
 
-function appendPersonaSetup(systemPrompt: string): string {
-	return isPersonaSetupPending() ? systemPrompt + buildPersonaSetupBlock() : systemPrompt;
+function appendSystemSetup(systemPrompt: string): string {
+	return isSystemSetupPending() ? systemPrompt + buildSystemSetupBlock() : systemPrompt;
 }
 
 function buildCompactionSummary(tokensBefore: number): string {
@@ -73,7 +73,7 @@ export default function (pi: ExtensionAPI) {
 		memoryDigest ??= buildMemoryDigest(ctx.cwd);
 		systemPrompt = appendMemoryDigest(systemPrompt, memoryDigest);
 
-		systemPrompt = appendPersonaSetup(systemPrompt);
+		systemPrompt = appendSystemSetup(systemPrompt);
 
 		return { systemPrompt };
 	});

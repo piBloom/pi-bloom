@@ -76,16 +76,9 @@ in
     nixpi.wait_for_unit("multi-user.target", timeout=300)
     nixpi.wait_for_unit("network-online.target", timeout=60)
     nixpi.wait_for_unit("wireguard-wg0.service", timeout=60)
-    nixpi.wait_for_unit("nixpi-chat.service", timeout=120)
     nixpi.wait_for_unit("nixpi-ttyd.service", timeout=120)
     nixpi.wait_for_unit("nginx.service", timeout=120)
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1:8080/ | grep -q 'nixpi-shell'", timeout=60)
-    nixpi.wait_until_succeeds(
-        "test \"$(curl -s -o /dev/null -w '%{http_code}' -X POST "
-        + "http://127.0.0.1:8080/chat -H 'Content-Type: application/json' -d '{}')\" = 400",
-        timeout=60,
-    )
-    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1/terminal/ >/dev/null", timeout=60)
+    nixpi.wait_until_succeeds("curl -sf http://127.0.0.1/ >/dev/null", timeout=60)
     nixpi.succeed("test -d " + home + "/.nixpi")
     nixpi.wait_until_succeeds("test ! -f " + home + "/.nixpi/wizard-state/system-ready", timeout=60)
     nixpi.fail("test -f " + home + "/.nixpi/.setup-complete")
@@ -106,7 +99,7 @@ in
     nixpi.fail("command -v nixpi-bootstrap-prepare-repo")
     nixpi.fail("command -v nixpi-bootstrap-nixos-rebuild-switch")
     nixpi.fail("command -v codex")
-    nixpi.succeed("systemctl is-enabled nixpi-chat.service")
+    nixpi.succeed("systemctl is-enabled nixpi-ttyd.service")
 
     nixpi.succeed(
         "su - pi -c 'test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi; "

@@ -10,7 +10,7 @@ Operators validating a fresh NixPI release on a NixOS-capable x86_64 VPS, headle
 
 This is the release-acceptance checklist for the current public deployment story.
 
-Use it to verify that bootstrap, the remote app surface, and the canonical `/srv/nixpi` workflow still match the shipped docs.
+Use it to verify that bootstrap, the Pi terminal surface, and the canonical `/srv/nixpi` workflow still match the shipped docs.
 
 ## How To Run The Check
 
@@ -52,21 +52,21 @@ These commands standardize the host-side QEMU environment only. Local runtime ar
 
 ### First Remote Validation
 
-1. Confirm `nixpi-chat.service`, `nixpi-ttyd.service`, `nginx.service`, and `wireguard-wg0.service` reach their expected state.
+1. Confirm `nixpi-ttyd.service`, `nginx.service`, and `wireguard-wg0.service` reach their expected state.
 2. Verify the public HTTP surface responds on `http://127.0.0.1/` and `http://127.0.0.1/terminal/`.
-3. Use `http://127.0.0.1:8080/` only as the internal chat backend health probe when you need to distinguish backend availability from the public nginx surface.
+3. Confirm the same Pi workflow also works over SSH or a local terminal when needed.
 4. Confirm outbound networking works and add at least one WireGuard peer before treating the host as ready for routine remote use.
 5. Reboot once and repeat the public-surface checks.
 6. On monitor-attached hardware, confirm the machine also presents a local `tty1` login prompt after reboot.
 
-**Expected result:** the remote app and browser terminal return after reboot, the system remains operable from the canonical checkout without any local-session setup flow, and monitor-attached mini PCs retain a local recovery console.
+**Expected result:** the Pi terminal surface returns after reboot, the system remains operable from the canonical checkout without any separate local-session app flow, and monitor-attached mini PCs retain a local recovery console.
 
 ### Core Runtime
 
-1. Confirm the remote app loads on `/`.
-2. Confirm the browser terminal loads on `/terminal/`.
-3. Verify the chat runtime replies to a basic message through the remote app.
-4. If agent overlays exist, confirm malformed overlays are skipped without breaking chat availability.
+1. Confirm the Pi terminal loads on `/`.
+2. Confirm `/terminal/` resolves to the same ttyd-backed terminal surface.
+3. Verify `pi` is usable from ttyd, SSH, or a local shell.
+4. If agent overlays exist, confirm malformed overlays are skipped without breaking Pi availability.
 
 ## Reference
 
@@ -74,8 +74,7 @@ These commands standardize the host-side QEMU environment only. Local runtime ar
 
 - Fresh bootstrap completes on a clean host.
 - `/srv/nixpi` is present and usable for rebuilds after install.
-- The public app surface works on `/` and `/terminal/`.
-- The internal backend health probe on `127.0.0.1:8080` still responds when needed for debugging.
+- The public Pi terminal surface works on `/` and `/terminal/`.
 - One reboot cycle preserves the expected remote operator workflow.
 - Known risks for any optional packaged workloads are documented.
 

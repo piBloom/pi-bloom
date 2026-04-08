@@ -24,9 +24,8 @@ When WireGuard is active and the `wg0` interface is up, the following services a
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Web app | `:80`, `:443` | Primary remote chat and terminal entrypoint |
-| Browser terminal | `/terminal/` via nginx | Operator shell access |
-| Internal backend probe | `127.0.0.1:8080` | Host-local health check for `nixpi-chat.service` |
+| Pi terminal surface | `:80`, `:443` | Primary remote Pi entrypoint |
+| ttyd alias | `/terminal/` via nginx | Alias to the same operator shell |
 
 ## What Happens If WireGuard Peers Are Missing
 

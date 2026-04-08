@@ -1,5 +1,5 @@
 # core/os/pkgs/app/default.nix
-{ lib, buildNpmPackage, nodejs, piAgent }:
+{ lib, buildNpmPackage, piAgent }:
 
 buildNpmPackage {
   pname = "app";
@@ -21,7 +21,7 @@ buildNpmPackage {
           || lib.hasSuffix ".iso" rel);
   };
 
-  npmDepsHash = "sha256-GLC/G319Si5xYAm68ZdBBeApB2tA2Ddveuznn4ZwZoU=";
+  npmDepsHash = "sha256-FKRPimOKEiSPczn4pCa7V0Gn6S4/3YH41EKReF8E4P0=";
   buildPhase = ''
     runHook preBuild
     npm run build
@@ -35,12 +35,6 @@ buildNpmPackage {
     cp -r dist package.json node_modules $out/share/nixpi/
     cp -r core/pi/persona $out/share/nixpi/core/pi/persona
     cp -r core/pi/skills  $out/share/nixpi/core/pi/skills
-
-    mkdir -p $out/share/nixpi/core/chat-server/frontend
-    cp -r core/chat-server/frontend/dist $out/share/nixpi/core/chat-server/frontend/
-    mkdir -p $out/share/nixpi/dist/core/chat-server/frontend
-    ln -sf $out/share/nixpi/core/chat-server/frontend/dist \
-      $out/share/nixpi/dist/core/chat-server/frontend/dist
 
     mkdir -p $out/bin
 

@@ -7,7 +7,7 @@
 NixPI combines several technologies to create a self-hosted AI companion OS. The architecture is shaped by these design goals:
 
 1. **Deterministic systems**: NixOS provides reproducible system state
-2. **Local-first AI runtime**: the built-in web chat keeps Pi available without external messaging infrastructure
+2. **Local-first AI runtime**: the built-in terminal surface keeps Pi available without external messaging infrastructure
 3. **Inspectable memory**: Markdown files for human-readable, editable storage
 4. **Minimal base**: Small footprint that users evolve through Pi
 5. **Human-in-the-loop**: Local proposal workflow for system changes
@@ -19,7 +19,7 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 | Subsystem | Purpose | Location |
 |-----------|---------|----------|
 | **NixOS Modules** | System provisioning and service definitions | `core/os/` |
-| **Local Chat Runtime** | Session-backed web chat server and frontend | `core/chat-server/` |
+| **Terminal Runtime** | ttyd + Pi bootstrap wiring | `core/os/modules/ttyd.nix`, `core/scripts/nixpi-terminal-bootstrap.sh` |
 | **Pi Extensions** | Tool surface for Pi | `core/pi/extensions/` |
 | **Core Library** | Shared runtime primitives | `core/lib/` |
 | **Persona & Skills** | Behavior configuration | `core/pi/persona/`, `core/pi/skills/` |
@@ -28,8 +28,8 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Local chat backend | `127.0.0.1:8080` by default | Session-backed Pi chat server |
-| HTTP entrypoint | `:80` | Reverse proxy into the local chat runtime |
+| ttyd backend | `127.0.0.1:7681` by default | Browser terminal transport |
+| HTTP entrypoint | `:80` | Reverse proxy into the Pi terminal surface |
 | HTTPS entrypoint | `:443` | Canonical secure web entrypoint |
 
 ## How The Layers Connect
@@ -39,7 +39,7 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 ```
 ┌─────────────────────────────────────────┐
 │           User Interface                │
-│   (Local web chat, CLI tools)           │
+│   (Browser terminal, CLI tools)         │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
@@ -48,9 +48,8 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
-│         Local Chat Runtime              │
-│  (HTTP server, session manager,         │
-│   streaming events)                     │
+│           Terminal Runtime              │
+│       (ttyd + Pi bootstrap)             │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
@@ -62,7 +61,7 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 ### Control Flow Summary
 
 1. **NixOS provisions runtime**: System boots with NixPI modules applied
-2. **Packaged app launches local chat**: `nixpi-chat.service` starts on boot
+2. **Packaged app prepares Pi state**: `nixpi-app-setup.service` seeds the terminal runtime
 3. **Nginx fronts the app**: local HTTP/HTTPS entrypoints proxy into the backend
 4. **Extensions expose tools**: Pi uses extensions for OS operations
 5. **Scripts drive setup**: First-boot wizard configures the system
@@ -85,7 +84,7 @@ NixPI combines several technologies to create a self-hosted AI companion OS. The
 |---------|-----------|---------|
 | `just` commands | Local shell | Development and VM operations |
 | `nixos-rebuild` | System | Apply system configuration |
-| Local web chat | Browser | Interactive Pi sessions |
+| Pi terminal surface | Browser / SSH / local shell | Interactive Pi sessions |
 | `nixpi-broker` | Privileged service | Elevated OS operations |
 
 ## Security Boundaries
@@ -109,7 +108,7 @@ The `wg0` interface (native WireGuard tunnel) is the only trusted interface for 
 Use the reference section for topic-level details:
 
 - [Service Architecture](../reference/service-architecture) - Built-in service surface
-- [Daemon Architecture](../reference/daemon-architecture) - Chat runtime internals
+- [Daemon Architecture](../reference/daemon-architecture) - Terminal runtime internals
 - [Infrastructure](../reference/infrastructure) - Network and service boundaries
 - [Memory Model](../reference/memory-model) - Durable and episodic storage
 - [Security Model](../reference/security-model) - Threat model and trust boundary

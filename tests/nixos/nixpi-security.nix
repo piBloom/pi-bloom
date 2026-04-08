@@ -91,7 +91,7 @@ in
 
     steady.start()
     steady.wait_for_unit("multi-user.target", timeout=300)
-    steady.wait_until_succeeds("curl -sf http://127.0.0.1:8080/ | grep -q 'nixpi-shell'", timeout=60)
+    steady.wait_until_succeeds("curl -sf http://127.0.0.1/ | grep -q 'nixpi-shell'", timeout=60)
     steady.succeed("env NIXPI_PRIMARY_USER=pi nixpi-setup-apply | tee /tmp/setup-apply.out")
     steady.wait_until_succeeds("test -f /home/pi/.nixpi/wizard-state/system-ready", timeout=120)
     steady.wait_for_unit("fail2ban.service", timeout=60)

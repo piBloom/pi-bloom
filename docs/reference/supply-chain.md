@@ -12,7 +12,7 @@ The important supply-chain boundary is:
 - The selected Nixpkgs revision
 - NixPI's own source tree
 
-Built-in services such as `nixpi-chat`, the local web chat on `:8080`, and the Pi runtime packages are provisioned from those sources rather than from a mutable runtime package catalog.
+Built-in services such as `nixpi-ttyd`, the nginx entrypoint, and the Pi runtime packages are provisioned from those sources rather than from a mutable runtime package catalog.
 
 ## Dependency Sources
 

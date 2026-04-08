@@ -1,8 +1,12 @@
 # core/os/modules/ttyd.nix
-# Runs ttyd as a local service so the web terminal is available at /terminal.
-# The nginx proxy in service-surface.nix exposes it on the public port.
+# Runs ttyd as a local service so the Pi terminal is available from the browser.
 { pkgs, lib, config, ... }:
 
+let
+  terminalBootstrap = pkgs.callPackage ../pkgs/nixpi-terminal-bootstrap { };
+  primaryUser = config.nixpi.primaryUser;
+  primaryHome = "/home/${primaryUser}";
+in
 {
   options.nixpi.ttyd.enable = lib.mkEnableOption "web terminal via ttyd" // {
     default = true;
@@ -13,12 +17,19 @@
 
     systemd.services.nixpi-ttyd = {
       description = "NixPI web terminal (ttyd)";
-      after = [ "network.target" ];
+      after = [ "network.target" "nixpi-app-setup.service" ];
+      wants = [ "nixpi-app-setup.service" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        ExecStart = "${pkgs.ttyd}/bin/ttyd --writable --port 7681 --interface 127.0.0.1 ${pkgs.bash}/bin/bash";
-        User = config.nixpi.primaryUser;
-        Group = config.nixpi.primaryUser;
+        Environment = [
+          "HOME=${primaryHome}"
+          "NIXPI_PRIMARY_USER=${primaryUser}"
+          "NIXPI_WORKSPACE_DIR=${config.nixpi.agent.workspaceDir}"
+        ];
+        ExecStart = "${pkgs.ttyd}/bin/ttyd --writable --port 7681 --interface 127.0.0.1 ${terminalBootstrap}/bin/nixpi-terminal-bootstrap";
+        User = primaryUser;
+        Group = primaryUser;
+        WorkingDirectory = primaryHome;
         Restart = "on-failure";
         RestartSec = "5";
         NoNewPrivileges = true;

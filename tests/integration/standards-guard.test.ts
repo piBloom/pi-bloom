@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -6,7 +6,12 @@ const repoRoot = path.resolve(import.meta.dirname, "../..");
 const packageJsonPath = path.join(repoRoot, "package.json");
 const ttydModulePath = path.join(repoRoot, "core/os/modules/ttyd.nix");
 const rebuildPullScriptPath = path.join(repoRoot, "core/scripts/nixpi-rebuild-pull.sh");
+const terminalBootstrapScriptPath = path.join(repoRoot, "core/scripts/nixpi-terminal-bootstrap.sh");
+const serviceSurfaceModulePath = path.join(repoRoot, "core/os/modules/service-surface.nix");
 const selfEvolutionSkillPath = path.join(repoRoot, "core/pi/skills/self-evolution/SKILL.md");
+const appPackagePath = path.join(repoRoot, "core/os/pkgs/app/default.nix");
+const retiredBrowserRuntimePath = path.join(repoRoot, "core", "chat-server");
+const viteConfigPath = path.join(repoRoot, "vite.config.ts");
 
 describe("repo standards guards", () => {
 	it("configures VitePress for GitHub Project Pages", () => {
@@ -18,6 +23,8 @@ describe("repo standards guards", () => {
 	it("declares compatible Pi peer dependency ranges and CI checks", () => {
 		const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
 			peerDependencies?: Record<string, string>;
+			dependencies?: Record<string, string>;
+			devDependencies?: Record<string, string>;
 			scripts?: Record<string, string>;
 		};
 
@@ -25,6 +32,10 @@ describe("repo standards guards", () => {
 			"@mariozechner/pi-ai": "^0.60.0",
 			"@mariozechner/pi-coding-agent": "^0.60.0",
 		});
+		expect(packageJson.dependencies?.[["@mariozechner", "pi-web-ui"].join("/")]).toBeUndefined();
+		expect(packageJson.devDependencies?.[["@mariozechner", "pi-agent-core"].join("/")]).toBeUndefined();
+		expect(packageJson.scripts?.build).toBe("rm -rf dist && tsc --build");
+		expect(packageJson.scripts?.[["build", "frontend"].join(":")]).toBeUndefined();
 		expect(packageJson.scripts?.["check:ci"]).toBe("biome ci .");
 	});
 
@@ -33,6 +44,22 @@ describe("repo standards guards", () => {
 
 		expect(ttydModule).toContain("--writable");
 		expect(ttydModule).toContain("--port 7681");
+		expect(ttydModule).toContain("nixpi-terminal-bootstrap");
+
+		const terminalBootstrap = readFileSync(terminalBootstrapScriptPath, "utf8");
+		expect(terminalBootstrap).toContain("exec /run/current-system/sw/bin/pi");
+
+		const serviceSurfaceModule = readFileSync(serviceSurfaceModulePath, "utf8");
+		expect(serviceSurfaceModule).toContain("http://127.0.0.1:7681/");
+	});
+
+	it("removes the old chat-first browser artifacts from the runtime path", () => {
+		expect(existsSync(retiredBrowserRuntimePath)).toBe(false);
+		expect(existsSync(viteConfigPath)).toBe(false);
+
+		const appPackage = readFileSync(appPackagePath, "utf8");
+		expect(appPackage).not.toContain(["core", "chat-server", "frontend"].join("/"));
+		expect(appPackage).not.toContain("frontend/dist");
 	});
 
 	it("documents the canonical /srv/nixpi rebuild workflow and pull wrapper", () => {
@@ -43,10 +70,10 @@ describe("repo standards guards", () => {
 		const selfEvolutionSkill = readFileSync(selfEvolutionSkillPath, "utf8");
 
 		expect(rebuildPullScript).toContain('REPO_DIR="/srv/nixpi"');
-		expect(rebuildPullScript).toContain('TARGET_REF="${1:-main}"');
+		expect(rebuildPullScript).toContain('TARGET_REF="' + "$" + '{1:-main}"');
 		expect(rebuildPullScript).toContain('git -C "$REPO_DIR" fetch origin');
 		expect(rebuildPullScript).toContain('git -C "$REPO_DIR" reset --hard "origin/$TARGET_REF"');
-		expect(rebuildPullScript).toContain('exec nixos-rebuild switch --flake /etc/nixos#nixos --impure');
+		expect(rebuildPullScript).toContain("exec nixos-rebuild switch --flake /etc/nixos#nixos --impure");
 
 		expect(readme).toContain("/srv/nixpi");
 		expect(readme).toContain("nixpi-rebuild-pull");
