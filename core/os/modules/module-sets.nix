@@ -9,6 +9,7 @@
     ./options.nix
     ./network.nix
     ./update.nix
+    ./terminal-ui.nix
     ./shell.nix
   ];
 
@@ -30,6 +31,7 @@
     ./app.nix
     ./broker.nix
     ./tooling.nix
+    ./terminal-ui.nix
     ./shell.nix
   ];
 }

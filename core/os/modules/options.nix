@@ -8,6 +8,7 @@
     ./options/security.nix
     ./options/agent.nix
     ./options/wireguard.nix
+    ./options/terminal-ui.nix
   ];
 
   options.nixpi = {
