@@ -349,8 +349,8 @@
               path = nixosTests.nixpi-security;
             }
             {
-              name = "nixpi-wireguard";
-              path = nixosTests.nixpi-wireguard;
+              name = "nixpi-headscale";
+              path = nixosTests.nixpi-headscale;
             }
             {
               name = "nixpi-broker";
@@ -384,8 +384,8 @@
               path = nixosTests.nixpi-security;
             }
             {
-              name = "nixpi-wireguard";
-              path = nixosTests.nixpi-wireguard;
+              name = "nixpi-headscale";
+              path = nixosTests.nixpi-headscale;
             }
             {
               name = "nixpi-modular-services";
