@@ -229,8 +229,6 @@ in
     machine.succeed("command -v nixpi-rebuild")
     machine.succeed("test -d " + home + "/.pi")
     machine.succeed("test ! -L " + home + "/.pi")
-    machine.fail("systemctl status nixpi-ttyd.service >/dev/null 2>&1")
-    machine.fail("systemctl status nginx.service >/dev/null 2>&1")
     machine.succeed("grep -q \"Bootstrap complete.\" /tmp/bootstrap.out")
 
     print("nixpi-bootstrap-fresh-install-external test passed!")

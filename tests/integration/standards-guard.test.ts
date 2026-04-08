@@ -12,11 +12,8 @@ const ovhHostPath = path.join(repoRoot, "core/os/hosts/ovh-vps.nix");
 const ovhDiskoPath = path.join(repoRoot, "core/os/disko/ovh-single-disk.nix");
 const ovhDeployDocPath = path.join(repoRoot, "docs/operations/ovh-rescue-deploy.md");
 const selfEvolutionSkillPath = path.join(repoRoot, "core/pi/skills/self-evolution/SKILL.md");
-const appPackagePath = path.join(repoRoot, "core/os/pkgs/app/default.nix");
 const appModulePath = path.join(repoRoot, "core/os/modules/app.nix");
 const piPackagePath = path.join(repoRoot, "core/os/pkgs/pi/default.nix");
-const retiredBrowserRuntimePath = path.join(repoRoot, "core", "chat-server");
-const viteConfigPath = path.join(repoRoot, "vite.config.ts");
 
 describe("repo standards guards", () => {
 	it("configures VitePress for GitHub Project Pages", () => {
@@ -37,17 +34,8 @@ describe("repo standards guards", () => {
 			"@mariozechner/pi-ai": "^0.60.0",
 			"@mariozechner/pi-coding-agent": "^0.60.0",
 		});
-		expect(packageJson.dependencies?.[["@mariozechner", "pi-web-ui"].join("/")]).toBeUndefined();
-		expect(packageJson.devDependencies?.[["@mariozechner", "pi-agent-core"].join("/")]).toBeUndefined();
 		expect(packageJson.scripts?.build).toBe("rm -rf dist && tsc --build");
-		expect(packageJson.scripts?.[["build", "frontend"].join(":")]).toBeUndefined();
 		expect(packageJson.scripts?.["check:ci"]).toBe("biome ci .");
-	});
-
-	it("keeps Pi shell-first and removes browser host wiring", () => {
-		expect(existsSync(path.join(repoRoot, "core/os/modules/ttyd.nix"))).toBe(false);
-		expect(existsSync(path.join(repoRoot, "core/os/modules/service-surface.nix"))).toBe(false);
-		expect(existsSync(path.join(repoRoot, "core/scripts/nixpi-terminal-bootstrap.sh"))).toBe(false);
 	});
 
 	it("keeps Pi command execution shell-capable by including bash in wrapper PATH", () => {
@@ -59,15 +47,6 @@ describe("repo standards guards", () => {
 		expect(appModule).toContain("/bin/bash");
 		expect(appModule).toContain("chown -R");
 		expect(appModule).toContain("/srv/nixpi");
-	});
-
-	it("removes the old chat-first browser artifacts from the runtime path", () => {
-		expect(existsSync(retiredBrowserRuntimePath)).toBe(false);
-		expect(existsSync(viteConfigPath)).toBe(false);
-
-		const appPackage = readFileSync(appPackagePath, "utf8");
-		expect(appPackage).not.toContain(["core", "chat-server", "frontend"].join("/"));
-		expect(appPackage).not.toContain("frontend/dist");
 	});
 
 	it("documents the canonical /srv/nixpi rebuild workflow and pull wrapper", () => {

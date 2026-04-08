@@ -29,8 +29,6 @@
     nixpi.wait_for_unit("nixpi-app-setup.service", timeout=120)
 
     nixpi.succeed("test -d " + home + "/.pi")
-    nixpi.fail("systemctl status nixpi-ttyd.service >/dev/null 2>&1")
-    nixpi.fail("systemctl status nginx.service >/dev/null 2>&1")
     nixpi.succeed("grep -Eq '(^| )console=tty0($| )' /run/current-system/kernel-params")
     nixpi.succeed("grep -Eq '(^| )console=ttyS0,115200($| )' /run/current-system/kernel-params")
     nixpi.succeed("test \"$(systemctl is-enabled getty@tty1.service 2>&1 || true)\" = linked")

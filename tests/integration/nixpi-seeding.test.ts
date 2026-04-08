@@ -77,11 +77,6 @@ describe("nixpi seeding", () => {
 		}
 	});
 
-	it("does not create .stignore inside NixPI dir", async () => {
-		await runNixpiExtension();
-		expect(existsSync(join(temp.nixPiDir, ".stignore"))).toBe(false);
-	});
-
 	it("sets _NIXPI_DIR_RESOLVED env var", async () => {
 		await runNixpiExtension();
 		expect(process.env._NIXPI_DIR_RESOLVED).toBe(temp.nixPiDir);

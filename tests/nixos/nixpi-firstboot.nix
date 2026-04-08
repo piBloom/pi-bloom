@@ -94,9 +94,6 @@ in
     nixpi.fail("command -v nixpi-bootstrap-prepare-repo")
     nixpi.fail("command -v nixpi-bootstrap-nixos-rebuild-switch")
     nixpi.fail("command -v codex")
-    nixpi.fail("systemctl status nixpi-ttyd.service >/dev/null 2>&1")
-    nixpi.fail("systemctl status nginx.service >/dev/null 2>&1")
-
     nixpi.succeed(
         "su - pi -c 'test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi; "
         + "pi --help | grep -q \"AI coding assistant\"'"

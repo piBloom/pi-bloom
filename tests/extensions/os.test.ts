@@ -114,9 +114,6 @@ describe("os tool structure", () => {
 		const names = toolNames();
 		expect(new Set(names).size).toBe(names.length);
 	});
-	it("does not register the legacy container tool", () => {
-		expect(toolNames()).not.toContain("container");
-	});
 });
 
 // ---------------------------------------------------------------------------

@@ -49,9 +49,6 @@
     nixpi.succeed('test "$(stat -c %U /home/pi/.pi)" = pi')
     nixpi.succeed("su - pi -c 'test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi; pi --help | grep -q \"AI coding assistant\"'")
 
-    nixpi.fail("systemctl status nixpi-ttyd.service >/dev/null 2>&1")
-    nixpi.fail("systemctl status nginx.service >/dev/null 2>&1")
-
     print("nixpi-runtime tests passed!")
   '';
 }

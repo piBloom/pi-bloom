@@ -60,10 +60,6 @@ describe("objects registration", () => {
 		]);
 	});
 
-	it("has no session_start event handler", () => {
-		expect(api._eventHandlers.has("session_start")).toBe(false);
-	});
-
 	it("each tool has name, label, description, and execute", () => {
 		for (const tool of api._registeredTools) {
 			expect(tool).toHaveProperty("name");

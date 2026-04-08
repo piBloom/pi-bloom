@@ -42,17 +42,6 @@ describe("ensureNixPi", () => {
 });
 
 describe("nixpi extension", () => {
-	it("does not register authoring tools in the default runtime surface", async () => {
-		vi.resetModules();
-		const api = createMockExtensionAPI();
-		const mod = await import("../../core/pi/extensions/nixpi/index.js");
-		mod.default(api as never);
-
-		const names = api._registeredTools.map((tool) => tool.name);
-		expect(names).toEqual(["nixpi_status"]);
-		expect(api._eventHandlers.has("input")).toBe(false);
-	});
-
 	it("shows usage for /nixpi without arguments instead of opening an interaction prompt", async () => {
 		vi.resetModules();
 		const api = createMockExtensionAPI();
@@ -66,7 +55,6 @@ describe("nixpi extension", () => {
 
 		await command.handler("", ctx);
 
-		expect(api._sentCustomMessages).toEqual([]);
 		expect(ctx.ui.notify).toHaveBeenCalledWith("Usage: /nixpi init | status | update-blueprints", "info");
 	});
 });

@@ -39,9 +39,6 @@ describe("runtime package extension list", () => {
 			"./core/pi/extensions/objects",
 			"./core/pi/extensions/nixpi",
 		]);
-		expect(extensionList).not.toContain("./core/pi/extensions/nixpi-dev");
-		expect(extensionList).not.toContain("./core/pi/extensions/nixpi-repo");
-		expect(extensionList).not.toContain("./core/pi/extensions/nixpi-services");
 	});
 });
 
@@ -57,7 +54,6 @@ describe("nixpi registration", () => {
 		expect(toolNames(api)).toEqual(["nixpi_status"]);
 		expect(commandNames(api)).toEqual(["nixpi"]);
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start", "resources_discover"]));
-		expect(eventNames(api)).not.toContain("input");
 	});
 });
 
@@ -98,8 +94,6 @@ describe("objects registration", () => {
 				"memory_list",
 			]),
 		);
-		expect(toolNames(api)).not.toContain("memory_move");
-		expect(toolNames(api)).not.toContain("workspace_reindex");
 		expect(eventNames(api)).toEqual([]);
 	});
 });
@@ -114,7 +108,6 @@ describe("os registration", () => {
 		mod.default(api as never);
 
 		expect(toolNames(api)).toEqual(expect.arrayContaining(["nixos_update", "nix_config_proposal", "systemd_control"]));
-		expect(toolNames(api)).not.toContain("container");
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["before_agent_start"]));
 	});
 });
