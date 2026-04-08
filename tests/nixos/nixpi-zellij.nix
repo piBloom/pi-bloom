@@ -13,6 +13,13 @@
       nixpi.terminal.zellij.enable = true;
 
       networking.hostName = "nixpi-zellij-test";
+      time.timeZone = "UTC";
+      i18n.defaultLocale = "en_US.UTF-8";
+      networking.networkmanager.enable = true;
+      system.stateVersion = "25.05";
+      boot.loader.systemd-boot.enable = true;
+      boot.loader.efi.canTouchEfiVariables = true;
+      users.users.pi.initialPassword = "pi";
     };
 
   testScript = ''
@@ -20,6 +27,7 @@
 
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
+    nixpi.wait_for_unit("systemd-tmpfiles-setup.service", timeout=60)
 
     assert nixpi.succeed("sudo -u pi -- bash -lc \"command -v zellij\"").strip()
     assert nixpi.succeed("sudo -u pi -- bash -lc \"command -v nixpi-launch-terminal-ui\"").strip()
