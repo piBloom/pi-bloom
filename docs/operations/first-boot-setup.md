@@ -16,11 +16,12 @@ Before this checklist, you should already have:
 
 ## What First Boot Means Now
 
-NixPI comes up as a shell-first host runtime.
+NixPI comes up as a shell-first host runtime with Zellij as the default interactive terminal UI.
 
 A fresh system should provide:
 
 - SSH access for the primary operator
+- Zellij as the default interactive entrypoint on SSH and local tty sessions
 - Pi runtime state under `~/.pi`
 - system management anchored in `/srv/nixpi`
 - a generated `/etc/nixos/flake.nix` that keeps `#nixos` as the rebuild target
@@ -54,6 +55,8 @@ Expected result:
 - `~/.pi/settings.json` exists
 - Pi is usable without any browser-only service layer
 
+After the first successful login, the default operator-facing interface is Zellij. The generated layout opens Pi and a shell tab. If you need a plain shell for recovery, use `NIXPI_NO_ZELLIJ=1` before starting the login shell.
+
 ### 3. Verify WireGuard Before Normal Use
 
 ```bash
@@ -84,7 +87,7 @@ After first boot, keep these boundaries in mind:
 
 - `/srv/nixpi` is the canonical git working tree for sync, review, and rebuilds
 - `/etc/nixos` is the standard flake root used for system rebuilds
-- SSH sessions are the operator control plane
+- SSH sessions are the operator control plane, with Zellij as the default interactive UI
 - direct passwordless `sudo` is temporary during setup and is removed by `nixpi-setup-apply`
 - system services remain inspectable with normal NixOS and systemd tooling
 

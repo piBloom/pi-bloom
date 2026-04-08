@@ -15,5 +15,7 @@ NixPI ships its operator-facing runtime directly from the base NixOS system. The
 ## Operational Notes
 
 - SSH and local terminals are the supported operator entrypoints
-- The Pi runtime is invoked directly with `pi`
+- Zellij is the default operator-facing terminal UI for interactive SSH and local tty sessions
+- set `NIXPI_NO_ZELLIJ=1` to keep a plain shell for recovery or debugging
+- The Pi runtime remains available inside the generated Zellij layout and as a direct command when bypassing Zellij
 - Use `systemctl status nixpi-app-setup.service`, `sshd.service`, and `wireguard-wg0.service` for host-level inspection

@@ -6,8 +6,9 @@
 
 1. `nixpi-app-setup.service` prepares `~/.pi`
 2. `sshd.service` and local login shells provide operator entry
-3. the operator runs `pi`
-4. Pi loads extensions, persona, and workspace state from the seeded runtime
+3. interactive operator sessions enter Zellij by default
+4. the generated Zellij layout opens Pi and a plain shell workspace
+5. Pi loads extensions, persona, and workspace state from the seeded runtime
 
 ## Boot and Service Startup Flow
 
@@ -30,9 +31,14 @@ multi-user.target
 ## Important Runtime Properties
 
 - SSH and local terminals are the supported interactive entrypoints
-- Pi owns the actual user experience
+- Zellij is the default interactive terminal UI
+- Pi remains the main workflow inside the generated layout
 - `~/.pi` is seeded before the operator starts work
 - `/srv/nixpi` remains the canonical editable checkout for rebuilds
+
+## Default Terminal UI
+
+Interactive SSH and local tty logins pass through the NixPI terminal-ui launcher. When enabled, the launcher starts Zellij with the generated NixPI layout, opening Pi and a plain shell. Set `NIXPI_NO_ZELLIJ=1` to bypass the launcher and stay in a plain shell.
 
 ## Verification Commands
 

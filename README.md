@@ -4,9 +4,11 @@ NixPI is a VPS-first, headless AI companion OS built on NixOS.
 
 It combines:
 - a canonical system checkout at `/srv/nixpi`
-- a shell-first Pi runtime for SSH sessions
+- a Zellij-first operator runtime for SSH and local tty sessions
 - host automation through NixOS and systemd
 - Pi runtime + extensions in one deployable system
+
+By default, interactive operator sessions enter **Zellij** on both SSH and local tty logins. The default layout opens a Pi tab and a plain shell tab. For recovery or troubleshooting, skip auto-start with `NIXPI_NO_ZELLIJ=1` before starting a login shell.
 
 ## Quick start
 

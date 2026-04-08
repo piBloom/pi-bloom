@@ -8,7 +8,8 @@ NixPI uses a simpler runtime model:
 
 - `nixpi-app-setup.service` seeds the Pi runtime state
 - SSH and local login shells provide operator entry
-- the operator runs `pi` directly
+- interactive login shells auto-enter Zellij by default
+- the generated Zellij layout opens Pi and a shell workspace
 
 This keeps the runtime inspectable and avoids a separate browser transport layer.
 
@@ -26,9 +27,11 @@ At startup:
 
 1. `nixpi-app-setup.service` ensures the Pi runtime state exists under `~/.pi`
 2. `sshd.service` and local terminals remain available for operator entry
-3. the operator runs `pi` in the user's NixPI workspace
+3. interactive operator sessions enter Zellij by default
+4. the generated Zellij layout opens Pi and a shell workspace
 
 ## Failure Behavior
 
 - if SSH is unavailable, a local terminal remains the fallback on monitor-attached hardware
+- set `NIXPI_NO_ZELLIJ=1` to bypass Zellij and keep a plain shell for recovery
 - if Pi state is missing or inconsistent, inspect `~/.pi/` and rerun `pi`
