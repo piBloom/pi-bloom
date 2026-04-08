@@ -1,10 +1,10 @@
 # Quick Deploy
 
-> Bootstrap NixPI onto a VPS, headless VM, or mini PC and operate it from the shell-first Pi runtime
+> Install NixPI onto a headless VPS with nixos-anywhere and operate it from the shell-first runtime
 
 ## Audience
 
-Operators and maintainers deploying NixPI onto a NixOS-capable x86_64 VPS, headless VM, or mini PC.
+Operators and maintainers deploying NixPI onto a headless x86_64 VPS.
 
 ## Security Note: WireGuard Is the Preferred Private Management Network
 
@@ -12,65 +12,32 @@ WireGuard remains the preferred private network path for NixPI hosts. SSH stays 
 
 ## Canonical Deployment Path
 
-NixPI is bootstrap-first and remote-first. The standard deployment flow is:
+NixPI now has one deployment flow:
 
-1. provision a NixOS-capable x86_64 machine
-2. run the bootstrap command once
-3. connect over SSH (or use a local terminal)
-4. keep operating from the canonical checkout at `/srv/nixpi`
+1. Put the VPS into rescue mode.
+2. Run the `nixpi-deploy-ovh` wrapper.
+3. Let first boot seed `/srv/nixpi` and `/etc/nixos/flake.nix`.
+4. Keep operating from `/srv/nixpi`.
 
-## Two Supported Deployment Paths
+## 1. Enter rescue mode
 
-### Fresh OVH install
+Use the provider control panel to boot the VPS into rescue mode, then confirm you can SSH into the rescue environment as `root`.
 
-For a brand-new OVH VPS that starts from rescue mode, use the dedicated [OVH Rescue Deploy](./ovh-rescue-deploy) path.
+For OVH-specific steps, follow [OVH Rescue Deploy](./ovh-rescue-deploy).
 
-### Existing NixOS-capable machine
+## 2. Run the install wrapper
 
-For a VPS, headless VM, or mini PC that is already NixOS-capable and reachable over SSH, use the bootstrap workflow documented below.
-
-## 1. Provision a NixOS-Capable Machine
-
-Bring up a fresh x86_64 VPS, headless VM, or mini PC with:
-
-- SSH access
-- `sudo` privileges
-- outbound internet access
-- enough disk and RAM to complete a `nixos-rebuild switch`
-
-## 2. Run the Bootstrap Command
-
-From the target host:
+From your local checkout:
 
 ```bash
-nix run github:alexradunet/nixpi#nixpi-bootstrap-vps
+nix run .#nixpi-deploy-ovh -- \
+  --target-host root@SERVER_IP \
+  --disk /dev/sdX
 ```
 
-If you already have a local checkout of this branch, you can use the repo-local command instead:
+The install is destructive. On first boot the installed system seeds `/srv/nixpi`, initializes `/etc/nixos/flake.nix`, and keeps the standard `#nixos` rebuild target.
 
-```bash
-nix run .#nixpi-bootstrap-vps
-```
-
-The bootstrap package:
-
-- clones the repo into `/srv/nixpi` if it does not exist
-- refreshes that checkout from `origin/main`
-- initializes a standard flake-based `/etc/nixos`
-- runs `sudo nixos-rebuild switch --flake /etc/nixos#nixos`
-
-On monitor-attached hardware, the resulting system keeps a `tty1` login prompt after reboot for local recovery.
-
-> Warning: rerunning the bootstrap command on a host with local commits in `/srv/nixpi` will reset that checkout to `origin/main`. Commit or export local work first.
-
-## 3. Connect to the Pi Runtime
-
-After the switch completes, connect through one of the supported shell paths:
-
-- SSH to the host
-- local `tty1` on monitor-attached hardware
-
-Preferred access is over WireGuard-backed SSH once you have configured peers.
+## 3. Validate first boot
 
 Useful checks:
 
@@ -105,7 +72,7 @@ Roll back if needed:
 sudo nixos-rebuild switch --rollback
 ```
 
-## 5. Validate the Shell Runtime
+## 5. Validate the shell runtime
 
 Smoke-check the core services on a running host:
 
@@ -119,12 +86,12 @@ su - <user> -c 'pi --help'
 Expected result:
 
 - the Pi runtime is seeded under `~/.pi`
-- `pi` runs from SSH or a local terminal
-- no browser-only host services are required
+- `pi` runs from SSH
+- no second install path is required for routine operation
 
 For repo-side validation during development:
 
 ```bash
 nix --option substituters https://cache.nixos.org/ build .#checks.x86_64-linux.config --no-link
-nix build .#checks.x86_64-linux.nixpi-vps-bootstrap --no-link -L
+nix build .#checks.x86_64-linux.nixpi-firstboot --no-link -L
 ```

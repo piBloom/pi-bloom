@@ -87,17 +87,21 @@ in
     bootstrap.start()
     bootstrap.wait_for_unit("multi-user.target", timeout=300)
     bootstrap.wait_for_unit("fail2ban.service", timeout=60)
+    bootstrap.wait_for_unit("nixpi-app-setup.service", timeout=120)
     bootstrap.wait_until_succeeds("test ! -f /home/pi/.nixpi/wizard-state/system-ready", timeout=30)
     bootstrap.succeed("su - pi -c 'sudo -n true'")
+    bootstrap.succeed("test -f /home/pi/.pi/settings.json")
 
     steady.start()
     steady.wait_for_unit("multi-user.target", timeout=300)
-    steady.wait_until_succeeds("curl -sf http://127.0.0.1/ >/dev/null", timeout=60)
+    steady.wait_for_unit("nixpi-app-setup.service", timeout=120)
     steady.succeed("env NIXPI_PRIMARY_USER=pi nixpi-setup-apply | tee /tmp/setup-apply.out")
     steady.wait_until_succeeds("test -f /home/pi/.nixpi/wizard-state/system-ready", timeout=120)
     steady.fail("su - pi -c 'sudo -n true'")
     steady.succeed("su - pi -c 'nixpi-brokerctl status >/tmp/steady-broker-status.json'")
     steady.wait_for_unit("fail2ban.service", timeout=60)
+    steady.succeed("test -f /home/pi/.pi/settings.json")
+    steady.succeed("command -v pi")
 
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)
@@ -107,15 +111,7 @@ in
 
     client.succeed("nc -z -w 2 nixpi-steady 22")
 
-    steady.wait_until_succeeds("nc -z 127.0.0.1 80", timeout=60)
-    steady.wait_until_succeeds("nc -z 127.0.0.1 443", timeout=60)
-
     steady.succeed("fail2ban-client status sshd | grep -q 'Status for the jail: sshd'")
-
-    blocked_ports = [80, 443]
-    for host in ["nixpi-bootstrap", "nixpi-steady"]:
-        for port in blocked_ports:
-            client.succeed(f"! nc -z -w 2 {host} {port}")
 
     print("NixPI security exposure policy tests passed!")
   '';

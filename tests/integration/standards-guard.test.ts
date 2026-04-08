@@ -8,6 +8,7 @@ const rebuildPullScriptPath = path.join(repoRoot, "core/scripts/nixpi-rebuild-pu
 const brokerModulePath = path.join(repoRoot, "core/os/modules/broker.nix");
 const setupApplyScriptPath = path.join(repoRoot, "core/scripts/nixpi-setup-apply.sh");
 const deployOvhScriptPath = path.join(repoRoot, "core/scripts/nixpi-deploy-ovh.sh");
+const installFinalizeScriptPath = path.join(repoRoot, "core/scripts/nixpi-install-finalize.sh");
 const ovhHostPath = path.join(repoRoot, "core/os/hosts/ovh-vps.nix");
 const ovhDiskoPath = path.join(repoRoot, "core/os/disko/ovh-single-disk.nix");
 const ovhDeployDocPath = path.join(repoRoot, "docs/operations/ovh-rescue-deploy.md");
@@ -52,7 +53,7 @@ describe("repo standards guards", () => {
 	it("documents the canonical /srv/nixpi rebuild workflow and pull wrapper", () => {
 		const rebuildPullScript = readFileSync(rebuildPullScriptPath, "utf8");
 		const readme = readFileSync(path.join(repoRoot, "README.md"), "utf8");
-		const bootstrapScript = readFileSync(path.join(repoRoot, "core/os/pkgs/bootstrap/nixpi-bootstrap-vps.sh"), "utf8");
+		const installFinalizeScript = readFileSync(installFinalizeScriptPath, "utf8");
 		const osActions = readFileSync(path.join(repoRoot, "core/pi/extensions/os/actions.ts"), "utf8");
 		const selfEvolutionSkill = readFileSync(selfEvolutionSkillPath, "utf8");
 
@@ -65,13 +66,10 @@ describe("repo standards guards", () => {
 		expect(readme).toContain("/srv/nixpi");
 		expect(readme).toContain("nixpi-rebuild-pull");
 
-		expect(bootstrapScript).toContain("/srv/nixpi");
-		expect(bootstrapScript).toContain("nixpi-rebuild-pull");
-		expect(bootstrapScript).toContain("config --get user.name");
-		expect(bootstrapScript).toContain('config user.name "$PRIMARY_USER_VALUE"');
-		expect(bootstrapScript).toContain('config user.email "$fallback_email"');
-		expect(bootstrapScript).toContain(".local");
-		expect(bootstrapScript).toContain('chown -R "$PRIMARY_USER_VALUE:$PRIMARY_GROUP_VALUE" "$REPO_DIR"');
+		expect(installFinalizeScript).toContain('REPO_DIR="/srv/nixpi"');
+		expect(installFinalizeScript).toContain('git clone --branch "$REPO_BRANCH" "$REPO_URL" "$REPO_DIR"');
+		expect(installFinalizeScript).toContain('chown -R "$PRIMARY_USER:$primary_group" "$REPO_DIR"');
+		expect(installFinalizeScript).toContain("nixpi-init-system-flake.sh");
 
 		expect(osActions).toContain("/srv/nixpi");
 		expect(osActions).toContain("nixpi-rebuild-pull");
@@ -111,7 +109,7 @@ describe("repo standards guards", () => {
 		expect(existsSync(ovhDeployDocPath)).toBe(true);
 
 		expect(installDoc).toContain("OVH Rescue Deploy");
-		expect(quickDeployDoc).toContain("Fresh OVH install");
+		expect(quickDeployDoc).toContain("nixpi-deploy-ovh");
 	});
 
 	it("documents an explicit destructive OVH deploy script contract", () => {

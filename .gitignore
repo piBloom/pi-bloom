@@ -19,5 +19,3 @@ core/scripts/prefill.env
 package-lock.json
 core/os/pkgs/pi/package-lock.json
 .mcp.json
-qemu-lab/*
-!qemu-lab/README.md

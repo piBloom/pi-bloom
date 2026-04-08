@@ -28,6 +28,7 @@ wg show wg0
 
 ## Related
 
+- [OVH Rescue Deploy](./ovh-rescue-deploy)
 - [Quick Deploy](./quick-deploy)
 - [First Boot Setup](./first-boot-setup)
 - [Live Testing](./live-testing)

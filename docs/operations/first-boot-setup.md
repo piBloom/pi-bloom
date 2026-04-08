@@ -1,30 +1,29 @@
 # First Boot Setup
 
-> Validating a fresh NixPI host after bootstrap
+> Validating a fresh NixPI host after nixos-anywhere installation
 
 ## Audience
 
-Operators bringing up a fresh NixPI VPS, headless VM, or mini PC.
+Operators bringing up a fresh NixPI headless VPS.
 
 ## Prerequisites
 
 Before this checklist, you should already have:
 
-1. a NixOS-capable x86_64 machine
-2. a successful `nixpi-bootstrap-vps` run
-3. the canonical checkout present at `/srv/nixpi`
-4. a completed `sudo nixos-rebuild switch --flake /etc/nixos#nixos`
+1. a completed `nixpi-deploy-ovh` install
+2. the canonical checkout present at `/srv/nixpi`
+3. a completed `sudo nixos-rebuild switch --flake /etc/nixos#nixos`
 
 ## What First Boot Means Now
 
-NixPI now comes up as a shell-first host runtime.
+NixPI comes up as a shell-first host runtime.
 
 A fresh system should provide:
 
 - SSH access for the primary operator
-- a local login shell on monitor-attached hardware
 - Pi runtime state under `~/.pi`
 - system management anchored in `/srv/nixpi`
+- a generated `/etc/nixos/flake.nix` that keeps `#nixos` as the rebuild target
 
 ## First-Boot Checklist
 
@@ -37,11 +36,11 @@ systemctl status wireguard-wg0.service
 systemctl status nixpi-update.timer
 ```
 
-Expected result: all four services are active or activatable without any desktop login step.
+Expected result: all four services are active or activatable.
 
 ### 2. Verify the Pi Runtime
 
-From SSH or a local terminal:
+From SSH:
 
 ```bash
 command -v pi
@@ -85,8 +84,7 @@ After first boot, keep these boundaries in mind:
 
 - `/srv/nixpi` is the canonical git working tree for sync, review, and rebuilds
 - `/etc/nixos` is the standard flake root used for system rebuilds
-- SSH and local terminal sessions are the operator control plane
-- a connected monitor on x86_64 hardware lands on a local `tty1` login prompt after boot
+- SSH sessions are the operator control plane
 - direct passwordless `sudo` is temporary during setup and is removed by `nixpi-setup-apply`
 - system services remain inspectable with normal NixOS and systemd tooling
 
@@ -104,6 +102,5 @@ After first boot, keep these boundaries in mind:
 
 - the machine boots to a normal headless multi-user target
 - no desktop session is required to start operating NixPI
-- the primary user workflow is Pi in the terminal, reached from SSH or a local shell
-- on monitor-attached x86_64 hardware, `tty1` remains available for local recovery
+- the primary user workflow is Pi in the terminal, reached from SSH
 - updates run through the native `nixos-upgrade.service` / `nixpi-update.timer` path, while manual rebuilds and rollbacks still come from `/srv/nixpi`

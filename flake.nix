@@ -25,7 +25,7 @@
       inherit (nixpkgs) lib;
       stableNixOSRelease = "25.11";
       stableNixpkgsFlakeUrl = "github:NixOS/nixpkgs/nixos-${stableNixOSRelease}";
-      bootstrapSystemFlakeScript = builtins.readFile ./core/scripts/nixpi-init-system-flake.sh;
+      installFinalizeSystemFlakeScript = builtins.readFile ./core/scripts/nixpi-init-system-flake.sh;
       flakeSource = builtins.readFile ./flake.nix;
       supportedSystems = [
         system
@@ -44,7 +44,6 @@
         {
           pi = piAgent;
           app = appPackage;
-          nixpi-bootstrap-vps = pkgs.callPackage ./core/os/pkgs/bootstrap { };
           nixpi-rebuild = pkgs.callPackage ./core/os/pkgs/nixpi-rebuild { };
           nixpi-rebuild-pull = pkgs.callPackage ./core/os/pkgs/nixpi-rebuild-pull { };
           nixpi-deploy-ovh = pkgs.callPackage ./core/os/pkgs/nixpi-deploy-ovh {
@@ -92,16 +91,12 @@
     in
     assert lib.hasInfix
       "NIXPI_STABLE_NIXOS_RELEASE=\"\${NIXPI_STABLE_NIXOS_RELEASE:-${stableNixOSRelease}}\""
-      bootstrapSystemFlakeScript;
+      installFinalizeSystemFlakeScript;
     assert lib.hasInfix "nixpkgs-stable.url = \"${stableNixpkgsFlakeUrl}\";" flakeSource;
     {
       packages = forAllSystems (
         system:
-        (mkPackages system)
-        // {
-          nixpi-bootstrap-fresh-install-harness =
-            self.checks.${system}.nixpi-bootstrap-fresh-install-external.driver;
-        }
+        mkPackages system
       );
 
       formatter = forAllSystems (system: (mkPkgs system).nixfmt-rfc-style);
@@ -115,7 +110,7 @@
             imports = moduleSets.nixpiBaseNoShell;
           };
 
-        # Minimal installed NixPI base with the operator shell/bootstrap path.
+        # Minimal installed NixPI base with the operator shell path.
         nixpi-base =
           { ... }:
           {
@@ -160,7 +155,7 @@
           ];
         };
 
-        # Host-owned system-flake composition used by bootstrap-generated installs:
+        # Host-owned system-flake composition used by the retained install-finalize path:
         # local /etc/nixos configuration layered with nixpi.nixosModules.nixpi.
         # Used by checks.config and checks.boot below.
         installed-test = mkConfiguredSystem {
@@ -192,8 +187,6 @@
 
       checks.${system} =
         let
-          bootstrapPackage = self.packages.${system}.nixpi-bootstrap-vps;
-          bootstrapScriptSource = ./core/os/pkgs/bootstrap/nixpi-bootstrap-vps.sh;
           setupApplyPackage = self.packages.${system}.nixpi-setup-apply;
           generatedModuleSystem = mkConfiguredSystem {
             inherit system;
@@ -280,8 +273,8 @@
           # evaluation failures without touching QEMU.
           config = self.nixosConfigurations.installed-test.config.system.build.toplevel;
 
-          # Fast stable-path proof for the documented bootstrap flake contract.
-          config-stable-bootstrap =
+          # Fast stable-path proof for the retained system-flake contract.
+          config-stable-system-flake =
             (
               mkConfiguredStableSystem {
                 inherit system;
@@ -310,7 +303,7 @@
               }
             ).config.system.build.toplevel;
 
-          bootstrap-stable-alignment = pkgs.runCommandLocal "bootstrap-stable-alignment-check" { } ''
+          install-finalize-stable-alignment = pkgs.runCommandLocal "install-finalize-stable-alignment-check" { } ''
             expected_default='NIXPI_STABLE_NIXOS_RELEASE="''${NIXPI_STABLE_NIXOS_RELEASE:-${stableNixOSRelease}}"'
             grep -F "$expected_default" ${./core/scripts/nixpi-init-system-flake.sh} >/dev/null
             expected_flake_url='nixpkgs-stable.url = "${stableNixpkgsFlakeUrl}";'
@@ -334,36 +327,6 @@
             touch "$out"
           '';
 
-          bootstrap-script = pkgs.runCommandLocal "bootstrap-script-check" { } ''
-            test -x "${bootstrapPackage}/bin/nixpi-bootstrap-vps"
-            test -x "${bootstrapScriptSource}"
-            test -x "${./core/scripts/nixpi-init-system-flake.sh}"
-            test -x "${./core/scripts/nixpi-rebuild.sh}"
-            grep -F 'REPO_DIR="/srv/nixpi"' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'REPO_URL="''${NIXPI_REPO_URL:-https://github.com/alexradunet/nixpi.git}"' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'BRANCH="''${NIXPI_REPO_BRANCH:-main}"' "${bootstrapScriptSource}" >/dev/null
-            grep -F '/srv/nixpi' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'resolve_primary_user()' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'id -un' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'getent passwd' "${bootstrapScriptSource}" >/dev/null
-            ! grep -F 'human' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'run_as_root install -d -m 0755 /srv' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'run_as_root git clone --branch "$BRANCH" "$REPO_URL" "$REPO_DIR"' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'run_as_root git -C "$REPO_DIR" fetch origin "$BRANCH"' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'run_as_root git -C "$REPO_DIR" checkout "$BRANCH"' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'run_as_root git -C "$REPO_DIR" reset --hard "origin/$BRANCH"' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'nixpi-init-system-flake.sh' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'nixos-rebuild switch --flake /etc/nixos#nixos' "${bootstrapScriptSource}" >/dev/null
-            grep -F 'nixos-rebuild switch --flake /etc/nixos#nixos' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
-            grep -F -- '--impure' "${bootstrapScriptSource}" >/dev/null
-            grep -F -- '--impure' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
-            grep -F '"$@"' "${./core/scripts/nixpi-rebuild.sh}" >/dev/null
-            grep -F "Use 'nixpi-rebuild' to rebuild" "${bootstrapScriptSource}" >/dev/null
-            ! grep -F 'nixos-rebuild switch --flake /srv/nixpi#nixpi' "${bootstrapScriptSource}" >/dev/null
-            ! test -e ${./.}/tools/run-installer-iso.sh
-            touch "$out"
-          '';
-
           rebuild-pull-script = pkgs.runCommandLocal "rebuild-pull-script-check" { } ''
             script="${./.}/core/scripts/nixpi-rebuild-pull.sh"
             test -x "$script"
@@ -374,18 +337,19 @@
             touch "$out"
           '';
 
-          system-flake-bootstrap = pkgs.runCommandLocal "system-flake-bootstrap-check" { } ''
-            script=${./core/os/pkgs/bootstrap/nixpi-bootstrap-vps.sh}
+          system-flake-finalize = pkgs.runCommandLocal "system-flake-finalize-check" { } ''
+            script=${./core/scripts/nixpi-install-finalize.sh}
             helper=${./core/scripts/nixpi-init-system-flake.sh}
+            test -x "$script"
             test -x "$helper"
             grep -F 'core/scripts/nixpi-init-system-flake.sh' "$script" >/dev/null
+            grep -F 'git clone --branch "$REPO_BRANCH" "$REPO_URL" "$REPO_DIR"' "$script" >/dev/null
             grep -F 'NIXPI_NIXPKGS_FLAKE_URL' "$helper" >/dev/null
             grep -F 'NIXPI_STABLE_NIXOS_RELEASE' "$helper" >/dev/null
-            grep -F '# Generated by NixPI bootstrap' "$helper" >/dev/null
+            grep -F '# Generated by NixPI install finalization' "$helper" >/dev/null
             grep -F 'nixpi.inputs.nixpkgs.follows = "nixpkgs";' "$helper" >/dev/null
             grep -F 'nixosConfigurations.nixos' "$helper" >/dev/null
             grep -F './configuration.nix' "$helper" >/dev/null
-            grep -F 'nixos-rebuild switch --flake /etc/nixos#nixos' "$script" >/dev/null
             ! grep -F 'specialArgs =' "$helper" >/dev/null
             ! grep -F 'nixpi-integration.nix' "$helper" >/dev/null
             ! grep -F 'nixpi-host.nix' "$helper" >/dev/null
@@ -477,14 +441,6 @@
               path = nixosTests.nixpi-firstboot;
             }
             {
-              name = "nixpi-bootstrap-fresh-install";
-              path = nixosTests.nixpi-bootstrap-fresh-install;
-            }
-            {
-              name = "nixpi-bootstrap-fresh-install-stable";
-              path = nixosTests.nixpi-bootstrap-fresh-install-stable;
-            }
-            {
               name = "nixpi-system-flake";
               path = nixosTests.nixpi-system-flake;
             }
@@ -540,39 +496,6 @@
         // nixosTests; # Merge in the new test suite
 
       apps.${system} = {
-        nixpi-bootstrap-fresh-install-harness = {
-          type = "app";
-          program = "${self.packages.${system}.nixpi-bootstrap-fresh-install-harness}/bin/nixos-test-driver";
-        };
-
-        qemu-installer = {
-          type = "app";
-          program = "${pkgs.writeShellScript "qemu-installer" ''
-            exec ${./tools/qemu}/run-installer.sh "$@"
-          ''}";
-        };
-
-        qemu-preinstalled-stable = {
-          type = "app";
-          program = "${pkgs.writeShellScript "qemu-preinstalled-stable" ''
-            exec ${./tools/qemu}/run-preinstalled-stable.sh "$@"
-          ''}";
-        };
-
-        qemu-prepare-preinstalled-stable = {
-          type = "app";
-          program = "${pkgs.writeShellScript "qemu-prepare-preinstalled-stable" ''
-            exec ${./tools/qemu}/prepare-preinstalled-stable.sh "$@"
-          ''}";
-        };
-
-        qemu-clean = {
-          type = "app";
-          program = "${pkgs.writeShellScript "qemu-clean" ''
-            exec ${./tools/qemu}/clean-lab.sh "$@"
-          ''}";
-        };
-
         nixpi-deploy-ovh = {
           type = "app";
           program = "${self.packages.${system}.nixpi-deploy-ovh}/bin/nixpi-deploy-ovh";

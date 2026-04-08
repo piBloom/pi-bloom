@@ -39,8 +39,9 @@
 
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
-
-    nixpi.wait_until_succeeds("curl -skf https://127.0.0.1/ >/dev/null", timeout=60)
+    nixpi.wait_for_unit("nixpi-app-setup.service", timeout=120)
+    nixpi.succeed("test -f /home/pi/.pi/settings.json")
+    nixpi.succeed("command -v pi")
 
     print("NixPI modular service tests passed!")
   '';

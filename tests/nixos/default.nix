@@ -14,7 +14,6 @@ let
       mkTestFilesystems
       mkManagedUserConfig
       ;
-    bootstrapPackage = self.packages.${pkgs.system}.nixpi-bootstrap-vps;
   };
 
   runTest =
@@ -28,12 +27,8 @@ let
     };
 
   tests = {
-    nixpi-bootstrap-fresh-install = runTest ./nixpi-bootstrap-fresh-install.nix;
-    nixpi-bootstrap-fresh-install-stable = runTest ./nixpi-bootstrap-fresh-install-stable.nix;
-    nixpi-bootstrap-fresh-install-external = runTest ./nixpi-bootstrap-fresh-install-external.nix;
     nixpi-firstboot = runTest ./nixpi-firstboot.nix;
     nixpi-system-flake = runTest ./nixpi-system-flake.nix;
-    nixpi-vps-bootstrap = runTest ./nixpi-vps-bootstrap.nix;
     nixpi-runtime = runTest ./nixpi-runtime.nix;
     nixpi-network = runTest ./nixpi-network.nix;
     nixpi-e2e = runTest ./nixpi-e2e.nix;
@@ -47,7 +42,7 @@ let
   };
 
   smokeAliases = {
-    smoke-firstboot = tests.nixpi-vps-bootstrap;
+    smoke-firstboot = tests.nixpi-firstboot;
     smoke-runtime = tests.nixpi-runtime;
     smoke-security = tests.nixpi-security;
     smoke-broker = tests.nixpi-broker;

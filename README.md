@@ -4,29 +4,25 @@ NixPI is a VPS-first, headless AI companion OS built on NixOS.
 
 It combines:
 - a canonical system checkout at `/srv/nixpi`
-- a shell-first Pi runtime for SSH and local terminals
+- a shell-first Pi runtime for SSH sessions
 - host automation through NixOS and systemd
 - Pi runtime + extensions in one deployable system
 
 ## Quick start
 
-Run on a fresh NixOS-capable VPS:
+Install onto a fresh OVH VPS from rescue mode:
 
 ```bash
-nix --extra-experimental-features 'nix-command flakes' run github:alexradunet/nixpi#nixpi-bootstrap-vps
+nix run .#nixpi-deploy-ovh -- \
+  --target-host root@SERVER_IP \
+  --disk /dev/sdX
 ```
 
-Then operate from the canonical checkout:
+After first boot, operate from the canonical checkout:
 
 ```bash
 cd /srv/nixpi
-git status
 sudo nixpi-rebuild
-```
-
-To update the canonical checkout and rebuild in one step:
-
-```bash
 sudo nixpi-rebuild-pull
 ```
 

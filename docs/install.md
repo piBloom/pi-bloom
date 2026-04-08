@@ -1,49 +1,22 @@
 ---
 title: Install NixPI
-description: Install NixPI on a fresh OVH VPS or a NixOS-capable x86_64 machine.
+description: Install NixPI on a fresh headless OVH VPS with nixos-anywhere.
 ---
 
 # Install NixPI
 
-## Bootstrap requirements
+## Supported target
 
-- NixOS-capable x86_64 machine: VPS, headless VM, or mini PC with an attached monitor
-- SSH access with `sudo`
-- Outbound internet access
+- headless x86_64 VPS
+- provider rescue-mode access
+- SSH access to the rescue environment
+- outbound internet access during installation and first boot
 
-## Install paths
+## Canonical install path
 
-Choose the path that matches the machine you are starting from:
+Use the dedicated [OVH Rescue Deploy](./operations/ovh-rescue-deploy) runbook.
 
-- **Fresh OVH VPS from rescue mode**:
-  [OVH Rescue Deploy](./operations/ovh-rescue-deploy)
-- **Already NixOS-capable machine**:
-  use the bootstrap command below
-
-## Install command
-
-```bash
-nix --extra-experimental-features 'nix-command flakes' run github:alexradunet/nixpi#nixpi-bootstrap-vps
-```
-
-Run the command as your normal user (do **not** prefix with `sudo`).
-The bootstrap script escalates only the specific steps that need root.
-
-If you want to force the freshest copy from GitHub (skip flake fetch cache), use:
-
-```bash
-nix --extra-experimental-features 'nix-command flakes' run --refresh github:alexradunet/nixpi?ref=main#nixpi-bootstrap-vps
-```
-
-The bootstrap process prepares `/srv/nixpi`, initializes a standard flake-based `/etc/nixos`, and runs:
-
-```bash
-sudo nixos-rebuild switch --flake /etc/nixos#nixos
-```
-
-The generated `/etc/nixos/flake.nix` follows the standard NixOS flake pattern more closely: it keeps the existing `/etc/nixos/configuration.nix`, layers NixPI on top, and exposes a single `#nixos` configuration. It follows the configured stable NixOS line by default. Today that means `nixos-25.11`.
-
-On a monitor-attached mini PC, the installed system also keeps a local `tty1` login prompt after reboot, so local recovery remains available if remote access is unavailable.
+NixPI now supports a single install story: deploy a fresh headless VPS with `nixos-anywhere`, then operate the machine from `/srv/nixpi`.
 
 ## After install
 
@@ -51,9 +24,9 @@ Operate from the canonical checkout:
 
 ```bash
 cd /srv/nixpi
-git fetch origin
-git rebase origin/main
+git status
 sudo nixpi-rebuild
+sudo nixpi-rebuild-pull
 ```
 
 Check core services:
@@ -66,8 +39,6 @@ systemctl status nixpi-update.timer
 wg show wg0
 ```
 
-`wireguard-wg0.service` remains the operator-facing service name, but the interface is now configured through native NixOS `networking.wireguard.interfaces`.
-
 Rollback if needed:
 
 ```bash
@@ -77,5 +48,6 @@ sudo nixos-rebuild switch --rollback
 ## Next steps
 
 - [Operations](./operations/)
+- [OVH Rescue Deploy](./operations/ovh-rescue-deploy)
 - [First Boot Setup](./operations/first-boot-setup)
 - [Reference](./reference/)
