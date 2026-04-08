@@ -40,6 +40,13 @@ nix run .#nixpi-deploy-ovh -- \
 
 The install is destructive and installs the final `ovh-vps` host configuration directly.
 
+If the install fails with `No space left on device` during closure upload, do
+not assume the VPS disk is too small. On some OVH rescue hosts the disk order
+changes after `nixos-anywhere` kexecs into its temporary installer. Follow the
+staged troubleshooting flow in [OVH Rescue Deploy](./ovh-rescue-deploy) to boot
+only the `kexec` phase, inspect `/dev/disk/by-id` inside the installer, and
+resume the remaining phases with the correct installer-side disk ID.
+
 ## 3. Validate first boot
 
 Useful checks:

@@ -220,6 +220,26 @@ describe("repo standards guards", () => {
 		expect(deployDoc).toContain("initialHashedPassword");
 	});
 
+	it("documents the staged OVH kexec troubleshooting flow for disk renumbering", () => {
+		const deployDoc = readFileSync(ovhDeployDocPath, "utf8");
+		const quickDeployDoc = readFileSync(quickDeployDocPath, "utf8");
+		const liveTestingDoc = readFileSync(liveTestingDocPath, "utf8");
+
+		expect(deployDoc).toContain("device names can change after");
+		expect(deployDoc).toContain("--phases kexec");
+		expect(deployDoc).toContain("rescue passwords do not carry over");
+		expect(deployDoc).toContain("authorized_keys");
+		expect(deployDoc).toContain("/dev/disk/by-id");
+		expect(deployDoc).toContain("--phases disko,install,reboot");
+
+		expect(quickDeployDoc).toContain("No space left on device");
+		expect(quickDeployDoc).toContain("temporary installer");
+		expect(quickDeployDoc).toContain("/dev/disk/by-id");
+
+		expect(liveTestingDoc).toContain("/dev/disk/by-id");
+		expect(liveTestingDoc).toContain("installer-side target disk ID");
+	});
+
 	it("keeps headless VPS deployment as the documented install story", () => {
 		const flake = readFileSync(path.join(repoRoot, "flake.nix"), "utf8");
 		const readme = readFileSync(readmePath, "utf8");

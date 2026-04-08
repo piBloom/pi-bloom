@@ -17,6 +17,10 @@ Use it to verify that the retained `nixos-anywhere` install path, the shell-firs
 3. Confirm `nixos-anywhere` installs the final `ovh-vps` host configuration directly and reaches the expected service state.
 4. Reboot once and confirm the same headless operator flow still works.
 
+If the provider reorders disks after kexec, validate the temporary installer's
+`/dev/disk/by-id` mapping before the destructive `disko` phase and resume the
+install with the verified installer-side target disk ID.
+
 ## First Remote Validation
 
 1. Confirm `nixpi-app-setup.service`, `sshd.service`, `wireguard-wg0.service`, and `nixpi-update.timer` reach their expected state.
