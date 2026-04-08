@@ -24,9 +24,9 @@ jobs:
         run: npx tsc --noEmit
       - name: Run Biome CI checks
         run: npm run check:ci
-      - name: Build unstable config check
+      - name: Build config check
         run: nix build .#checks.x86_64-linux.config --no-link -L
-      - name: Build stable bootstrap config check
-        run: nix build .#checks.x86_64-linux.config-stable-bootstrap --no-link -L
-      - name: Build stable alignment guard
-        run: nix build .#checks.x86_64-linux.bootstrap-stable-alignment --no-link -L
+      - name: Build flake topology check
+        run: nix build .#checks.x86_64-linux.flake-topology --no-link -L
+      - name: Build VPS topology check
+        run: nix build .#checks.x86_64-linux.vps-topology --no-link -L

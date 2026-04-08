@@ -118,20 +118,20 @@ ssh-keygen -R SERVER_IP
 ssh human@SERVER_IP
 ```
 
-## 5. Switch to the canonical day-2 workflow
+## 5. Switch to routine operations
 
-After first login, use the repo's normal operational model:
+After first login, the installed `/etc/nixos` flake is the authoritative host
+configuration.
 
 ```bash
-cd /srv/nixpi
-git status
 sudo nixpi-rebuild
 ```
 
-To update the canonical checkout and rebuild:
+If you keep the conventional `/srv/nixpi` operator checkout for repo-backed
+changes, you can still sync and rebuild through it:
 
 ```bash
-sudo nixpi-rebuild-pull
+sudo nixpi-rebuild-pull [branch]
 ```
 
 Rollback if needed:

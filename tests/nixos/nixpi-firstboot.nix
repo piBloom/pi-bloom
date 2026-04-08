@@ -1,78 +1,30 @@
 {
-  lib,
-  nixPiModulesNoShell,
   mkTestFilesystems,
   ...
 }:
 
 let
-  mkNode =
-    {
-      hostName ? "nixpi-firstboot-test",
-    }:
-    { pkgs, ... }:
-    let
-      username = "pi";
-      homeDir = "/home/${username}";
-    in
-    {
-      imports = nixPiModulesNoShell ++ [ mkTestFilesystems ];
-      nixpi.primaryUser = username;
-      nixpi.install.enable = true;
-      nixpi.install.repoUrl = "file:///var/lib/nixpi-source";
-      nixpi.install.repoBranch = "main";
-
-      networking.hostName = hostName;
-      users.users.${username} = {
-        isNormalUser = true;
-        group = username;
-        extraGroups = [
-          "wheel"
-          "networkmanager"
-        ];
-        home = homeDir;
-        shell = pkgs.bash;
-      };
-      users.groups.${username} = { };
-      environment.systemPackages = [
-        pkgs.curl
-        pkgs.git
-        pkgs.jq
-      ];
-      systemd.tmpfiles.rules = [ "d ${homeDir}/.nixpi 0755 ${username} ${username} -" ];
-
-      system.activationScripts.nixpi-test-install-seed = lib.stringAfter [ "users" ] ''
-          mkdir -p ${homeDir}/.nixpi
-          install -d -m 0755 /etc/nixos
-          cat > /etc/nixos/configuration.nix <<'EOF'
-        { ... }:
-        {
-          networking.hostName = "${hostName}";
-        }
-        EOF
-          cat > /etc/nixos/hardware-configuration.nix <<'EOF'
-        { ... }:
-        {}
-        EOF
-          if [ ! -d /var/lib/nixpi-source/.git ]; then
-            rm -rf /var/lib/nixpi-source
-            install -d -m 0755 /var/lib/nixpi-source
-            cp -R ${../../.}/. /var/lib/nixpi-source/
-            chmod -R u+rwX /var/lib/nixpi-source
-            ${lib.getExe pkgs.git} -C /var/lib/nixpi-source init -b main
-            ${lib.getExe pkgs.git} -C /var/lib/nixpi-source add .
-            ${lib.getExe pkgs.git} -C /var/lib/nixpi-source -c user.name='Test User' -c user.email='test@example.com' commit -m 'seed repo'
-          fi
-          chown -R ${username}:${username} ${homeDir}/.nixpi
-          chmod 755 ${homeDir}/.nixpi
-      '';
-    };
+  username = "pi";
+  homeDir = "/home/${username}";
 in
 {
   name = "nixpi-firstboot";
 
-  nodes = {
-    nixpi = mkNode { hostName = "nixpi-firstboot-test"; };
+  nodes.nixpi = {
+    ...
+  }: {
+    imports = [
+      ../../core/os/hosts/vps.nix
+      mkTestFilesystems
+    ];
+
+    networking.hostName = "nixpi-firstboot-test";
+    nixpi = {
+      primaryUser = username;
+      bootstrap.enable = true;
+    };
+
+    systemd.tmpfiles.rules = [ "d ${homeDir}/.nixpi 0755 ${username} ${username} -" ];
   };
 
   testScript = ''
@@ -84,24 +36,37 @@ in
     nixpi.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
     nixpi.wait_for_unit("wireguard-wg0.service", timeout=60)
     nixpi.wait_for_unit("nixpi-app-setup.service", timeout=120)
+    nixpi.wait_for_unit("sshd.service", timeout=60)
+    nixpi.succeed("hostnamectl --static | grep -qx 'nixpi-firstboot-test'")
     nixpi.succeed("test -d " + home + "/.nixpi")
-    nixpi.wait_until_succeeds("test ! -f " + home + "/.nixpi/wizard-state/system-ready", timeout=60)
     nixpi.fail("test -f " + home + "/.nixpi/.setup-complete")
-    nixpi.succeed("su - pi -c 'sudo -n true'")
+    nixpi.succeed("sudo -u pi -- sudo -n true")
+    nixpi.succeed("ss -ltn '( sport = :22 )' | grep -q LISTEN")
+    nixpi.fail("command -v nixpi-setup-apply")
 
     nixpi.succeed("test -d " + home + "/.pi")
-    nixpi.succeed("test -f " + home + "/.pi/settings.json")
+    nixpi.succeed("test -d " + home + "/.pi/agent")
     nixpi.succeed("test ! -L " + home + "/.pi")
     nixpi.succeed("test \"$(stat -c %U " + home + "/.pi)\" = pi")
-    nixpi.succeed("test -d /srv/nixpi/.git")
-    nixpi.succeed("test -f /srv/nixpi/flake.nix")
-    nixpi.fail("test -e /var/lib/nixpi/pi-nixpi")
-    nixpi.succeed("test -f /etc/nixos/flake.nix")
-    nixpi.succeed("grep -q 'nixosConfigurations.nixos' /etc/nixos/flake.nix")
-    nixpi.succeed("grep -q 'path:/srv/nixpi' /etc/nixos/flake.nix")
+    nixpi.succeed("test -L " + home + "/.pi/settings.json")
+    nixpi.succeed("readlink " + home + "/.pi/settings.json | grep -q '^/nix/store/'")
+    nixpi.fail("test -e " + home + "/.pi/agent/auth.json")
+    nixpi.fail("test -L " + home + "/.pi/agent/auth.json")
+    nixpi.fail("systemctl cat nixpi-app-setup.service | grep -Eq 'chown -R|install -m 0600'")
+    nixpi.fail("test -e /srv/nixpi")
+    nixpi.fail("test -f /etc/nixos/flake.nix")
+    nixpi.fail("systemctl cat nixpi-install-finalize.service >/dev/null")
     nixpi.fail("command -v codex")
+    nixpi.fail("test -e " + home + "/.bashrc")
+    nixpi.fail("test -e " + home + "/.bash_profile")
+    nixpi.fail("test -e /etc/skel/.bashrc")
+    nixpi.fail("test -e /etc/skel/.bash_profile")
+    nixpi.fail("grep -q 'nixpi-shell-dotfiles' /run/current-system/activate")
     nixpi.succeed(
-        "su - pi -c 'test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi; "
+        "sudo -u pi -- bash -lc '"
+        + "test \"$NIXPI_PI_DIR\" = /home/pi/.pi && "
+        + "test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi && "
+        + "printf %s \"$PATH\" | grep -q \"/usr/local/share/nixpi/node_modules/.bin\" && "
         + "pi --help | grep -q \"AI coding assistant\"'"
     )
 

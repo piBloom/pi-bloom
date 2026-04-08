@@ -7,10 +7,6 @@
 
 let
   inherit (config.nixpi) primaryUser stateDir;
-  primaryHome = "/home/${primaryUser}";
-  systemReadyFile = "${primaryHome}/.nixpi/wizard-state/system-ready";
-  firstBootSudoersDir = "${stateDir}/sudoers.d";
-  firstBootSudoersPath = "${firstBootSudoersDir}/nixpi-first-boot";
   socketDir = "/run/nixpi-broker";
   socketPath = "${socketDir}/broker.sock";
   brokerStateDir = "${stateDir}/broker";
@@ -38,6 +34,7 @@ let
     export NIXPI_BROKER_CONFIG=${brokerConfig}
     exec ${brokerProgram}/bin/nixpi-broker "$@"
   '';
+  brokerCtlCommand = "/run/current-system/sw/bin/nixpi-brokerctl";
 in
 {
   imports = [ ./options.nix ];
@@ -57,82 +54,72 @@ in
     environment.systemPackages = [ brokerCtl ];
 
     systemd.tmpfiles.settings.nixpi-broker = {
+      "${socketDir}".d = {
+        mode = "0770";
+        user = "root";
+        group = primaryUser;
+      };
       "${brokerStateDir}".d = {
         mode = "0770";
         user = "root";
         group = primaryUser;
       };
-      "${firstBootSudoersDir}".d = {
-        mode = "0750";
-        user = "root";
-        group = "root";
+    };
+
+    systemd.sockets.nixpi-broker = {
+      description = "NixPI privileged operations broker socket";
+      wantedBy = [ "sockets.target" ];
+      socketConfig = {
+        ListenStream = socketPath;
+        SocketUser = "root";
+        SocketGroup = primaryUser;
+        SocketMode = "0660";
+        Service = "nixpi-broker.service";
+        RemoveOnStop = true;
       };
     };
 
-    security.sudo.extraConfig = ''
-      # NixPI first-boot dynamic sudo grants.
-      #includedir ${firstBootSudoersDir}
-    '';
-
-    system.activationScripts.nixpi-first-boot-sudo = lib.stringAfter [ "users" ] ''
-      primary_user="${primaryUser}"
-      marker="${systemReadyFile}"
-      sudoers_dir="${firstBootSudoersDir}"
-      sudoers_file="${firstBootSudoersPath}"
-
-      if [ -z "$primary_user" ]; then
-        rm -f "$sudoers_file"
-        exit 0
-      fi
-
-      install -d -m 0750 "$sudoers_dir"
-
-      if [ -f "$marker" ]; then
-        rm -f "$sudoers_file"
-      else
-        install -m 0440 /dev/null "$sudoers_file"
-        printf '%s\n' \
-          '# Managed by NixPI first-boot setup gate.' \
-          "$primary_user ALL=(ALL:ALL) NOPASSWD: ALL" > "$sudoers_file"
-      fi
-    '';
-
-    system.services.nixpi-broker = {
-      process.argv = [
-        "${brokerCtl}/bin/nixpi-brokerctl"
-        "server"
-      ];
-      systemd.service = {
-        description = "NixPI privileged operations broker";
-        after = [ "network.target" ];
-        wantedBy = [ "multi-user.target" ];
-        serviceConfig = {
-          User = "root";
-          Group = "root";
-          RuntimeDirectory = "nixpi-broker";
-          RuntimeDirectoryMode = "0770";
-          UMask = "0007";
-          Environment = [ "NIXPI_BROKER_CONFIG=${brokerConfig}" ];
-        };
+    systemd.services.nixpi-broker = {
+      description = "NixPI privileged operations broker";
+      serviceConfig = {
+        ExecStart = "${brokerCtl}/bin/nixpi-brokerctl server";
+        User = "root";
+        Group = "root";
+        Restart = "always";
+        RestartSec = 5;
+        UMask = "0007";
+        Environment = [ "NIXPI_BROKER_CONFIG=${brokerConfig}" ];
       };
     };
 
-    security.sudo.extraRules = lib.optional (primaryUser != "") {
-      users = [ primaryUser ];
-      commands = [
+    security.sudo.extraRules =
+      lib.optionals (config.nixpi.bootstrap.temporaryAdmin.enable && primaryUser != "") [
         {
-          command = "${brokerCtl}/bin/nixpi-brokerctl grant-admin *";
-          options = [ "NOPASSWD" ];
+          users = [ primaryUser ];
+          commands = [
+            {
+              command = "ALL";
+              options = [ "NOPASSWD" ];
+            }
+          ];
         }
-        {
-          command = "${brokerCtl}/bin/nixpi-brokerctl revoke-admin";
-          options = [ "NOPASSWD" ];
-        }
-        {
-          command = "${brokerCtl}/bin/nixpi-brokerctl status";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    };
+      ]
+      ++ lib.optional (primaryUser != "") {
+        users = [ primaryUser ];
+        commands = [
+          {
+            command = "${brokerCtlCommand} grant-admin *";
+            options = [ "NOPASSWD" ];
+          }
+          {
+            command = "${brokerCtlCommand} revoke-admin";
+            options = [ "NOPASSWD" ];
+          }
+          {
+            command = "${brokerCtlCommand} status";
+            options = [ "NOPASSWD" ];
+          }
+        ];
+      };
   };
 }

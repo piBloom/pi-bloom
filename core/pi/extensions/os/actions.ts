@@ -8,8 +8,6 @@ import path from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { run } from "../../../lib/exec.js";
 import {
-	assertSupportedRebuildBranch,
-	getCanonicalRepoDir,
 	getSystemFlakeDir,
 	getUpdateStatusPath,
 } from "../../../lib/filesystem.js";
@@ -62,39 +60,9 @@ function ensureSystemFlakeExists(flake: string): OsActionResult | null {
 	}
 
 	return errorResult(
-		`System flake not found at ${flake}. NixPI rebuilds through the standard /etc/nixos flake, which should import the canonical checkout at /srv/nixpi. ` +
-			`Run bootstrap again or initialize /etc/nixos/flake.nix so it imports /srv/nixpi before applying updates.`,
+		`System flake not found at ${flake}. The installed host flake at ${flake} is the running system's source of truth. ` +
+			`Repair or reinstall that installed host flake before applying updates. Any operator checkout such as /srv/nixpi is optional and separate from system convergence.`,
 	);
-}
-
-async function ensureCanonicalMainBranch(signal: AbortSignal | undefined): Promise<
-	| { branchOk: true }
-	| {
-			branchOk: false;
-			errorResult: OsActionResult;
-	  }
-> {
-	const repoDir = getCanonicalRepoDir();
-	const branchResult = await run("git", ["-C", repoDir, "branch", "--show-current"], signal);
-	if (branchResult.exitCode !== 0) {
-		return {
-			branchOk: false,
-			errorResult: errorResult(`Failed to determine canonical repo branch at ${repoDir}: ${branchResult.stderr}`),
-		};
-	}
-
-	try {
-		assertSupportedRebuildBranch(branchResult.stdout.trim());
-		return { branchOk: true };
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		return {
-			branchOk: false,
-			errorResult: errorResult(
-				`${message}. switch to main in /srv/nixpi or run 'sudo nixpi-rebuild-pull main' before rebuilding from ${getSystemFlakeDir()}.`,
-			),
-		};
-	}
 }
 
 async function handleNixosApply(signal: AbortSignal | undefined): Promise<OsActionResult> {
@@ -102,11 +70,6 @@ async function handleNixosApply(signal: AbortSignal | undefined): Promise<OsActi
 	const flakeError = ensureSystemFlakeExists(flakeDir);
 	if (flakeError) {
 		return flakeError;
-	}
-
-	const branchCheck = await ensureCanonicalMainBranch(signal);
-	if (!branchCheck.branchOk) {
-		return branchCheck.errorResult;
 	}
 
 	const flake = `${flakeDir}#nixos`;

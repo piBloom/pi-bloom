@@ -1,6 +1,5 @@
 {
   lib,
-  nixPiModulesNoShell,
   mkTestFilesystems,
   ...
 }:
@@ -11,20 +10,18 @@ let
   clientPrivateKey = "GFsSi1hbQDbwgpQDI4o/gi+jhh4CNTI4gfTp+RCSCE0=";
   clientPublicKey = "24kILIZLwbEGAMV6JP7siP9Rg2DR6QMJjSdPSl7F8i0=";
   presharedKey = "KJduqkMXVQ9l0Iz7JsLzuhkD1zTJ9ECyC3HVB6T3G10=";
-  initSystemFlake = ../../core/scripts/nixpi-init-system-flake.sh;
+  username = "pi";
+  homeDir = "/home/${username}";
 in
 {
   name = "nixpi-wireguard";
 
   nodes = {
     nixpi =
-      { pkgs, ... }:
-      let
-        username = "pi";
-        homeDir = "/home/${username}";
-      in
+      { ... }:
       {
-        imports = nixPiModulesNoShell ++ [
+        imports = [
+          ../../core/os/hosts/vps.nix
           mkTestFilesystems
         ];
 
@@ -53,18 +50,6 @@ in
         boot.loader.systemd-boot.enable = true;
         boot.loader.efi.canTouchEfiVariables = true;
 
-        users.users.${username} = {
-          isNormalUser = true;
-          group = username;
-          extraGroups = [
-            "wheel"
-            "networkmanager"
-          ];
-          home = homeDir;
-          shell = pkgs.bash;
-        };
-        users.groups.${username} = { };
-
         environment.etc = {
           "wireguard/server.key".text = serverPrivateKey;
           "wireguard/psk".text = presharedKey;
@@ -75,24 +60,6 @@ in
           "C /run/wireguard/psk 0600 root root - /etc/wireguard/psk"
           "d ${homeDir}/.nixpi 0755 ${username} ${username} -"
         ];
-
-        system.activationScripts.nixpi-wireguard-bootstrap = lib.stringAfter [ "users" ] ''
-          mkdir -p ${homeDir}/.nixpi
-          install -d -m 0755 /etc/nixos
-          cat > /etc/nixos/configuration.nix <<'EOF'
-          { ... }:
-          {
-            networking.hostName = "nixpi";
-          }
-          EOF
-          cat > /etc/nixos/hardware-configuration.nix <<'EOF'
-          { ... }:
-          {}
-          EOF
-          ${lib.getExe' pkgs.bash "bash"} ${initSystemFlake} /srv/nixpi nixpi ${username} UTC us
-          chown -R ${username}:${username} ${homeDir}/.nixpi
-          chmod 755 ${homeDir}/.nixpi
-        '';
       };
 
     client =
@@ -156,6 +123,9 @@ in
     nixpi.fail("test -f /etc/systemd/network/50-wg0.netdev")
     nixpi.fail("test -f /etc/systemd/network/50-wg0.network")
     nixpi.fail("systemctl cat nixpi-prefer-wifi.service >/dev/null")
+    nixpi.fail("test -e /srv/nixpi")
+    nixpi.fail("test -f /etc/nixos/flake.nix")
+    nixpi.fail("systemctl cat nixpi-install-finalize.service >/dev/null")
     nixpi.succeed("ip -4 addr show dev wg0 | grep -q '10.77.0.1/24'")
     nixpi.succeed("wg show wg0 | grep -q '${clientPublicKey}'")
     nixpi.succeed("systemctl stop wireguard-wg0.service")

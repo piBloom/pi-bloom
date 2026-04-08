@@ -3,10 +3,10 @@
 NixPI is a VPS-first, headless AI companion OS built on NixOS.
 
 It combines:
-- a canonical system checkout at `/srv/nixpi`
+- a final host configuration installed directly by `nixos-anywhere`
 - a Zellij-first operator runtime for SSH and local tty sessions
-- host automation through NixOS and systemd
-- Pi runtime + extensions in one deployable system
+- bootstrap and steady-state host behavior selected in NixOS config
+- an optional operator checkout such as `/srv/nixpi` for operator workflows
 
 By default, interactive operator sessions enter **Zellij** on both SSH and local tty logins. The default layout opens a Pi tab and a plain shell tab. For recovery or troubleshooting, skip auto-start with `NIXPI_NO_ZELLIJ=1` before starting a login shell.
 
@@ -20,13 +20,27 @@ nix run .#nixpi-deploy-ovh -- \
   --disk /dev/sdX
 ```
 
-After first boot, operate from the canonical checkout:
+After install, validate the running host:
 
 ```bash
-cd /srv/nixpi
-sudo nixpi-rebuild
-sudo nixpi-rebuild-pull
+systemctl status sshd.service
+systemctl status wireguard-wg0.service
+systemctl status nixpi-app-setup.service
 ```
+
+Operator rebuild path and repo semantics are separate:
+
+- the installed `/etc/nixos` flake is the running host's source of truth
+- `sudo nixpi-rebuild` rebuilds that installed host flake from anywhere
+- an optional operator checkout such as `/srv/nixpi` is a workspace, not part of install convergence
+
+Optional `/srv/nixpi` sync-and-rebuild helper:
+
+```bash
+sudo nixpi-rebuild-pull [branch]
+```
+
+The helper syncs a remote branch into the conventional `/srv/nixpi` operator checkout before rebuilding from that checkout.
 
 Rollback if needed:
 

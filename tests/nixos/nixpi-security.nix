@@ -1,47 +1,36 @@
-{ nixPiModulesNoShell, mkTestFilesystems, ... }:
+{ mkTestFilesystems, ... }:
 
 let
   mkNode =
-    { hostName, username }:
-    { pkgs, ... }:
+    {
+      hostName,
+      username,
+      bootstrapEnable ? true,
+      sshEnable ? bootstrapEnable,
+      temporaryAdminEnable ? bootstrapEnable,
+    }:
+    {
+      ...
+    }:
     let
       homeDir = "/home/${username}";
     in
     {
-      imports = nixPiModulesNoShell ++ [
+      imports = [
+        ../../core/os/hosts/vps.nix
         mkTestFilesystems
       ];
 
-      nixpi.primaryUser = username;
-      nixpi.security.enforceServiceFirewall = true;
-
-      virtualisation.diskSize = 20480;
-      virtualisation.memorySize = 4096;
-
-      boot.loader.systemd-boot.enable = true;
-      boot.loader.efi.canTouchEfiVariables = true;
-      networking.hostName = hostName;
-      time.timeZone = "UTC";
-      i18n.defaultLocale = "en_US.UTF-8";
-      networking.networkmanager.enable = true;
-      system.stateVersion = "25.05";
-
-      users.users.${username} = {
-        isNormalUser = true;
-        group = username;
-        extraGroups = [
-          "wheel"
-          "networkmanager"
-        ];
-        home = homeDir;
-        shell = pkgs.bash;
+      nixpi = {
+        primaryUser = username;
+        security.enforceServiceFirewall = true;
+        bootstrap.enable = bootstrapEnable;
+        bootstrap.ssh.enable = sshEnable;
+        bootstrap.temporaryAdmin.enable = temporaryAdminEnable;
       };
-      users.groups.${username} = { };
-      system.activationScripts.nixpi-bootstrap = ''
-        mkdir -p ${homeDir}/.nixpi
-        chown -R ${username}:${username} ${homeDir}/.nixpi
-        chmod 755 ${homeDir}/.nixpi
-      '';
+
+      networking.hostName = hostName;
+      systemd.tmpfiles.rules = [ "d ${homeDir}/.nixpi 0755 ${username} ${username} -" ];
     };
 in
 {
@@ -51,11 +40,15 @@ in
     bootstrap = mkNode {
       hostName = "nixpi-bootstrap";
       username = "pi";
+      bootstrapEnable = true;
     };
 
     steady = mkNode {
       hostName = "nixpi-steady";
       username = "pi";
+      bootstrapEnable = false;
+      sshEnable = true;
+      temporaryAdminEnable = false;
     };
 
     client =
@@ -88,27 +81,26 @@ in
     bootstrap.wait_for_unit("multi-user.target", timeout=300)
     bootstrap.wait_for_unit("fail2ban.service", timeout=60)
     bootstrap.wait_for_unit("nixpi-app-setup.service", timeout=120)
-    bootstrap.wait_until_succeeds("test ! -f /home/pi/.nixpi/wizard-state/system-ready", timeout=30)
-    bootstrap.succeed("su - pi -c 'sudo -n true'")
+    bootstrap.wait_for_unit("sshd.service", timeout=60)
+    bootstrap.succeed("sudo -u pi -- sudo -n true")
     bootstrap.succeed("test -f /home/pi/.pi/settings.json")
 
     steady.start()
     steady.wait_for_unit("multi-user.target", timeout=300)
     steady.wait_for_unit("nixpi-app-setup.service", timeout=120)
-    steady.succeed("env NIXPI_PRIMARY_USER=pi nixpi-setup-apply | tee /tmp/setup-apply.out")
-    steady.wait_until_succeeds("test -f /home/pi/.nixpi/wizard-state/system-ready", timeout=120)
-    steady.fail("su - pi -c 'sudo -n true'")
-    steady.succeed("su - pi -c 'nixpi-brokerctl status >/tmp/steady-broker-status.json'")
+    steady.wait_for_unit("sshd.service", timeout=60)
+    steady.fail("sudo -u pi -- sudo -n true")
+    steady.succeed("sudo -u pi -- bash -lc 'nixpi-brokerctl status >/tmp/steady-broker-status.json'")
     steady.wait_for_unit("fail2ban.service", timeout=60)
     steady.succeed("test -f /home/pi/.pi/settings.json")
     steady.succeed("command -v pi")
+    steady.fail("command -v nixpi-setup-apply")
 
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)
     client.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
 
     client.succeed("nc -z nixpi-bootstrap 22")
-
     client.succeed("nc -z -w 2 nixpi-steady 22")
 
     steady.succeed("fail2ban-client status sshd | grep -q 'Status for the jail: sshd'")

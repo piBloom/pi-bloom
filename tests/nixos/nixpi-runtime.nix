@@ -44,10 +44,15 @@
 
     nixpi.succeed("test -d /usr/local/share/nixpi")
     nixpi.succeed("test -d /home/pi/.pi")
-    nixpi.succeed("test -f /home/pi/.pi/settings.json")
+    nixpi.succeed("test -d /home/pi/.pi/agent")
     nixpi.succeed("test ! -L /home/pi/.pi")
     nixpi.succeed('test "$(stat -c %U /home/pi/.pi)" = pi')
-    nixpi.succeed("su - pi -c 'test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi; pi --help | grep -q \"AI coding assistant\"'")
+    nixpi.succeed("test -L /home/pi/.pi/settings.json")
+    nixpi.succeed("readlink /home/pi/.pi/settings.json | grep -q '^/nix/store/'")
+    nixpi.fail("test -e /home/pi/.pi/agent/auth.json")
+    nixpi.fail("test -L /home/pi/.pi/agent/auth.json")
+    nixpi.fail("systemctl cat nixpi-app-setup.service | grep -Eq 'chown -R|install -m 0600'")
+    nixpi.succeed("pi --help | grep -q \"AI coding assistant\"")
 
     print("nixpi-runtime tests passed!")
   '';

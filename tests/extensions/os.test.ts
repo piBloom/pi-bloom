@@ -146,27 +146,15 @@ describe("handleNixosUpdate — rollback", () => {
 });
 
 describe("handleNixosUpdate — apply (missing system flake)", () => {
-	it("returns error when /etc/nixos/flake.nix is absent and guides operators to /srv/nixpi main", async () => {
+	it("returns error when /etc/nixos/flake.nix is absent and keeps /srv/nixpi optional", async () => {
 		vi.spyOn(fs, "existsSync").mockReturnValue(false);
 		const ctx = createMockExtensionContext();
 		const result = await handleNixosUpdate("apply", undefined, ctx as never);
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("System flake not found at /etc/nixos");
-		expect(result.content[0].text).toContain("standard /etc/nixos flake");
-		expect(result.content[0].text).toContain("/srv/nixpi");
-		expect(result.content[0].text).toContain("bootstrap");
-	});
-});
-
-describe("handleNixosUpdate — apply (wrong canonical branch)", () => {
-	it("returns error when /srv/nixpi is not on main", async () => {
-		vi.spyOn(fs, "existsSync").mockReturnValue(true);
-		mockRun.mockResolvedValueOnce({ stdout: "feature/test\n", stderr: "", exitCode: 0 });
-		const ctx = createMockExtensionContext();
-		const result = await handleNixosUpdate("apply", undefined, ctx as never);
-		expect(result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Supported rebuilds require /srv/nixpi to be on main");
-		expect(result.content[0].text).toContain("switch to main");
+		expect(result.content[0].text).toContain("installed host flake");
+		expect(result.content[0].text).toContain("operator checkout");
+		expect(result.content[0].text).toContain("optional");
 	});
 });
 
@@ -260,35 +248,24 @@ describe("handleSystemHealth", () => {
 // handleNixosUpdate — apply (success path)
 // ---------------------------------------------------------------------------
 describe("handleNixosUpdate — apply (success)", () => {
-	it("returns success message when brokerctl apply succeeds", async () => {
+	it("returns success message when brokerctl apply succeeds without consulting /srv/nixpi", async () => {
 		vi.spyOn(fs, "existsSync").mockReturnValue(true);
-		mockRun
-			.mockResolvedValueOnce({ stdout: "main\n", stderr: "", exitCode: 0 }) // git branch
-			.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // brokerctl apply
+		mockRun.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 0 }); // brokerctl apply
 		const ctx = createMockExtensionContext();
 		const result = await handleNixosUpdate("apply", undefined, ctx as never);
 		expect(result.isError).toBeFalsy();
 		expect(result.content[0].text).toContain("Update applied successfully");
+		expect(mockRun).toHaveBeenCalledTimes(1);
+		expect(mockRun).toHaveBeenCalledWith("nixpi-brokerctl", ["nixos-update", "apply", "/etc/nixos#nixos"], undefined);
 	});
 
 	it("returns error message when brokerctl apply fails", async () => {
 		vi.spyOn(fs, "existsSync").mockReturnValue(true);
-		mockRun
-			.mockResolvedValueOnce({ stdout: "main\n", stderr: "", exitCode: 0 }) // git branch
-			.mockResolvedValueOnce({ stdout: "", stderr: "build failed", exitCode: 1 }); // brokerctl apply
+		mockRun.mockResolvedValueOnce({ stdout: "", stderr: "build failed", exitCode: 1 }); // brokerctl apply
 		const ctx = createMockExtensionContext();
 		const result = await handleNixosUpdate("apply", undefined, ctx as never);
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("build failed");
-	});
-
-	it("returns error when git branch command fails", async () => {
-		vi.spyOn(fs, "existsSync").mockReturnValue(true);
-		mockRun.mockResolvedValueOnce({ stdout: "", stderr: "not a repo", exitCode: 128 }); // git branch fails
-		const ctx = createMockExtensionContext();
-		const result = await handleNixosUpdate("apply", undefined, ctx as never);
-		expect(result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Failed to determine canonical repo branch");
 	});
 });
 

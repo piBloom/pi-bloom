@@ -2,14 +2,15 @@
 
 > Day-2 commands for deployed NixPI hosts
 
+The installed `/etc/nixos` flake is authoritative for the running host. Keep an operator checkout such as `/srv/nixpi` only if you want the conventional repo-sync workflow.
+
 ## Core workflows
 
 ```bash
-# Canonical rebuild path
-cd /srv/nixpi
+# Rebuild the installed host flake
 sudo nixpi-rebuild
 
-# Update checkout + rebuild
+# Optional: sync the conventional /srv/nixpi checkout, then rebuild
 sudo nixpi-rebuild-pull
 
 # Roll back

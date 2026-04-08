@@ -12,7 +12,6 @@ on:
           - nixos-smoke
           - nixos-full
           - nixos-destructive
-          - nixpi-bootstrap-fresh-install-stable
   schedule:
     - cron: "0 3 * * *"
 

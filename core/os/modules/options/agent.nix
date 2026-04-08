@@ -60,6 +60,14 @@
       '';
     };
 
+    piDir = lib.mkOption {
+      type = lib.types.str;
+      description = ''
+        Declarative Pi runtime directory exported as NIXPI_PI_DIR and
+        PI_CODING_AGENT_DIR.
+      '';
+    };
+
     workspaceDir = lib.mkOption {
       type = lib.types.str;
       description = ''
@@ -70,5 +78,8 @@
     };
   };
 
-  config.nixpi.agent.workspaceDir = lib.mkDefault "/home/${config.nixpi.primaryUser}/nixpi";
+  config.nixpi.agent = {
+    piDir = lib.mkDefault "/home/${config.nixpi.primaryUser}/.pi";
+    workspaceDir = lib.mkDefault "/home/${config.nixpi.primaryUser}/nixpi";
+  };
 }

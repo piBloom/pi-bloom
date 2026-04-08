@@ -40,7 +40,6 @@ export interface BrokerRuntime {
 	mkdir(target: string): Promise<void>;
 	readFile(target: string): Promise<string>;
 	runCommand(args: string[]): Promise<BrokerCommandResult>;
-	setSocketPermissions(socketPath: string, primaryUser: string): Promise<void>;
 	unlink(target: string): Promise<void>;
 	writeFile(target: string, content: string): Promise<void>;
 	now(): number;
@@ -55,6 +54,8 @@ export interface BrokerRequest {
 	flake?: string;
 	minutes?: number;
 }
+
+export type BrokerListenTarget = string | { fd: number };
 
 export function parseDuration(spec: string): number {
 	if (spec.endsWith("m")) {
@@ -242,10 +243,44 @@ export async function request(runtime: BrokerRuntime, config: BrokerConfig, payl
 	return response.exitCode;
 }
 
-export async function serve(runtime: BrokerRuntime, config: BrokerConfig): Promise<void> {
+function parsePositiveInteger(value: string | undefined): number | null {
+	if (!value || !/^\d+$/.test(value)) {
+		return null;
+	}
+	const parsed = Number.parseInt(value, 10);
+	return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+function systemdListenFd(env: NodeJS.ProcessEnv, pid: number): number | null {
+	const listenPid = parsePositiveInteger(env.LISTEN_PID);
+	const listenFds = parsePositiveInteger(env.LISTEN_FDS);
+	if (listenPid !== pid || listenFds !== 1) {
+		return null;
+	}
+	return 3;
+}
+
+export function brokerListenTarget(
+	config: Pick<BrokerConfig, "socketPath">,
+	env: NodeJS.ProcessEnv = process.env,
+	pid = process.pid,
+): BrokerListenTarget {
+	const fd = systemdListenFd(env, pid);
+	return fd === null ? config.socketPath : { fd };
+}
+
+export async function serve(
+	runtime: BrokerRuntime,
+	config: BrokerConfig,
+	env: NodeJS.ProcessEnv = process.env,
+	pid = process.pid,
+): Promise<void> {
 	await runtime.mkdir(config.brokerStateDir);
-	await runtime.mkdir(new URL(".", `file://${config.socketPath}`).pathname).catch(() => undefined);
-	await runtime.unlink(config.socketPath).catch(() => undefined);
+	const listenTarget = brokerListenTarget(config, env, pid);
+	if (typeof listenTarget === "string") {
+		await runtime.mkdir(new URL(".", `file://${config.socketPath}`).pathname).catch(() => undefined);
+		await runtime.unlink(config.socketPath).catch(() => undefined);
+	}
 
 	const server = net.createServer((socket) => {
 		void (async () => {
@@ -266,9 +301,12 @@ export async function serve(runtime: BrokerRuntime, config: BrokerConfig): Promi
 
 	await new Promise<void>((resolve, reject) => {
 		server.once("error", reject);
-		server.listen(config.socketPath, () => resolve());
+		if (typeof listenTarget === "string") {
+			server.listen(listenTarget, () => resolve());
+			return;
+		}
+		server.listen(listenTarget, () => resolve());
 	});
-	await runtime.setSocketPermissions(config.socketPath, config.primaryUser);
 	await new Promise(() => undefined);
 }
 
@@ -335,14 +373,6 @@ async function runCommand(args: string[]): Promise<BrokerCommandResult> {
 	}
 }
 
-async function resolvePrimaryGroup(primaryUser: string): Promise<number> {
-	const group = await runCommand(["id", "-g", primaryUser]);
-	if (group.exitCode !== 0) {
-		throw new Error(group.stderr || `Failed to resolve primary group for ${primaryUser}`);
-	}
-	return Number.parseInt(group.stdout.trim(), 10);
-}
-
 export const defaultBrokerRuntime: BrokerRuntime = {
 	mkdir(target) {
 		return fs.mkdir(target, { recursive: true }).then(() => undefined);
@@ -351,10 +381,6 @@ export const defaultBrokerRuntime: BrokerRuntime = {
 		return fs.readFile(target, "utf-8");
 	},
 	runCommand,
-	async setSocketPermissions(socketPath, primaryUser) {
-		await fs.chown(socketPath, 0, await resolvePrimaryGroup(primaryUser));
-		await fs.chmod(socketPath, 0o660);
-	},
 	unlink(target) {
 		return fs.unlink(target).then(() => undefined);
 	},

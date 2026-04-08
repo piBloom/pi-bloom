@@ -2,52 +2,28 @@
 # Aggregates NixPI option declarations split by concern.
 { lib, ... }:
 
+let
+  installFinalizeRemoved = ''
+    nixpi.install.* was removed. Install the final host configuration directly
+    with nixos-anywhere; NixPI no longer seeds /srv/nixpi or generates
+    /etc/nixos/flake.nix at boot.
+  '';
+in
 {
   imports = [
     ./options/core.nix
+    ./options/bootstrap.nix
     ./options/security.nix
     ./options/agent.nix
     ./options/wireguard.nix
     ./options/terminal-ui.nix
+    (lib.mkRenamedOptionModule [ "nixpi" "bootstrap" "keepSshAfterSetup" ] [ "nixpi" "bootstrap" "ssh" "enable" ])
+    (lib.mkRemovedOptionModule [ "nixpi" "install" "enable" ] installFinalizeRemoved)
+    (lib.mkRemovedOptionModule [ "nixpi" "install" "repoUrl" ] installFinalizeRemoved)
+    (lib.mkRemovedOptionModule [ "nixpi" "install" "repoBranch" ] installFinalizeRemoved)
   ];
 
   options.nixpi = {
-    bootstrap.keepSshAfterSetup = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = ''
-        Whether SSH should remain reachable after first-boot setup
-        completes. By default SSH is treated as a bootstrap-only path.
-      '';
-    };
-
-    install = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = ''
-          Whether the installed system should seed the canonical /srv/nixpi checkout
-          and initialize /etc/nixos/flake.nix on first boot.
-        '';
-      };
-
-      repoUrl = lib.mkOption {
-        type = lib.types.str;
-        default = "https://github.com/alexradunet/nixpi.git";
-        description = ''
-          Git repository used to seed /srv/nixpi on first boot.
-        '';
-      };
-
-      repoBranch = lib.mkOption {
-        type = lib.types.str;
-        default = "main";
-        description = ''
-          Branch used when cloning the canonical /srv/nixpi checkout.
-        '';
-      };
-    };
-
     update = {
       onBootSec = lib.mkOption {
         type = lib.types.str;

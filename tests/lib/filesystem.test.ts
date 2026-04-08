@@ -9,15 +9,14 @@ import {
 	ensureDir,
 	getCanonicalRepoDir,
 	getNixPiDir,
+	getBootstrapMode,
 	getNixPiStateDir,
-	getPersonaDonePath,
 	getPiDir,
 	getPrimaryUser,
 	getQuadletDir,
 	getSystemFlakeDir,
-	getSystemReadyPath,
 	getUpdateStatusPath,
-	getWizardStateDir,
+	isBootstrapMode,
 	readPackageVersion,
 	resolvePackageDir,
 	safePath,
@@ -300,19 +299,24 @@ describe("env-based path helpers", () => {
 		expect(getPiDir()).toBe(path.join(os.homedir(), ".pi"));
 	});
 
-	it("getWizardStateDir is nested under getNixPiStateDir", () => {
-		process.env.NIXPI_STATE_DIR = "/s";
-		expect(getWizardStateDir()).toBe("/s/wizard-state");
+	it("getBootstrapMode defaults to steady", () => {
+		delete process.env.NIXPI_BOOTSTRAP_MODE;
+		expect(getBootstrapMode()).toBe("steady");
+		expect(isBootstrapMode()).toBe(false);
 	});
 
-	it("getSystemReadyPath is inside wizard-state", () => {
-		process.env.NIXPI_STATE_DIR = "/s";
-		expect(getSystemReadyPath()).toBe("/s/wizard-state/system-ready");
+	it("getBootstrapMode accepts bootstrap aliases", () => {
+		for (const value of ["bootstrap", "1", "true", "TRUE"]) {
+			process.env.NIXPI_BOOTSTRAP_MODE = value;
+			expect(getBootstrapMode()).toBe("bootstrap");
+			expect(isBootstrapMode()).toBe(true);
+		}
 	});
 
-	it("getPersonaDonePath is inside wizard-state", () => {
-		process.env.NIXPI_STATE_DIR = "/s";
-		expect(getPersonaDonePath()).toBe("/s/wizard-state/persona-done");
+	it("getBootstrapMode treats other values as steady", () => {
+		process.env.NIXPI_BOOTSTRAP_MODE = "steady";
+		expect(getBootstrapMode()).toBe("steady");
+		expect(isBootstrapMode()).toBe(false);
 	});
 
 	it("getUpdateStatusPath is inside state dir", () => {

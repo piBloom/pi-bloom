@@ -1,9 +1,8 @@
 { pkgs, lib, config, ... }:
 
 let
-  nixpiRebuild = pkgs.callPackage ../pkgs/nixpi-rebuild { };
-  nixpiRebuildPull = pkgs.callPackage ../pkgs/nixpi-rebuild-pull { };
-  setupApplyPackage = pkgs.callPackage ../pkgs/nixpi-setup-apply { };
+  nixpiRebuild = pkgs.callPackage ../pkgs/nixpi-rebuild { }; # rebuild the installed /etc/nixos host flake
+  nixpiRebuildPull = pkgs.callPackage ../pkgs/nixpi-rebuild-pull { }; # sync/rebuild the conventional /srv/nixpi operator checkout
 in
 {
   imports = [ ./options.nix ];
@@ -30,6 +29,5 @@ in
     OVMF
     nixpiRebuild
     nixpiRebuildPull
-    setupApplyPackage
   ] ++ lib.optionals config.nixpi.security.fail2ban.enable [ pkgs.fail2ban ];
 }

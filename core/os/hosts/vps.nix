@@ -26,8 +26,7 @@ in
   systemd.services."serial-getty@ttyS0".enable = lib.mkDefault true;
 
   nixpi = {
-    install.enable = lib.mkDefault true;
-    bootstrap.keepSshAfterSetup = lib.mkDefault true;
+    bootstrap.enable = lib.mkDefault true;
     security.ssh.passwordAuthentication = lib.mkDefault false;
     terminal.interface = lib.mkDefault "zellij";
     terminal.zellij.enable = lib.mkDefault true;

@@ -1,36 +1,32 @@
-{
-  lib,
-  nixPiModulesNoShell,
-  mkTestFilesystems,
-  mkManagedUserConfig,
-  ...
-}:
+{ mkTestFilesystems, ... }:
 
+let
+  username = "pi";
+  homeDir = "/home/${username}";
+in
 {
   name = "nixpi-post-setup-lockdown";
 
   nodes = {
-    nixpi =
-      _:
-      let
-        username = "pi";
-        homeDir = "/home/${username}";
-      in
-      {
-        imports = nixPiModulesNoShell ++ [
-          ../../core/os/modules/broker.nix
-          mkTestFilesystems
-        ];
+    nixpi = {
+      ...
+    }: {
+      imports = [
+        ../../core/os/hosts/vps.nix
+        mkTestFilesystems
+      ];
 
-        networking.hostName = "nixpi-steady";
-        nixpi.security.enforceServiceFirewall = true;
-        system.activationScripts.nixpi-bootstrap = lib.stringAfter [ "users" ] ''
-          mkdir -p ${homeDir}/.nixpi
-          chown -R ${username}:${username} ${homeDir}/.nixpi
-          chmod 755 ${homeDir}/.nixpi
-        '';
-      }
-      // (mkManagedUserConfig { inherit username homeDir; });
+      networking.hostName = "nixpi-steady";
+      nixpi = {
+        primaryUser = username;
+        bootstrap.enable = false;
+        bootstrap.ssh.enable = true;
+        bootstrap.temporaryAdmin.enable = false;
+        security.enforceServiceFirewall = true;
+      };
+
+      systemd.tmpfiles.rules = [ "d ${homeDir}/.nixpi 0755 ${username} ${username} -" ];
+    };
 
     client =
       { pkgs, ... }:
@@ -59,19 +55,18 @@
     nixpi.start()
     nixpi.wait_for_unit("multi-user.target", timeout=300)
     nixpi.wait_for_unit("nixpi-app-setup.service", timeout=120)
-    nixpi.succeed("env NIXPI_PRIMARY_USER=pi nixpi-setup-apply | tee /tmp/setup-apply.out")
-    nixpi.wait_until_succeeds("test -f /home/pi/.nixpi/wizard-state/system-ready", timeout=180)
-    nixpi.fail("test -f /home/pi/.nixpi/.setup-complete")
-    nixpi.fail("su - pi -c 'sudo -n true'")
-    nixpi.succeed("su - pi -c 'nixpi-brokerctl status >/tmp/broker-status.json'")
+    nixpi.wait_for_unit("sshd.service", timeout=60)
+    nixpi.fail("sudo -u pi -- sudo -n true")
+    nixpi.succeed("sudo -u pi -- bash -lc 'nixpi-brokerctl status >/tmp/broker-status.json'")
     nixpi.succeed("test -f /home/pi/.pi/settings.json")
     nixpi.succeed("command -v pi")
+    nixpi.fail("command -v nixpi-setup-apply")
 
     client.start()
     client.wait_for_unit("multi-user.target", timeout=120)
     client.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
 
-    # SSH remains available; only app/bootstrap surfaces are locked down.
+    # Steady-state keeps SSH available while bootstrap-only privilege grants stay disabled.
     client.succeed("nc -z -w 2 nixpi-steady 22")
 
     print("NixPI post-setup lockdown test passed!")

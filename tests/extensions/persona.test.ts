@@ -19,15 +19,18 @@ let api: MockExtensionAPI;
 let originalHome: string | undefined;
 let originalStateDir: string | undefined;
 let originalPiDir: string | undefined;
+let originalBootstrapMode: string | undefined;
 
 beforeEach(async () => {
 	temp = createTempNixPi();
 	originalHome = process.env.HOME;
 	originalStateDir = process.env.NIXPI_STATE_DIR;
 	originalPiDir = process.env.NIXPI_PI_DIR;
+	originalBootstrapMode = process.env.NIXPI_BOOTSTRAP_MODE;
 	process.env.HOME = temp.nixPiDir;
 	process.env.NIXPI_STATE_DIR = path.join(temp.nixPiDir, ".nixpi");
 	process.env.NIXPI_PI_DIR = path.join(temp.nixPiDir, ".pi");
+	delete process.env.NIXPI_BOOTSTRAP_MODE;
 	api = createMockExtensionAPI();
 	const mod = await import("../../core/pi/extensions/persona/index.js");
 	mod.default(api as never);
@@ -37,6 +40,8 @@ afterEach(() => {
 	process.env.HOME = originalHome;
 	process.env.NIXPI_STATE_DIR = originalStateDir;
 	process.env.NIXPI_PI_DIR = originalPiDir;
+	if (originalBootstrapMode !== undefined) process.env.NIXPI_BOOTSTRAP_MODE = originalBootstrapMode;
+	else delete process.env.NIXPI_BOOTSTRAP_MODE;
 	temp.cleanup();
 });
 
@@ -71,8 +76,8 @@ describe("persona session_start", () => {
 		expect(api._sessionName).toBe("Pi");
 	});
 
-	it("injects system-setup guidance when onboarding is still incomplete", async () => {
-		fs.mkdirSync(path.join(temp.nixPiDir, ".nixpi", "wizard-state"), { recursive: true });
+	it("injects system-setup guidance when bootstrap mode is enabled", async () => {
+		process.env.NIXPI_BOOTSTRAP_MODE = "bootstrap";
 
 		const result = (await api.fireEvent(
 			"before_agent_start",
@@ -85,13 +90,16 @@ describe("persona session_start", () => {
 		expect(result.systemPrompt).toContain("## System Setup");
 		expect(result.systemPrompt).toContain("BASE");
 		expect(result.systemPrompt).toContain("Do not open with generic `/login` or `/model` instructions");
-		expect(result.systemPrompt).toContain("user.email=$(id -un)@$(hostname -s).local");
-		expect(result.systemPrompt).toContain("/srv/nixpi");
+		expect(result.systemPrompt).toContain("git config --global user.email");
+		expect(result.systemPrompt).toContain("$(id -un)@$(hostname -s).local");
+		expect(result.systemPrompt).toContain("operator checkout they plan to use");
+		expect(result.systemPrompt).toContain("for example `/srv/nixpi`");
+		expect(result.systemPrompt).not.toContain("Canonical system source checkout: `/srv/nixpi`.");
+		expect(result.systemPrompt).toContain("Leave bootstrap mode by switching the host configuration");
 	});
 
-	it("does not inject system-setup guidance after onboarding is complete", async () => {
-		fs.mkdirSync(path.join(temp.nixPiDir, ".nixpi", "wizard-state"), { recursive: true });
-		fs.writeFileSync(path.join(temp.nixPiDir, ".nixpi", "wizard-state", "system-ready"), "done", "utf-8");
+	it("does not inject system-setup guidance in steady mode", async () => {
+		process.env.NIXPI_BOOTSTRAP_MODE = "steady";
 
 		const result = (await api.fireEvent(
 			"before_agent_start",

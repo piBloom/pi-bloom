@@ -73,14 +73,15 @@ export function getPiDir(): string {
 	return process.env.NIXPI_PI_DIR ?? path.join(os.homedir(), ".pi");
 }
 
-/** Resolve the persisted wizard checkpoint directory. */
-export function getWizardStateDir(): string {
-	return path.join(getNixPiStateDir(), "wizard-state");
+/** Resolve the declarative bootstrap mode exported by the NixOS runtime. */
+export function getBootstrapMode(): "bootstrap" | "steady" {
+	const raw = process.env.NIXPI_BOOTSTRAP_MODE?.trim().toLowerCase();
+	return raw === "bootstrap" || raw === "1" || raw === "true" ? "bootstrap" : "steady";
 }
 
-/** Resolve the system-ready marker path. */
-export function getSystemReadyPath(): string {
-	return path.join(getWizardStateDir(), "system-ready");
+/** Whether the runtime is in declarative bootstrap mode. */
+export function isBootstrapMode(): boolean {
+	return getBootstrapMode() === "bootstrap";
 }
 
 /** Resolve the primary account name used for the canonical repo checkout. */
@@ -107,11 +108,6 @@ export function getPrimaryUser(): string {
 /** Resolve the canonical working repo path. */
 export function getCanonicalRepoDir(): string {
 	return CANONICAL_REPO_DIR;
-}
-
-/** Resolve the persona-complete marker path. */
-export function getPersonaDonePath(): string {
-	return path.join(getWizardStateDir(), "persona-done");
 }
 
 /** Path to the user's Quadlet unit directory for rootless containers. */

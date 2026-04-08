@@ -16,8 +16,11 @@ NixPI now has one deployment flow:
 
 1. Put the VPS into rescue mode.
 2. Run the `nixpi-deploy-ovh` wrapper.
-3. Let first boot seed `/srv/nixpi` and `/etc/nixos/flake.nix`.
-4. Keep operating from `/srv/nixpi`.
+3. Let `nixos-anywhere` install the final `ovh-vps` host configuration directly.
+4. Validate the running host.
+5. Use an operator-managed checkout only when you want a workspace for ongoing changes.
+
+No first-boot repo clone or generated flake step is required.
 
 ## 1. Enter rescue mode
 
@@ -35,7 +38,7 @@ nix run .#nixpi-deploy-ovh -- \
   --disk /dev/sdX
 ```
 
-The install is destructive. On first boot the installed system seeds `/srv/nixpi`, initializes `/etc/nixos/flake.nix`, and keeps the standard `#nixos` rebuild target.
+The install is destructive and installs the final `ovh-vps` host configuration directly.
 
 ## 3. Validate first boot
 
@@ -50,20 +53,24 @@ wg show wg0
 ip link show wg0
 ```
 
-## 4. Operate from `/srv/nixpi`
+## 4. Use the standard rebuild path, or sync an operator checkout when needed
 
-Treat `/srv/nixpi` as the installed source of truth. Use it for edits, sync, and rebuilds.
+The installed host flake stays authoritative for convergence:
 
 ```bash
-cd /srv/nixpi
 sudo nixpi-rebuild
 ```
 
-To update the canonical checkout and rebuild in one command:
+A repo checkout such as `/srv/nixpi` is optional. If you keep the conventional `/srv/nixpi` checkout for operator workflows, `sudo nixpi-rebuild-pull [branch]` syncs the conventional `/srv/nixpi` checkout to a remote branch and rebuilds from it:
 
 ```bash
-sudo nixpi-rebuild-pull
-sudo nixpi-rebuild-pull main
+sudo nixpi-rebuild-pull [branch]
+```
+
+You can still rebuild from any explicit checkout path when you want a manual, path-specific workflow:
+
+```bash
+sudo nixos-rebuild switch --flake <checkout-path>#ovh-vps
 ```
 
 Roll back if needed:
@@ -85,9 +92,10 @@ su - <user> -c 'pi --help'
 
 Expected result:
 
-- the Pi runtime is seeded under `~/.pi`
-- `pi` runs from SSH
-- no second install path is required for routine operation
+- the Pi runtime is available from SSH
+- the deployed host mode comes from NixOS config rather than user-home markers
+- the installed `/etc/nixos` flake remains the source of truth for the running host
+- shell behavior already matches the deployed NixOS configuration
 
 For repo-side validation during development:
 

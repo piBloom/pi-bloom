@@ -22,7 +22,7 @@ import { handleNixConfigProposal } from "./actions-proposal.js";
 const NixosUpdateParams = Type.Object({
 	action: StringEnum(["status", "apply", "rollback"] as const, {
 		description:
-			"status: list NixOS generations. apply: run nixos-rebuild switch from the local NixPI flake checkout. rollback: revert to previous generation.",
+			"status: list NixOS generations. apply: run nixos-rebuild switch through the installed /etc/nixos host flake. rollback: revert to previous generation.",
 	}),
 });
 
@@ -52,7 +52,7 @@ export default function (pi: ExtensionAPI) {
 			name: "nixos_update",
 			label: "NixOS Update Management",
 			description:
-				"Manage NixOS OS updates: view generation history, apply the local NixPI flake checkout, or rollback to the previous generation.",
+				"Manage NixOS OS updates: view generation history, apply the installed host flake, or rollback to the previous generation.",
 			parameters: NixosUpdateParams,
 			async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 				const p = params as Static<typeof NixosUpdateParams>;

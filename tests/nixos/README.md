@@ -1,16 +1,17 @@
 # NixOS Integration Tests for NixPI
 
-This directory contains NixOS integration tests for the retained headless VPS NixPI platform. The tests use `pkgs.testers.runNixOSTest` to boot VMs and verify the install-finalize path plus the day-2 service surface.
+This directory contains NixOS integration tests for the retained headless VPS NixPI platform. The tests use `pkgs.testers.runNixOSTest` to boot VMs and verify the declarative install path plus the day-2 service surface.
+
+Bootstrap versus steady-state behavior is selected declaratively via `nixpi.bootstrap.*`; no NixOS VM test should rely on `~/.nixpi/wizard-state/system-ready` or `nixpi-setup-apply`.
 
 ## Test Lanes
 
 - `config`: fast non-VM closure build for the retained headless VPS system
-- `config-stable-system-flake`: fast non-VM closure build for the retained stable system-flake contract
 - `vps-topology`: fast flake-shape check for the canonical `vps` host profile
 - `nixos-smoke`: PR-oriented headless VPS VM subset
-  - `nixpi-firstboot`
   - `nixpi-runtime`
   - `nixpi-security`
+  - `nixpi-wireguard`
   - `nixpi-broker`
 - `nixos-full`: comprehensive retained VM lane
   - `boot`
@@ -35,7 +36,6 @@ This directory contains NixOS integration tests for the retained headless VPS Ni
 ```bash
 nix build .#checks.x86_64-linux.vps-topology --no-link -L
 nix build .#checks.x86_64-linux.config --no-link
-nix build .#checks.x86_64-linux.config-stable-system-flake --no-link -L
 nix build .#checks.x86_64-linux.nixos-smoke --no-link -L
 ```
 
@@ -79,14 +79,14 @@ tests/nixos/
 ├── default.nix                 # test suite entry point
 ├── nixpi-broker.nix            # broker autonomy and privilege boundaries
 ├── nixpi-e2e.nix               # end-to-end integration test
-├── nixpi-firstboot.nix         # install-finalize first-boot contract
+├── nixpi-firstboot.nix         # declarative first-boot contract
 ├── nixpi-modular-services.nix  # system.services/configData regression
 ├── nixpi-network.nix           # network/mesh test
 ├── nixpi-options-validation.nix# options validation test
 ├── nixpi-post-setup-lockdown.nix # steady-state post-setup security contract
 ├── nixpi-runtime.nix           # shell-first Pi runtime smoke test
 ├── nixpi-security.nix          # security boundary test
-├── nixpi-system-flake.nix      # generated /etc/nixos flake contract
+├── nixpi-system-flake.nix      # retained name; now asserts no runtime /etc/nixos flake generation
 ├── nixpi-update.nix            # update flow test
 ├── nixpi-wireguard.nix         # wireguard interface test
 └── README.md                   # this file
@@ -103,8 +103,8 @@ When writing new NixOS tests:
 
 ## CI Integration
 
-- `.github/workflows/check.yml` runs TypeScript checks plus `checks.x86_64-linux.config`
-- `.github/workflows/nixos-vm.yml` runs VM lanes on a self-hosted runner
+- `.github/workflows/check.yml` runs TypeScript checks plus `checks.x86_64-linux.config`, `checks.x86_64-linux.flake-topology`, and `checks.x86_64-linux.vps-topology`
+- `.github/workflows/nixos-vm.yml` runs `nixos-smoke`, `nixos-full`, or `nixos-destructive` on a self-hosted runner
 
 ## References
 

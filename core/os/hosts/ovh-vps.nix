@@ -1,5 +1,6 @@
 # core/os/hosts/ovh-vps.nix
-# OVH-oriented VPS profile for destructive nixos-anywhere installs.
+# OVH-oriented VPS profile for destructive nixos-anywhere installs that land
+# directly on the final host configuration.
 { lib, modulesPath, ... }:
 
 {

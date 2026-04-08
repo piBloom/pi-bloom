@@ -32,9 +32,8 @@ describe("os nixos_update handler", () => {
 		}
 	});
 
-	it("applies the canonical /etc/nixos#nixos flake checkout", async () => {
+	it("applies the installed /etc/nixos#nixos host flake without consulting /srv/nixpi", async () => {
 		vi.spyOn(fs, "existsSync").mockReturnValue(true);
-		runMock.mockResolvedValueOnce({ stdout: "main\n", stderr: "", exitCode: 0 });
 		runMock.mockResolvedValueOnce({ stdout: "ok\n", stderr: "", exitCode: 0 });
 
 		const { handleNixosUpdate } = await import("../../core/pi/extensions/os/actions.js");
@@ -43,8 +42,7 @@ describe("os nixos_update handler", () => {
 		const expectedFlake = "/etc/nixos#nixos";
 
 		expect(ctx.ui.confirm).toHaveBeenCalled();
-		expect(runMock).toHaveBeenNthCalledWith(1, "git", ["-C", "/srv/nixpi", "branch", "--show-current"], undefined);
-		expect(runMock).toHaveBeenNthCalledWith(2, "nixpi-brokerctl", ["nixos-update", "apply", expectedFlake], undefined);
+		expect(runMock).toHaveBeenNthCalledWith(1, "nixpi-brokerctl", ["nixos-update", "apply", expectedFlake], undefined);
 		expect(result.isError).toBe(false);
 		expect(result.content[0].text).toContain(`from ${expectedFlake}`);
 	});
@@ -53,23 +51,37 @@ describe("os nixos_update handler", () => {
 		const explicitFlakeDir = path.join(temp.nixPiDir, "system-flake");
 		process.env.NIXPI_SYSTEM_FLAKE_DIR = explicitFlakeDir;
 		vi.spyOn(fs, "existsSync").mockReturnValue(true);
-		runMock.mockResolvedValueOnce({ stdout: "main\n", stderr: "", exitCode: 0 });
 		runMock.mockResolvedValueOnce({ stdout: "ok\n", stderr: "", exitCode: 0 });
 
 		const { handleNixosUpdate } = await import("../../core/pi/extensions/os/actions.js");
 		const ctx = createMockExtensionContext({ hasUI: true });
 		await handleNixosUpdate("apply", undefined, ctx as never);
 
-		expect(runMock).toHaveBeenNthCalledWith(1, "git", ["-C", "/srv/nixpi", "branch", "--show-current"], undefined);
 		expect(runMock).toHaveBeenNthCalledWith(
-			2,
+			1,
 			"nixpi-brokerctl",
 			["nixos-update", "apply", `${explicitFlakeDir}#nixos`],
 			undefined,
 		);
 	});
 
-	it("fails early if the canonical system flake is missing", async () => {
+	it("reports the explicit installed host flake path when override mode is missing", async () => {
+		const explicitFlakeDir = path.join(temp.nixPiDir, "missing-system-flake");
+		process.env.NIXPI_SYSTEM_FLAKE_DIR = explicitFlakeDir;
+		vi.spyOn(fs, "existsSync").mockReturnValue(false);
+
+		const { handleNixosUpdate } = await import("../../core/pi/extensions/os/actions.js");
+		const ctx = createMockExtensionContext({ hasUI: true });
+		const result = await handleNixosUpdate("apply", undefined, ctx as never);
+
+		expect(runMock).not.toHaveBeenCalled();
+		expect(result.isError).toBe(true);
+		expect(result.content[0].text).toContain(`System flake not found at ${explicitFlakeDir}`);
+		expect(result.content[0].text).toContain("installed host flake");
+		expect(result.content[0].text).not.toContain("under /etc/nixos");
+	});
+
+	it("fails early if the installed system flake is missing", async () => {
 		vi.spyOn(fs, "existsSync").mockReturnValue(false);
 
 		const { handleNixosUpdate } = await import("../../core/pi/extensions/os/actions.js");
@@ -79,14 +91,13 @@ describe("os nixos_update handler", () => {
 		expect(runMock).not.toHaveBeenCalled();
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("System flake not found at /etc/nixos");
-		expect(result.content[0].text).toContain("standard /etc/nixos flake");
-		expect(result.content[0].text).toContain("/srv/nixpi");
-		expect(result.content[0].text).toContain("bootstrap");
+		expect(result.content[0].text).toContain("installed host flake");
+		expect(result.content[0].text).toContain("operator checkout");
+		expect(result.content[0].text).toContain("optional");
 	});
 
 	it("returns error result when apply exits non-zero", async () => {
 		vi.spyOn(fs, "existsSync").mockReturnValue(true);
-		runMock.mockResolvedValueOnce({ stdout: "main\n", stderr: "", exitCode: 0 });
 		runMock.mockResolvedValueOnce({ stdout: "", stderr: "build failed", exitCode: 1 });
 
 		const { handleNixosUpdate } = await import("../../core/pi/extensions/os/actions.js");
@@ -95,25 +106,6 @@ describe("os nixos_update handler", () => {
 
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain("build failed");
-	});
-
-	it("rejects apply when /srv/nixpi is not on main", async () => {
-		vi.spyOn(fs, "existsSync").mockReturnValue(true);
-		runMock.mockResolvedValueOnce({ stdout: "feature/test\n", stderr: "", exitCode: 0 });
-
-		const { handleNixosUpdate } = await import("../../core/pi/extensions/os/actions.js");
-		const ctx = createMockExtensionContext({ hasUI: true });
-		const result = await handleNixosUpdate("apply", undefined, ctx as never);
-
-		expect(runMock).toHaveBeenCalledWith("git", ["-C", "/srv/nixpi", "branch", "--show-current"], undefined);
-		expect(runMock).not.toHaveBeenCalledWith(
-			"nixpi-brokerctl",
-			["nixos-update", "apply", "/etc/nixos#nixos"],
-			undefined,
-		);
-		expect(result.isError).toBe(true);
-		expect(result.content[0].text).toContain("Supported rebuilds require /srv/nixpi to be on main");
-		expect(result.content[0].text).toContain("switch to main");
 	});
 
 	it("schedules a reboot after confirmation", async () => {

@@ -23,10 +23,6 @@
     let
       system = "x86_64-linux";
       inherit (nixpkgs) lib;
-      stableNixOSRelease = "25.11";
-      stableNixpkgsFlakeUrl = "github:NixOS/nixpkgs/nixos-${stableNixOSRelease}";
-      installFinalizeSystemFlakeScript = builtins.readFile ./core/scripts/nixpi-init-system-flake.sh;
-      flakeSource = builtins.readFile ./flake.nix;
       supportedSystems = [
         system
         "aarch64-linux"
@@ -49,7 +45,6 @@
           nixpi-deploy-ovh = pkgs.callPackage ./core/os/pkgs/nixpi-deploy-ovh {
             nixosAnywherePackage = nixos-anywhere.packages.${system}.nixos-anywhere;
           };
-          nixpi-setup-apply = pkgs.callPackage ./core/os/pkgs/nixpi-setup-apply { };
         };
       pkgs = mkPkgs system;
       # pkgsUnfree is used only for boot nixosTest.  pkgs.testers.nixosTest
@@ -89,10 +84,6 @@
           ];
         };
     in
-    assert lib.hasInfix
-      "NIXPI_STABLE_NIXOS_RELEASE=\"\${NIXPI_STABLE_NIXOS_RELEASE:-${stableNixOSRelease}}\""
-      installFinalizeSystemFlakeScript;
-    assert lib.hasInfix "nixpkgs-stable.url = \"${stableNixpkgsFlakeUrl}\";" flakeSource;
     {
       packages = forAllSystems (
         system:
@@ -155,9 +146,8 @@
           ];
         };
 
-        # Host-owned system-flake composition used by the retained install-finalize path:
-        # local /etc/nixos configuration layered with nixpi.nixosModules.nixpi.
-        # Used by checks.config and checks.boot below.
+        # Representative installed NixPI system used by checks.config and
+        # checks.boot below.
         installed-test = mkConfiguredSystem {
           inherit system;
           modules = [
@@ -187,7 +177,6 @@
 
       checks.${system} =
         let
-          setupApplyPackage = self.packages.${system}.nixpi-setup-apply;
           generatedModuleSystem = mkConfiguredSystem {
             inherit system;
             modules = [
@@ -273,60 +262,6 @@
           # evaluation failures without touching QEMU.
           config = self.nixosConfigurations.installed-test.config.system.build.toplevel;
 
-          # Fast stable-path proof for the retained system-flake contract.
-          config-stable-system-flake =
-            (
-              mkConfiguredStableSystem {
-                inherit system;
-                modules = [
-                  self.nixosModules.nixpi
-                  {
-                    nixpi.primaryUser = "alex";
-                    networking.hostName = "nixos";
-                    system.stateVersion = "25.05";
-                    boot.loader = {
-                      systemd-boot.enable = true;
-                      efi.canTouchEfiVariables = true;
-                    };
-                    fileSystems = {
-                      "/" = {
-                        device = "/dev/vda";
-                        fsType = "ext4";
-                      };
-                      "/boot" = {
-                        device = "/dev/vda1";
-                        fsType = "vfat";
-                      };
-                    };
-                  }
-                ];
-              }
-            ).config.system.build.toplevel;
-
-          install-finalize-stable-alignment = pkgs.runCommandLocal "install-finalize-stable-alignment-check" { } ''
-            expected_default='NIXPI_STABLE_NIXOS_RELEASE="''${NIXPI_STABLE_NIXOS_RELEASE:-${stableNixOSRelease}}"'
-            grep -F "$expected_default" ${./core/scripts/nixpi-init-system-flake.sh} >/dev/null
-            expected_flake_url='nixpkgs-stable.url = "${stableNixpkgsFlakeUrl}";'
-            grep -F "$expected_flake_url" ${./flake.nix} >/dev/null
-            touch "$out"
-          '';
-
-          setup-apply-package = pkgs.runCommandLocal "setup-apply-package-check" { } ''
-            bash -n "${./core/scripts/nixpi-setup-apply.sh}"
-            wrapped="${setupApplyPackage}/bin/nixpi-setup-apply"
-            ! grep -E '/jq-[^/]+/bin' "$wrapped"
-            ! grep -E '/git-[^/]+/bin' "$wrapped"
-            ! grep -F 'SETUP_NAME is required' "${./core/scripts/nixpi-setup-apply.sh}"
-            ! grep -F 'SETUP_EMAIL is required' "${./core/scripts/nixpi-setup-apply.sh}"
-            ! grep -F 'SETUP_USERNAME is required' "${./core/scripts/nixpi-setup-apply.sh}"
-            ! grep -F 'SETUP_PASSWORD is required' "${./core/scripts/nixpi-setup-apply.sh}"
-            ! grep -F 'git clone' "${./core/scripts/nixpi-setup-apply.sh}"
-            ! grep -F 'nixos-rebuild switch' "${./core/scripts/nixpi-setup-apply.sh}"
-            ! grep -F 'jq --arg key' "${./core/scripts/nixpi-setup-apply.sh}"
-            ! grep -F 'SUDO_USER:-human' "${./core/scripts/nixpi-setup-apply.sh}"
-            touch "$out"
-          '';
-
           rebuild-pull-script = pkgs.runCommandLocal "rebuild-pull-script-check" { } ''
             script="${./.}/core/scripts/nixpi-rebuild-pull.sh"
             test -x "$script"
@@ -347,28 +282,6 @@
             touch "$out"
           '';
 
-          system-flake-finalize = pkgs.runCommandLocal "system-flake-finalize-check" { } ''
-            script=${./core/scripts/nixpi-install-finalize.sh}
-            helper=${./core/scripts/nixpi-init-system-flake.sh}
-            test -x "$script"
-            test -x "$helper"
-            grep -F 'core/scripts/nixpi-init-system-flake.sh' "$script" >/dev/null
-            grep -F 'git clone --branch "$REPO_BRANCH" "$REPO_URL" "$REPO_DIR"' "$script" >/dev/null
-            grep -F 'NIXPI_NIXPKGS_FLAKE_URL' "$helper" >/dev/null
-            grep -F 'NIXPI_STABLE_NIXOS_RELEASE' "$helper" >/dev/null
-            grep -F '# Generated by NixPI install finalization' "$helper" >/dev/null
-            grep -F 'nixpi.inputs.nixpkgs.follows = "nixpkgs";' "$helper" >/dev/null
-            grep -F 'nixosConfigurations.nixos' "$helper" >/dev/null
-            grep -F './configuration.nix' "$helper" >/dev/null
-            ! grep -F 'specialArgs =' "$helper" >/dev/null
-            ! grep -F 'nixpi-integration.nix' "$helper" >/dev/null
-            ! grep -F 'nixpi-host.nix' "$helper" >/dev/null
-            ! grep -F 'hostModules' "$helper" >/dev/null
-            ! grep -F 'Host-owned NixOS flake with NixPI layered on top' "$helper" >/dev/null
-            ! grep -F 'nixos-rebuild switch --flake /srv/nixpi#nixpi' "$script" >/dev/null
-            ! grep -F 'github:NixOS/nixpkgs/nixos-unstable' "$helper" >/dev/null
-            touch "$out"
-          '';
 
           flake-topology = pkgs.runCommandLocal "flake-topology-check" { } ''
             ! grep -F 'desktop-vm' ${./flake.nix}

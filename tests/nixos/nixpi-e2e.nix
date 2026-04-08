@@ -1,12 +1,11 @@
 {
-  lib,
-  nixPiModulesNoShell,
   mkTestFilesystems,
   ...
 }:
 
 let
-  initSystemFlake = ../../core/scripts/nixpi-init-system-flake.sh;
+  username = "pi";
+  homeDir = "/home/${username}";
 in
 {
   name = "nixpi-e2e";
@@ -14,15 +13,18 @@ in
   nodes = {
     nixpi =
       { pkgs, ... }:
-      let
-        username = "pi";
-        homeDir = "/home/${username}";
-      in
       {
-        imports = nixPiModulesNoShell ++ [
+        imports = [
+          ../../core/os/hosts/vps.nix
           mkTestFilesystems
         ];
-        nixpi.primaryUser = username;
+
+        nixpi = {
+          primaryUser = username;
+          bootstrap.enable = false;
+          bootstrap.ssh.enable = true;
+          bootstrap.temporaryAdmin.enable = false;
+        };
 
         virtualisation.diskSize = 20480;
         virtualisation.memorySize = 4096;
@@ -35,34 +37,7 @@ in
         boot.loader.systemd-boot.enable = true;
         boot.loader.efi.canTouchEfiVariables = true;
 
-        users.users.${username} = {
-          isNormalUser = true;
-          group = username;
-          extraGroups = [
-            "wheel"
-            "networkmanager"
-          ];
-          home = homeDir;
-          shell = pkgs.bash;
-        };
-        users.groups.${username} = { };
-        system.activationScripts.nixpi-e2e-bootstrap = lib.stringAfter [ "users" ] ''
-              mkdir -p ${homeDir}/.nixpi
-              install -d -m 0755 /etc/nixos
-              cat > /etc/nixos/configuration.nix <<'EOF'
-          { ... }:
-          {
-            networking.hostName = "pi";
-          }
-          EOF
-              cat > /etc/nixos/hardware-configuration.nix <<'EOF'
-          { ... }:
-          {}
-          EOF
-              ${lib.getExe' pkgs.bash "bash"} ${initSystemFlake} /srv/nixpi pi ${username} UTC us
-              chown -R ${username}:${username} ${homeDir}/.nixpi
-              chmod 755 ${homeDir}/.nixpi
-        '';
+        systemd.tmpfiles.rules = [ "d ${homeDir}/.nixpi 0755 ${username} ${username} -" ];
       };
 
     client =
@@ -98,18 +73,14 @@ in
     nixpi.wait_for_unit("multi-user.target", timeout=300)
     nixpi.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
     nixpi.wait_for_unit("nixpi-app-setup.service", timeout=120)
+    nixpi.wait_for_unit("sshd.service", timeout=60)
     client.start()
     client.wait_until_succeeds("ip -4 addr show dev eth1 | grep -q 'inet '", timeout=60)
 
     client.succeed("ping -c 3 pi")
 
-    apply_output = nixpi.succeed(
-        "env NIXPI_PRIMARY_USER=pi nixpi-setup-apply | tee /tmp/setup-apply.out"
-    )
-    print(apply_output)
-    assert "SETUP_FAILED" not in apply_output, apply_output
-    nixpi.wait_until_succeeds("test -f " + home + "/.nixpi/wizard-state/system-ready", timeout=180)
-    nixpi.fail("test -f " + home + "/.nixpi/.setup-complete")
+    nixpi.fail("sudo -u pi -- sudo -n true")
+    nixpi.fail("command -v nixpi-setup-apply")
 
     client.succeed("nc -z -w 2 pi 22")
 
@@ -123,10 +94,11 @@ in
     nixpi.succeed("test -d " + home + "/.pi")
     nixpi.succeed("test ! -L " + home + "/.pi")
     nixpi.succeed("test -d /usr/local/share/nixpi")
-    nixpi.succeed("test -f /etc/nixos/flake.nix")
+    nixpi.fail("test -e /srv/nixpi")
+    nixpi.fail("test -f /etc/nixos/flake.nix")
     nixpi.fail("test -e /etc/nixos/nixpi-host.nix")
     nixpi.fail("test -e /etc/nixos/nixpi-integration.nix")
-    nixpi.succeed("grep -q 'nixosConfigurations.nixos' /etc/nixos/flake.nix")
+    nixpi.fail("systemctl cat nixpi-install-finalize.service >/dev/null")
     nixpi.fail("command -v nixpi-bootstrap-ensure-repo-target")
     nixpi.fail("command -v nixpi-bootstrap-prepare-repo")
     nixpi.fail("command -v nixpi-bootstrap-nixos-rebuild-switch")
@@ -145,7 +117,7 @@ in
         nixpi.succeed("command -v " + pkg)
 
     nixpi.fail("command -v codex")
-    nixpi.succeed("su - pi -c 'command -v pi'")
+    nixpi.succeed("sudo -u pi -- bash -lc 'command -v pi'")
 
     nixpi.succeed("getent hosts pi")
     nixpi.succeed("getent hosts client")
@@ -154,10 +126,9 @@ in
     print("All E2E tests passed!")
     print("=" * 60)
     print("Verified:")
-    print("  - Web setup apply completed")
-    print("  - SSH remains reachable on the LAN after setup")
+    print("  - Host mode is selected declaratively from NixOS config")
+    print("  - SSH remains reachable on the LAN in steady-state")
     print("  - App ports stay closed without wg0 access")
-    print("  - Setup API completes")
     print("  - All core services start correctly")
     print("  - Network connectivity between nodes")
     print("  - File system and user setup correct")

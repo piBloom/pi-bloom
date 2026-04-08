@@ -8,12 +8,13 @@
 
 let
   inherit (config.nixpi) primaryUser stateDir;
-  primaryHome = "/home/${primaryUser}";
-  agentStateDir = "${primaryHome}/.pi";
+  inherit (config.nixpi.agent) piDir;
+  agentStateDir = piDir;
   piAgent = pkgs.callPackage ../pkgs/pi { };
   appPackage = pkgs.callPackage ../pkgs/app { inherit piAgent; };
   piCommand = pkgs.writeShellScriptBin "pi" ''
     export PI_SKIP_VERSION_CHECK=1
+    export NIXPI_BOOTSTRAP_MODE="${if config.nixpi.bootstrap.enable then "bootstrap" else "steady"}"
     export PATH="${
       lib.makeBinPath [
         pkgs.bash
@@ -58,37 +59,37 @@ in
       user = primaryUser;
       group = primaryUser;
     };
+    "${agentStateDir}".d = {
+      mode = "0700";
+      user = primaryUser;
+      group = primaryUser;
+    };
+    "${agentStateDir}/agent".d = {
+      mode = "0700";
+      user = primaryUser;
+      group = primaryUser;
+    };
+    "${agentStateDir}/settings.json"."L+" = {
+      argument = toString defaultSettings;
+    };
   };
 
   systemd.services.nixpi-app-setup = {
-    description = "NixPI app setup: create agent state dir and seed default settings";
+    description = "NixPI app setup: apply declarative runtime tmpfiles";
     wantedBy = [ "multi-user.target" ];
-    after = [ "systemd-tmpfiles-setup.service" ] ++ lib.optional config.nixpi.install.enable "nixpi-install-finalize.service";
-    wants = lib.optional config.nixpi.install.enable "nixpi-install-finalize.service";
+    after = [ "systemd-tmpfiles-setup.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
       User = "root";
       ExecStart = "${pkgs.writeShellScript "nixpi-app-setup" ''
-        primary_group="$(id -gn ${primaryUser})"
+        ${pkgs.systemd}/bin/systemd-tmpfiles --create --prefix=${agentStateDir} --prefix=${stateDir} --prefix=/usr/local/share/nixpi
 
-        install -d -m 0700 -o ${primaryUser} -g "$primary_group" ${agentStateDir}
-        install -d -m 0700 -o ${primaryUser} -g "$primary_group" ${agentStateDir}/agent
-
-        if [ ! -e ${agentStateDir}/settings.json ]; then
-          install -m 0600 -o ${primaryUser} -g "$primary_group" ${defaultSettings} ${agentStateDir}/settings.json
+        if [ -e ${agentStateDir}/auth.json ]; then
+          ln -sfn ../auth.json ${agentStateDir}/agent/auth.json
+        else
+          rm -f ${agentStateDir}/agent/auth.json
         fi
-
-        if [ -e ${agentStateDir}/auth.json ] && [ ! -e ${agentStateDir}/agent/auth.json ]; then
-          ln -s ../auth.json ${agentStateDir}/agent/auth.json
-        fi
-
-        if [ -d /srv/nixpi ]; then
-          chown -R ${primaryUser}:"$primary_group" /srv/nixpi
-        fi
-
-        chown -R ${primaryUser}:"$primary_group" ${agentStateDir}
-        chmod 0700 ${agentStateDir}
       ''}";
     };
   };

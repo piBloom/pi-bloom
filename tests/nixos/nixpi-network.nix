@@ -13,7 +13,10 @@
       { ... }:
       {
         imports = nixPiModules ++ [ mkTestFilesystems ];
-        nixpi.primaryUser = "tester1";
+        nixpi = {
+          primaryUser = "tester1";
+          bootstrap.ssh.enable = true;
+        };
 
         virtualisation.diskSize = 10240;
         virtualisation.memorySize = 2048;
@@ -31,7 +34,10 @@
       { ... }:
       {
         imports = nixPiModules ++ [ mkTestFilesystems ];
-        nixpi.primaryUser = "tester2";
+        nixpi = {
+          primaryUser = "tester2";
+          bootstrap.ssh.enable = true;
+        };
 
         virtualisation.diskSize = 10240;
         virtualisation.memorySize = 2048;

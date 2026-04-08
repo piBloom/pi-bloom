@@ -6,7 +6,8 @@ Use this page to orient yourself quickly.
 
 NixPI is a headless NixOS system that runs Pi with:
 - a shell-first operator workflow over SSH or a local terminal
-- a canonical repo at `/srv/nixpi`
+- the installed `/etc/nixos` flake as the running host source of truth
+- an optional operator checkout such as `/srv/nixpi` for repo-backed rebuild workflows
 - host operations through `nixos-rebuild` and systemd
 
 ## Read in this order

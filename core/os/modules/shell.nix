@@ -9,27 +9,8 @@
 let
   inherit (config.nixpi) primaryUser stateDir;
   primaryHome = "/home/${primaryUser}";
-  inherit (config.nixpi.agent) workspaceDir;
-
-  bashrc = pkgs.writeText "nixpi-bashrc" ''
-    export NIXPI_DIR="${workspaceDir}"
-    export NIXPI_STATE_DIR="${stateDir}"
-    export NIXPI_PI_DIR="${primaryHome}/.pi"
-    export PI_CODING_AGENT_DIR="${primaryHome}/.pi"
-    export NIXPI_CONFIG_DIR="${stateDir}/services"
-    export NIXPI_KEEP_SSH_AFTER_SETUP="${if config.nixpi.bootstrap.keepSshAfterSetup then "1" else "0"}"
-    if command -v chromium >/dev/null 2>&1; then
-      export BROWSER="chromium"
-    fi
-    export PATH="/usr/local/share/nixpi/node_modules/.bin:$PATH"
-    if [ -t 0 ]; then
-      stty sane erase '^H' 2>/dev/null || true
-    fi
-  '';
-
-  bashProfile = pkgs.writeText "nixpi-bash_profile" ''
-    [ -f ~/.bashrc ] && . ~/.bashrc
-  '';
+  inherit (config.nixpi.agent) piDir workspaceDir;
+  nodeBinDir = "/usr/local/share/nixpi/node_modules/.bin";
 in
 {
   imports = [ ./options.nix ];
@@ -68,36 +49,36 @@ in
   ];
 
   environment.etc = {
-    "skel/.bashrc".source = bashrc;
-    "skel/.bash_profile".source = bashProfile;
     "issue".text = "NixPI\n";
   };
 
-  environment.loginShellInit = ''
-    export NIXPI_DIR="${workspaceDir}"
-    export NIXPI_STATE_DIR="${stateDir}"
-    export NIXPI_PI_DIR="${primaryHome}/.pi"
-    export PI_CODING_AGENT_DIR="${primaryHome}/.pi"
-    export NIXPI_CONFIG_DIR="${stateDir}/services"
-    export NIXPI_KEEP_SSH_AFTER_SETUP="${if config.nixpi.bootstrap.keepSshAfterSetup then "1" else "0"}"
-    export PATH="/usr/local/share/nixpi/node_modules/.bin:$PATH"
+  environment.sessionVariables = {
+    NIXPI_DIR = workspaceDir;
+    NIXPI_STATE_DIR = stateDir;
+    NIXPI_PI_DIR = piDir;
+    PI_CODING_AGENT_DIR = piDir;
+    NIXPI_CONFIG_DIR = "${stateDir}/services";
+    NIXPI_BOOTSTRAP_MODE = if config.nixpi.bootstrap.enable then "bootstrap" else "steady";
+    NIXPI_KEEP_SSH_AFTER_SETUP = if config.nixpi.bootstrap.ssh.enable then "1" else "0";
+  };
 
-    if [ -t 0 ] && [ -t 1 ] && command -v nixpi-launch-terminal-ui >/dev/null 2>&1; then
-      nixpi-launch-terminal-ui || true
-    fi
-  '';
-
-  system.activationScripts.nixpi-shell-dotfiles = lib.stringAfter [ "users" ] ''
-    if [ -d ${primaryHome} ]; then
-      if [ ! -e ${primaryHome}/.bashrc ]; then
-        install -m 0644 -o ${primaryUser} -g ${primaryUser} ${bashrc} ${primaryHome}/.bashrc
+  programs.bash = {
+    enable = true;
+    loginShellInit = ''
+      export PATH="${nodeBinDir}:$PATH"
+    '';
+    interactiveShellInit = ''
+      if command -v chromium >/dev/null 2>&1; then
+        export BROWSER="chromium"
       fi
-
-      if [ ! -e ${primaryHome}/.bash_profile ]; then
-        install -m 0644 -o ${primaryUser} -g ${primaryUser} ${bashProfile} ${primaryHome}/.bash_profile
+      if [ -t 0 ]; then
+        stty sane erase '^H' 2>/dev/null || true
       fi
-    fi
-  '';
+      if [ -t 0 ] && [ -t 1 ] && command -v nixpi-launch-terminal-ui >/dev/null 2>&1; then
+        nixpi-launch-terminal-ui || true
+      fi
+    '';
+  };
 
   boot.kernel.sysctl."kernel.printk" = "4 4 1 7";
 }

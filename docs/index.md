@@ -21,9 +21,11 @@ hero:
 
 features:
   - title: VPS-first and headless
-    details: Deploy to a remote NixOS-capable VPS and operate through one web app.
-  - title: Canonical checkout
-    details: Use `/srv/nixpi` as the source of truth for updates and rebuilds.
+    details: Deploy to a remote NixOS-capable VPS and operate through SSH plus the shell-first Pi runtime.
+  - title: Installed host flake
+    details: Install the final host configuration directly; the installed `/etc/nixos` flake is the running host's source of truth.
+  - title: Optional operator checkout
+    details: Keep `/srv/nixpi` only if you want the conventional sync-and-rebuild operator workflow.
   - title: Minimal by default
     details: Keep the base system small and evolve it with Pi runtime extensions.
   - title: Operable

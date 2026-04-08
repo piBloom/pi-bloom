@@ -1,14 +1,20 @@
 # Runtime Flows
 
-> End-to-end startup and operator-entry flow for the current NixPI runtime
+> End-to-end operator-entry flow for the target declarative NixPI runtime
 
-## Active Runtime Path
+## Install-Time Handoff
 
-1. `nixpi-app-setup.service` prepares `~/.pi`
-2. `sshd.service` and local login shells provide operator entry
-3. interactive operator sessions enter Zellij by default
-4. the generated Zellij layout opens Pi and a plain shell workspace
-5. Pi loads extensions, persona, and workspace state from the seeded runtime
+1. `nixos-anywhere` installs the final host configuration directly.
+2. The first boot hands off to the normal NixOS boot path with no repo-seeding step.
+
+## Runtime Entry Flow
+
+1. Boot selects bootstrap or steady-state behavior from declarative NixOS config.
+2. `sshd.service` and `wireguard-wg0.service` provide operator entry.
+3. `nixpi-app-setup.service` exposes the Pi runtime entry path.
+4. Interactive operator sessions enter Zellij by default.
+5. The generated Zellij layout opens Pi and a plain shell workspace.
+6. Pi loads extensions, persona, and workspace state from the seeded runtime.
 
 ## Boot and Service Startup Flow
 
@@ -33,8 +39,10 @@ multi-user.target
 - SSH and local terminals are the supported interactive entrypoints
 - Zellij is the default interactive terminal UI
 - Pi remains the main workflow inside the generated layout
-- `~/.pi` is seeded before the operator starts work
-- `/srv/nixpi` remains the canonical editable checkout for rebuilds
+- No boot-time repo clone or generated host flake step is part of the intended runtime
+- Bootstrap and steady-state are selected declaratively rather than from user-home marker files
+- shell behavior should come from NixOS modules rather than user-home mutation
+- an operator checkout such as `/srv/nixpi` is optional and separate from the deployed host configuration
 
 ## Default Terminal UI
 

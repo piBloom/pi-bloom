@@ -8,9 +8,8 @@
 
 let
   primaryUser = config.nixpi.primaryUser;
-  primaryHome = "/home/${primaryUser}";
-  systemReadyFile = "${primaryHome}/.nixpi/wizard-state/system-ready";
   securityCfg = config.nixpi.security;
+  bootstrapCfg = config.nixpi.bootstrap;
   wgCfg = config.nixpi.wireguard;
   sshAllowUsers =
     if securityCfg.ssh.allowUsers != [ ] then
@@ -53,7 +52,7 @@ in
       hardware.enableAllFirmware = true;
 
       services.openssh = {
-        enable = true;
+        enable = bootstrapCfg.ssh.enable;
         settings = {
           AllowAgentForwarding = false;
           AllowTcpForwarding = false;
@@ -70,15 +69,9 @@ in
           AllowUsers ${lib.concatStringsSep " " sshAllowUsers}
         '';
       };
-      systemd.services.sshd.unitConfig = lib.mkIf (!config.nixpi.bootstrap.keepSshAfterSetup) {
-        ConditionPathExists = "!${systemReadyFile}";
-      };
-      systemd.sockets.sshd.unitConfig = lib.mkIf (!config.nixpi.bootstrap.keepSshAfterSetup) {
-        ConditionPathExists = "!${systemReadyFile}";
-      };
 
       networking.firewall.enable = true;
-      networking.firewall.allowedTCPPorts = [ 22 ];
+      networking.firewall.allowedTCPPorts = lib.optionals bootstrapCfg.ssh.enable [ 22 ];
       networking.firewall.allowedUDPPorts = lib.optionals wgCfg.enable [ wgCfg.listenPort ];
       networking.useDHCP = lib.mkDefault false;
       networking.networkmanager.enable = true;
