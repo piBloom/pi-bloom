@@ -13,7 +13,7 @@ Use it to verify that the retained install path, the shell-first Pi runtime, and
 ## Canonical Install Validation
 
 1. Start from a fresh OVH VPS in rescue mode.
-2. Run `nix run .#nixpi-deploy-ovh -- ...`.
+2. Run `nix run .#plain-host-deploy -- ...`.
 3. Confirm `nixos-anywhere` installs the `ovh-vps-base` provisioner preset.
 4. Reconnect and run `nixpi-bootstrap-host` on the machine.
 5. Reboot once and confirm the same headless operator flow still works.
@@ -49,7 +49,7 @@ Confirm the administrative path works only from the configured SSH allowlist and
 
 ### Ship Gate
 
-- The `nixpi-deploy-ovh` install completes on a clean headless VPS.
+- The `plain-host-deploy` install completes on a clean headless VPS.
 - The base install is followed by `nixpi-bootstrap-host` on the machine.
 - No first boot step relies on repo seeding or a deleted direct-install wrapper.
 - The shell-first Pi runtime works from SSH.

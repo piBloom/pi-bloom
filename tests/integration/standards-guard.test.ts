@@ -92,7 +92,7 @@ const hostOwnedBootstrapDocCases = [
 		label: relativePath(firstBootDocPath),
 		filePath: firstBootDocPath,
 		contains: ["run `nixpi-bootstrap-host`", "`/etc/nixos#nixos`"],
-		absent: ["nixpi-rebuild-pull", "<checkout-path>#ovh-vps", "/srv/nixpi"],
+		absent: ["nixpi-rebuild-pull", "<checkout-path>#ovh-vps", "/srv/nixpi", "nixpi-deploy-ovh"],
 	},
 	{
 		label: relativePath(runtimeFlowsPath),
@@ -103,8 +103,8 @@ const hostOwnedBootstrapDocCases = [
 	{
 		label: relativePath(liveTestingDocPath),
 		filePath: liveTestingDocPath,
-		contains: ["base install then bootstrap", "`nixpi-bootstrap-host` on the machine"],
-		absent: ["final `ovh-vps` host configuration directly", "nixpi-rebuild-pull", "/srv/nixpi"],
+		contains: ["base install then bootstrap", "`nixpi-bootstrap-host` on the machine", "plain-host-deploy"],
+		absent: ["final `ovh-vps` host configuration directly", "nixpi-rebuild-pull", "/srv/nixpi", "nixpi-deploy-ovh"],
 	},
 	{
 		label: relativePath(infrastructureDocPath),

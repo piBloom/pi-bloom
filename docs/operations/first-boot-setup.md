@@ -10,7 +10,7 @@ Operators bringing up a fresh NixPI headless VPS.
 
 Before this checklist, you should already have:
 
-1. a completed plain-base install such as `nixpi-deploy-ovh`
+1. a completed plain-base install via `plain-host-deploy`
 2. SSH or console access to the installed machine
 3. the intended primary user, hostname, timezone, and keyboard values for bootstrap
 
