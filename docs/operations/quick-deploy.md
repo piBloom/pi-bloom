@@ -16,7 +16,7 @@ The recommended deployment flow is:
 
 1. Put the VPS into rescue mode.
 2. Run the `plain-host-deploy` wrapper.
-3. Let `nixos-anywhere` install the `ovh-base` system.
+3. Let `nixos-anywhere` install the `ovh-vps-base` system.
 4. Reconnect to the installed machine after first boot.
 5. Optionally bootstrap NixPI on the host.
 6. Validate the running host and use `sudo nixpi-rebuild` for steady-state rebuilds.
@@ -39,7 +39,7 @@ nix run .#plain-host-deploy -- \
   --disk /dev/disk/by-id/PERSISTENT_TARGET_DISK_ID
 ```
 
-The install is destructive and installs the plain `ovh-base` system only.
+The install is destructive and installs the plain `ovh-vps-base` provisioner preset only.
 
 If the install fails with `No space left on device` during closure upload, do not assume the VPS disk is too small. On some OVH rescue hosts the disk order changes after `nixos-anywhere` kexecs into its temporary installer. Follow the staged troubleshooting flow in [OVH Rescue Deploy](./ovh-rescue-deploy) to inspect `/dev/disk/by-id` inside the installer and rerun the remaining phases with the correct installer-side disk ID.
 

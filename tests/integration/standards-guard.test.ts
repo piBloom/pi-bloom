@@ -79,7 +79,7 @@ const hostOwnedBootstrapDocCases = [
 	{
 		label: relativePath(quickDeployDocPath),
 		filePath: quickDeployDocPath,
-		contains: ["plain-host-deploy", "install the `ovh-base` system", "bootstrap NixPI after first boot"],
+		contains: ["plain-host-deploy", "install the `ovh-vps-base`", "bootstrap NixPI after first boot"],
 		absent: ["final `ovh-vps` host configuration directly", "nixpi-rebuild-pull", "/srv/nixpi"],
 	},
 	{
@@ -146,7 +146,6 @@ const legacyBootstrapTerms = [
 	"final `ovh-vps` host configuration directly",
 	"<checkout-path>#ovh-vps",
 	"/srv/nixpi",
-	"ovh-vps",
 ] as const;
 
 const legacyFreeDocCases = hostOwnedBootstrapDocCases.map(({ label, filePath }) => ({

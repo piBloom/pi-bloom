@@ -104,7 +104,7 @@ If you do not pass `--hostname`, the installed base system keeps the default `ni
 
 What the wrapper does:
 
-- uses the repo's `ovh-base` configuration as the base system
+- uses the repo's `ovh-vps-base` provisioner preset as the base system
 - overrides the target disk explicitly for `disko`
 - runs `nixos-anywhere` against the OVH rescue host
 - leaves NixPI bootstrapping for after the machine reboots into the installed system
@@ -179,7 +179,7 @@ Booting from Hard Disk...
 
 then the machine did not reach the installed NixOS userspace. In our live OVH run, this happened because the earlier disk layout only created an EFI system partition, while the VPS firmware actually booted through SeaBIOS.
 
-The current `ovh-base` layout in this repo includes both:
+The current `ovh-vps-base` provisioner preset includes both:
 
 - a BIOS boot partition (`EF02`) for GRUB on SeaBIOS
 - an EFI system partition (`EF00`) for removable EFI boot

@@ -14,7 +14,7 @@ Use it to verify that the retained install path, the shell-first Pi runtime, and
 
 1. Start from a fresh OVH VPS in rescue mode.
 2. Run `nix run .#nixpi-deploy-ovh -- ...`.
-3. Confirm `nixos-anywhere` installs the `ovh-base` base system.
+3. Confirm `nixos-anywhere` installs the `ovh-vps-base` provisioner preset.
 4. Reconnect and run `nixpi-bootstrap-host` on the machine.
 5. Reboot once and confirm the same headless operator flow still works.
 
