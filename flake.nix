@@ -50,7 +50,7 @@
             nixpiDefaultInput = nixpiBootstrapDefaultInput;
           };
           nixpi-rebuild = pkgs.callPackage ./core/os/pkgs/nixpi-rebuild { };
-          nixpi-deploy-ovh = pkgs.callPackage ./core/os/pkgs/nixpi-deploy-ovh {
+          plain-host-deploy = pkgs.callPackage ./core/os/pkgs/plain-host-deploy {
             nixosAnywherePackage = nixos-anywhere.packages.${system}.nixos-anywhere;
           };
         };
@@ -443,9 +443,9 @@
           type = "app";
           program = "${self.packages.${system}.nixpi-bootstrap-host}/bin/nixpi-bootstrap-host";
         };
-        nixpi-deploy-ovh = {
+        plain-host-deploy = {
           type = "app";
-          program = "${self.packages.${system}.nixpi-deploy-ovh}/bin/nixpi-deploy-ovh";
+          program = "${self.packages.${system}.plain-host-deploy}/bin/plain-host-deploy";
         };
       };
 

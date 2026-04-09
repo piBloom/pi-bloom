@@ -2,7 +2,7 @@
 set -euo pipefail
 
 log() {
-	printf '[nixpi-deploy-ovh] %s\n' "$*" >&2
+	printf '[plain-host-deploy] %s\n' "$*" >&2
 }
 
 resolve_repo_url() {
@@ -92,7 +92,7 @@ run_ovh_deploy() {
 	log "WARNING: destructive install to ${target_host} using disk ${disk}"
 	log "Using base configuration ${flake_ref} with target hostname ${hostname}"
 	log "nixos-anywhere will install a plain OVH base system only"
-	log "After first boot, run nixpi-bootstrap-host on the machine to layer NixPI onto /etc/nixos"
+	log "After first boot, optionally run nixpi-bootstrap-host on the machine to layer NixPI onto /etc/nixos"
 
 	nixos_anywhere_args=(
 		--flake "$tmp_dir#deploy"

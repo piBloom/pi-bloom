@@ -5,10 +5,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { run } from "../../core/lib/exec.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
-const deployScriptPath = path.join(repoRoot, "core/scripts/nixpi-deploy-ovh.sh");
+const deployScriptPath = path.join(repoRoot, "core/scripts/plain-host-deploy.sh");
 
 function createDeployHarness() {
-	const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "nixpi-deploy-ovh-test-"));
+	const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "plain-host-deploy-test-"));
 	const argsPath = path.join(rootDir, "nixos-anywhere.args");
 	const flakeCopyPath = path.join(rootDir, "generated-flake.nix");
 	const stubPath = path.join(rootDir, "fake-nixos-anywhere.sh");
@@ -82,7 +82,7 @@ afterEach(() => {
 	delete process.env.NIXPI_REPO_ROOT;
 });
 
-describe("nixpi-deploy-ovh.sh", () => {
+describe("plain-host-deploy.sh", () => {
 	it("exposes a sourceable pure flake builder for deterministic tests", async () => {
 		const result = await run(
 			"bash",
@@ -120,7 +120,19 @@ describe("nixpi-deploy-ovh.sh", () => {
 		const result = await run("bash", [deployScriptPath], undefined, repoRoot);
 
 		expect(result.exitCode).toBe(1);
-		expect(result.stderr).toContain("Usage: nixpi-deploy-ovh");
+		expect(result.stderr).toContain("Usage: plain-host-deploy");
+	});
+
+	it("defaults the generated deploy flake hostname to ovh-base", async () => {
+		const result = await run(
+			"bash",
+			["-lc", `source "${deployScriptPath}"; build_deploy_flake "path:${repoRoot}" "ovh-base" "ovh-base" "/dev/vda"`],
+			undefined,
+			repoRoot,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain('networking.hostName = lib.mkForce "ovh-base";');
 	});
 
 	it("rejects flake refs that do not include a nixosConfigurations attribute", async () => {
@@ -159,7 +171,7 @@ describe("nixpi-deploy-ovh.sh", () => {
 
 		try {
 			expect(result.exitCode).toBe(1);
-			expect(result.stderr).toContain("Usage: nixpi-deploy-ovh");
+			expect(result.stderr).toContain("Usage: plain-host-deploy");
 			expect(result.stderr).toContain("Unsupported legacy option: --bootstrap-user");
 			expect(result.readArgs()).toEqual([]);
 		} finally {
@@ -176,7 +188,7 @@ describe("nixpi-deploy-ovh.sh", () => {
 
 		try {
 			expect(result.exitCode).toBe(1);
-			expect(result.stderr).toContain("Usage: nixpi-deploy-ovh");
+			expect(result.stderr).toContain("Usage: plain-host-deploy");
 			expect(result.stderr).toContain(`Unsupported legacy option: ${legacyFlag.split("=")[0]}`);
 			expect(result.readArgs()).toEqual([]);
 		} finally {
@@ -224,5 +236,11 @@ describe("nixpi-deploy-ovh.sh", () => {
 		} finally {
 			result.harness.cleanup();
 		}
+	});
+
+	it("keeps packaged wrapper default flake resolution rooted at the repo checkout", () => {
+		const packageNix = fs.readFileSync(path.join(repoRoot, "core/os/pkgs/plain-host-deploy/default.nix"), "utf8");
+
+		expect(packageNix).toContain("--set NIXPI_REPO_ROOT ${../../../..}");
 	});
 });
