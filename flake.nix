@@ -349,8 +349,8 @@
               path = nixosTests.nixpi-security;
             }
             {
-              name = "nixpi-headscale";
-              path = nixosTests.nixpi-headscale;
+              name = "nixpi-netbird";
+              path = nixosTests.nixpi-netbird;
             }
             {
               name = "nixpi-broker";
@@ -384,8 +384,8 @@
               path = nixosTests.nixpi-security;
             }
             {
-              name = "nixpi-headscale";
-              path = nixosTests.nixpi-headscale;
+              name = "nixpi-netbird";
+              path = nixosTests.nixpi-netbird;
             }
             {
               name = "nixpi-modular-services";

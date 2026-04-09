@@ -11,7 +11,7 @@ Bootstrap versus steady-state behavior is selected declaratively via `nixpi.boot
 - `nixos-smoke`: PR-oriented headless VPS VM subset
   - `nixpi-runtime`
   - `nixpi-security`
-  - `nixpi-headscale`
+  - `nixpi-netbird`
   - `nixpi-broker`
 - `nixos-full`: comprehensive retained VM lane
   - `boot`
@@ -20,7 +20,7 @@ Bootstrap versus steady-state behavior is selected declaratively via `nixpi.boot
   - `nixpi-network`
   - `nixpi-e2e`
   - `nixpi-security`
-  - `nixpi-headscale`
+  - `nixpi-netbird`
   - `nixpi-modular-services`
   - `nixpi-post-setup-lockdown`
   - `nixpi-broker`
@@ -88,7 +88,7 @@ tests/nixos/
 ├── nixpi-security.nix          # security boundary test
 ├── nixpi-system-flake.nix      # retained name; now asserts no runtime /etc/nixos flake generation
 ├── nixpi-update.nix            # update flow test
-├── nixpi-headscale.nix         # admin tailnet integration test
+├── nixpi-netbird.nix           # NetBird client configuration test
 └── README.md                   # this file
 ```
 
