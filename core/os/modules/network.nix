@@ -10,31 +10,12 @@ let
   primaryUser = config.nixpi.primaryUser;
   securityCfg = config.nixpi.security;
   bootstrapCfg = config.nixpi.bootstrap;
-  headscaleCfg = config.nixpi.headscale;
-  tailnetCfg = config.nixpi.tailnet;
+  netbirdCfg = config.nixpi.netbird;
   sshAllowUsers =
     if securityCfg.ssh.allowUsers != [ ] then
       securityCfg.ssh.allowUsers
     else
       lib.optional (primaryUser != "") primaryUser;
-  headscaleSettings = lib.recursiveUpdate headscaleCfg.settings (
-    {
-      server_url = headscaleCfg.serverUrl;
-    }
-    // lib.optionalAttrs (headscaleCfg.policyFile != null) {
-      policy.path = headscaleCfg.policyFile;
-    }
-  );
-  tailnetUpFlags =
-    [
-      "--login-server"
-      tailnetCfg.loginServer
-    ]
-    ++ lib.optionals (tailnetCfg.hostname != null) [
-      "--hostname"
-      tailnetCfg.hostname
-    ]
-    ++ tailnetCfg.extraUpFlags;
 in
 
 {
@@ -74,17 +55,16 @@ in
     networking.firewall.allowedTCPPorts = lib.optionals bootstrapCfg.ssh.enable [ 22 ];
     networking.useDHCP = lib.mkDefault false;
     networking.networkmanager.enable = true;
-
-    services.headscale = lib.mkIf headscaleCfg.enable {
-      enable = true;
-      settings = headscaleSettings;
-    };
-
-    services.tailscale = lib.mkIf tailnetCfg.enable {
-      enable = true;
-      authKeyFile = tailnetCfg.authKeyFile;
-      extraUpFlags = tailnetUpFlags;
-      openFirewall = false;
+    services.resolved.enable = lib.mkIf netbirdCfg.enable true;
+    services.netbird.clients.wt0 = lib.mkIf netbirdCfg.enable {
+      login = {
+        enable = true;
+        setupKeyFile = netbirdCfg.setupKeyFile;
+      };
+      port = 51821;
+      ui.enable = false;
+      openFirewall = true;
+      openInternalFirewall = true;
     };
 
     services.fail2ban = lib.mkIf securityCfg.fail2ban.enable {
@@ -108,8 +88,6 @@ in
       };
     };
 
-    environment.systemPackages =
-      lib.optionals headscaleCfg.enable [ pkgs.headscale ]
-      ++ lib.optionals tailnetCfg.enable [ pkgs.tailscale ];
+    environment.systemPackages = lib.optionals netbirdCfg.enable [ pkgs.netbird ];
   };
 }
