@@ -32,7 +32,6 @@ let
     nixpi-firstboot = runTest ./nixpi-firstboot.nix;
     nixpi-system-flake = runTest ./nixpi-system-flake.nix;
     nixpi-runtime = runTest ./nixpi-runtime.nix;
-    nixpi-zellij = runTest ./nixpi-zellij.nix;
     nixpi-network = runTest ./nixpi-network.nix;
     nixpi-e2e = runTest ./nixpi-e2e.nix;
     nixpi-security = runTest ./nixpi-security.nix;
@@ -46,7 +45,6 @@ let
   smokeAliases = {
     smoke-firstboot = tests.nixpi-firstboot;
     smoke-runtime = tests.nixpi-runtime;
-    smoke-zellij = tests.nixpi-zellij;
     smoke-security = tests.nixpi-security;
     smoke-broker = tests.nixpi-broker;
   };

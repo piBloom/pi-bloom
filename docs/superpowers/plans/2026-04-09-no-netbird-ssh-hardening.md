@@ -150,7 +150,6 @@ imports = [
   ./options/bootstrap.nix
   ./options/security.nix
   ./options/agent.nix
-  ./options/terminal-ui.nix
   (lib.mkRenamedOptionModule [ "nixpi" "bootstrap" "keepSshAfterSetup" ] [ "nixpi" "bootstrap" "ssh" "enable" ])
   (lib.mkRemovedOptionModule [ "nixpi" "install" "enable" ] installFinalizeRemoved)
   (lib.mkRemovedOptionModule [ "nixpi" "install" "repoUrl" ] installFinalizeRemoved)
@@ -405,7 +404,6 @@ tests = {
   nixpi-firstboot = runTest ./nixpi-firstboot.nix;
   nixpi-system-flake = runTest ./nixpi-system-flake.nix;
   nixpi-runtime = runTest ./nixpi-runtime.nix;
-  nixpi-zellij = runTest ./nixpi-zellij.nix;
   nixpi-network = runTest ./nixpi-network.nix;
   nixpi-e2e = runTest ./nixpi-e2e.nix;
   nixpi-security = runTest ./nixpi-security.nix;

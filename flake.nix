@@ -294,17 +294,6 @@
           # evaluation failures without touching QEMU.
           config = self.nixosConfigurations.installed-test.config.system.build.toplevel;
 
-          terminal-ui-launcher = pkgs.runCommandLocal "terminal-ui-launcher-check" { } ''
-            launcher=${./core/os/modules/terminal-ui.nix}
-            test -f "$launcher"
-            grep -F 'nixpi-launch-terminal-ui' "$launcher" >/dev/null
-            grep -F 'NIXPI_NO_ZELLIJ' "$launcher" >/dev/null
-            grep -F 'pane command="pi"' "$launcher" >/dev/null
-            grep -F 'native-patched' "$launcher" >/dev/null
-            touch "$out"
-          '';
-
-
           flake-topology = pkgs.runCommandLocal "flake-topology-check" { } ''
             ! grep -F 'desktop-vm' ${./flake.nix}
             ! test -e ${./.}/core/os/hosts/x86_64-vm.nix
@@ -361,10 +350,6 @@
             {
               name = "nixpi-runtime";
               path = nixosTests.nixpi-runtime;
-            }
-            {
-              name = "nixpi-zellij";
-              path = nixosTests.nixpi-zellij;
             }
             {
               name = "nixpi-security";

@@ -175,7 +175,6 @@ Update `core/os/modules/options.nix` to import the new files and drop the WireGu
   ./options/headscale.nix
   ./options/security.nix
   ./options/tailnet.nix
-  ./options/terminal-ui.nix
 ]
 ```
 

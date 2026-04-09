@@ -16,7 +16,7 @@ Before this checklist, you should already have:
 
 ## What First Boot Means Now
 
-NixPI comes up as a shell-first host runtime with Zellij as the default interactive terminal UI.
+NixPI comes up as a shell-first host runtime.
 
 A fresh system should provide:
 
@@ -76,7 +76,7 @@ Expected result:
 - Pi is usable without any browser-only service layer
 - user-home marker files are not the primary control plane for the host mode
 
-After the first successful login, the default operator-facing interface is Zellij. The generated layout opens Pi and a shell tab. If you need a plain shell for recovery, use `NIXPI_NO_ZELLIJ=1` before starting the login shell.
+After the first successful login, the operator-facing interface remains a plain shell. Run `pi` directly from that shell when you want the Pi workflow.
 
 ### 4. Verify the SSH hardening policy
 
@@ -120,7 +120,7 @@ After first boot, keep these boundaries in mind:
 - the installed `/etc/nixos` flake remains authoritative for the running host
 - NixPI is layered into the host through generated helper files, not by replacing the machine root
 - user-home marker files are not the control path for transitioning host state
-- SSH sessions are the operator control plane, with Zellij as the default interactive UI
+- SSH sessions are the operator control plane, with a plain shell as the default interactive UI
 - shell behavior should already match the deployed NixOS configuration
 - system services remain inspectable with normal NixOS and systemd tooling
 
@@ -137,6 +137,6 @@ After first boot, keep these boundaries in mind:
 
 - the machine boots to a normal headless multi-user target
 - no desktop session is required to start operating NixPI
-- the primary user workflow is Pi in the terminal, reached from SSH via Zellij by default
+- the primary user workflow is Pi in the terminal, reached directly from the shell
 - updates run through native NixOS/systemd paths, and `sudo nixpi-rebuild` targets the installed host flake
 - recovery from a bad SSH allowlist happens through OVH console or rescue mode

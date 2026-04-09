@@ -20,7 +20,6 @@ in
     ./options/bootstrap.nix
     ./options/security.nix
     ./options/agent.nix
-    ./options/terminal-ui.nix
     (lib.mkRenamedOptionModule [ "nixpi" "bootstrap" "keepSshAfterSetup" ] [ "nixpi" "bootstrap" "ssh" "enable" ])
     (lib.mkRemovedOptionModule [ "nixpi" "install" "enable" ] installFinalizeRemoved)
     (lib.mkRemovedOptionModule [ "nixpi" "install" "repoUrl" ] installFinalizeRemoved)

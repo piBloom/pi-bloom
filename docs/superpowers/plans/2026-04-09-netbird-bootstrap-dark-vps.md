@@ -136,7 +136,6 @@ Update `core/os/modules/options.nix` to import `./options/netbird.nix` and remov
   ./options/security.nix
   ./options/agent.nix
   ./options/netbird.nix
-  ./options/terminal-ui.nix
 ]
 ```
 

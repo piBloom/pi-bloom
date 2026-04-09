@@ -707,7 +707,7 @@ It combines:
 - a plain machine/provider-specific NixOS base install
 - a host-owned `/etc/nixos` system root
 - a shared `nixpi-bootstrap-host` integration path for already-installed NixOS systems
-- a Zellij-first operator runtime for SSH and local tty sessions
+- a plain shell runtime for SSH and local tty sessions
 ````
 
 ````md

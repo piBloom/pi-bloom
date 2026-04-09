@@ -14,9 +14,8 @@
 1. Boot selects bootstrap or steady-state behavior from declarative NixOS config.
 2. `sshd.service` provides operator entry during bootstrap and steady state, restricted to configured admin CIDRs.
 3. `nixpi-app-setup.service` exposes the Pi runtime entry path.
-4. Interactive operator sessions enter Zellij by default.
-5. The generated Zellij layout opens Pi and a plain shell workspace.
-6. Pi loads extensions, persona, and workspace state from the seeded runtime.
+4. Interactive operator sessions stay in a plain shell.
+5. Pi loads extensions, persona, and workspace state from the seeded runtime.
 
 ## Boot and Service Startup Flow
 
@@ -38,7 +37,7 @@ multi-user.target
 ## Important Runtime Properties
 
 - SSH and local terminals are the supported interactive entrypoints
-- Zellij is the default interactive terminal UI
+- Interactive operator sessions stay shell-first
 - Pi remains the main workflow inside the generated layout
 - the machine starts from a plain base system before NixPI is layered on
 - bootstrap writes narrow `/etc/nixos` helper files
@@ -47,9 +46,9 @@ multi-user.target
 - shell behavior should come from NixOS modules rather than user-home mutation
 - repo checkouts are not part of the supported convergence path
 
-## Default Terminal UI
+## Default Terminal Behavior
 
-Interactive SSH and local tty logins pass through the NixPI terminal-ui launcher. When enabled, the launcher starts Zellij with the generated NixPI layout, opening Pi and a plain shell. Set `NIXPI_NO_ZELLIJ=1` to bypass the launcher and stay in a plain shell.
+Interactive SSH and local tty logins stay in a plain shell. Pi is available directly as a command in that shell without an extra terminal UI layer.
 
 ## Verification Commands
 

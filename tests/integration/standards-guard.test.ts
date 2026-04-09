@@ -19,8 +19,6 @@ const ovhVpsConfigTestPath = path.join(repoRoot, "tests/integration/ovh-vps-conf
 const reinstallOvhTestPath = path.join(repoRoot, "tests/integration/nixpi-reinstall-ovh.test.ts");
 const appModulePath = path.join(repoRoot, "core/os/modules/app.nix");
 const piPackagePath = path.join(repoRoot, "core/os/pkgs/pi/default.nix");
-const terminalUiOptionPath = path.join(repoRoot, "core/os/modules/options/terminal-ui.nix");
-const terminalUiModulePath = path.join(repoRoot, "core/os/modules/terminal-ui.nix");
 const shellModulePath = path.join(repoRoot, "core/os/modules/shell.nix");
 const moduleSetsPath = path.join(repoRoot, "core/os/modules/module-sets.nix");
 const runtimeFlowsPath = path.join(repoRoot, "docs/architecture/runtime-flows.md");
@@ -252,40 +250,22 @@ describe("repo standards guards", () => {
 		expect(existsSync(ovhVpsConfigTestPath)).toBe(false);
 	});
 
-	it("wires a declarative Zellij terminal UI as the default operator interface", () => {
-		expect(existsSync(terminalUiOptionPath)).toBe(true);
-		expect(existsSync(terminalUiModulePath)).toBe(true);
-
-		const terminalOptions = readUtf8(terminalUiOptionPath);
-		const terminalModule = readUtf8(terminalUiModulePath);
+	it("documents and wires a shell-first operator runtime", () => {
 		const shellModule = readUtf8(shellModulePath);
 		const moduleSets = readUtf8(moduleSetsPath);
 		const vpsHost = readUtf8(path.join(repoRoot, "core/os/hosts/vps.nix"));
+		const readme = readUtf8(readmePath);
 		const runtimeFlows = readUtf8(runtimeFlowsPath);
 		const daemonArchitecture = readUtf8(daemonArchitecturePath);
 		const serviceArchitecture = readUtf8(serviceArchitecturePath);
 
-		expect(terminalOptions).toContain("options.nixpi.terminal");
-		expect(terminalOptions).toContain('"plain-shell"');
-		expect(terminalOptions).toContain('"zellij"');
-		expect(terminalOptions).toContain('"nixpkgs"');
-
-		expect(terminalModule).toContain("nixpi-launch-terminal-ui");
-		expect(terminalModule).toContain("NIXPI_NO_ZELLIJ");
-		expect(terminalModule).toContain("config.kdl");
-		expect(terminalModule).toContain('pane command="pi"');
-		expect(terminalModule).toContain("attachExistingSession");
-
-		expect(shellModule).toContain("nixpi-launch-terminal-ui");
-		expect(moduleSets).toContain("./terminal-ui.nix");
-		expect(vpsHost).toContain('terminal.interface = lib.mkDefault "zellij";');
-		expect(vpsHost).toContain("terminal.zellij.enable = lib.mkDefault true;");
-
-		expect(runtimeFlows).toContain("Zellij");
-		expect(runtimeFlows).toContain("NIXPI_NO_ZELLIJ=1");
-		expect(daemonArchitecture).toContain("Zellij");
-		expect(daemonArchitecture).toContain("NIXPI_NO_ZELLIJ=1");
-		expect(serviceArchitecture).toContain("Zellij");
-		expect(serviceArchitecture).toContain("NIXPI_NO_ZELLIJ=1");
+		expect(existsSync(shellModulePath)).toBe(true);
+		expect(moduleSets).toContain("./shell.nix");
+		expect(vpsHost).toContain("bootstrap.enable = lib.mkDefault true;");
+		expect(readme).toContain("plain shell runtime");
+		expect(shellModule).toContain(`export PATH="\${nodeBinDir}:$PATH"`);
+		expect(runtimeFlows).toContain("Interactive operator sessions stay in a plain shell.");
+		expect(daemonArchitecture).toContain("interactive login shells stay in a plain shell");
+		expect(serviceArchitecture).toContain("plain shell runtime");
 	});
 });

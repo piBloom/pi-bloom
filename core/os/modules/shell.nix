@@ -105,9 +105,6 @@ in
         if [ -t 0 ]; then
           stty sane erase '^H' 2>/dev/null || true
         fi
-        if [ -t 0 ] && [ -t 1 ] && command -v nixpi-launch-terminal-ui >/dev/null 2>&1; then
-          nixpi-launch-terminal-ui || true
-        fi
       '';
     };
 

@@ -6,9 +6,9 @@ It combines:
 - a plain OVH-compatible NixOS base system
 - a host-owned `/etc/nixos` system root
 - a shared `nixpi-bootstrap-host` integration path for already-installed NixOS systems
-- a Zellij-first operator runtime for SSH and local tty sessions
+- a plain shell runtime for SSH and local tty sessions
 
-By default, interactive operator sessions enter **Zellij** on both SSH and local tty logins. The default layout opens a Pi tab and a plain shell tab. For recovery or troubleshooting, skip auto-start with `NIXPI_NO_ZELLIJ=1` before starting a login shell.
+Interactive operator sessions stay in a plain shell by default. Pi remains available as a normal command inside that shell.
 
 ## Quick start
 

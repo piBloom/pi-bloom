@@ -18,7 +18,7 @@
 - `npm run docs:dev` — serve the documentation site locally.
 
 ## Coding Style & Naming Conventions
-Use TypeScript ESM with tabs for indentation, double quotes, semicolons, and LF line endings; Biome enforces this (`biome.json`). Keep modules focused and prefer named exports. Match existing file patterns: kebab-case for Nix files (`terminal-ui.nix`), descriptive action files (`actions-health.ts`), and `*.test.ts` for tests.
+Use TypeScript ESM with tabs for indentation, double quotes, semicolons, and LF line endings; Biome enforces this (`biome.json`). Keep modules focused and prefer named exports. Match existing file patterns: kebab-case for Nix files (`ovh-base.nix`), descriptive action files (`actions-health.ts`), and `*.test.ts` for tests.
 
 ## Testing Guidelines
 Vitest runs in a Node environment and discovers `tests/**/*.test.ts`. Keep unit tests near their domain folder under `tests/`, and place broader workflow checks in `tests/integration/` or `tests/e2e/`. Coverage thresholds are enforced for `core/lib/**/*.ts` and `core/pi/extensions/**/*.ts`; do not lower them without justification.
