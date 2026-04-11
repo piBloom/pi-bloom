@@ -126,6 +126,18 @@ in
       };
     };
 
+    integrations.exa = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Whether Exa-backed web search tools are enabled for the Pi runtime.";
+      };
+      envFile = lib.mkOption {
+        type = absolutePath;
+        description = "Absolute path to an environment file that provides EXA_API_KEY for the Pi runtime.";
+      };
+    };
+
     agent = {
       autonomy = lib.mkOption {
         type = lib.types.enum [ "observe" "maintain" "admin" ];
@@ -141,6 +153,12 @@ in
         type = lib.types.bool;
         default = true;
         description = "Whether the root-owned NixPI operations broker is enabled.";
+      };
+      envFiles = lib.mkOption {
+        type = lib.types.listOf absolutePath;
+        default = [ ];
+        example = [ "/var/lib/nixpi/secrets/exa.env" ];
+        description = "Environment files sourced by the Pi runtime wrapper before launching pi. Use this for secrets that must stay out of the Nix store.";
       };
       elevation.duration = lib.mkOption {
         type = lib.types.str;
@@ -173,5 +191,9 @@ in
     nixpi.bootstrap.temporaryAdmin.enable = lib.mkDefault cfg.enable;
     nixpi.agent.piDir = lib.mkDefault "/home/${config.nixpi.primaryUser}/.pi";
     nixpi.agent.workspaceDir = lib.mkDefault "/home/${config.nixpi.primaryUser}/nixpi";
+    nixpi.integrations.exa.envFile = lib.mkDefault "${config.nixpi.stateDir}/secrets/exa.env";
+    nixpi.agent.envFiles = lib.mkIf config.nixpi.integrations.exa.enable (
+      lib.mkBefore [ config.nixpi.integrations.exa.envFile ]
+    );
   };
 }

@@ -11,6 +11,9 @@
   nixpi.timezone = "Europe/Bucharest";
   nixpi.keyboard = "us";
 
+  nixpi.integrations.exa.enable = true;
+  nixpi.integrations.exa.envFile = "/var/lib/nixpi/secrets/exa.env";
+
   nixpi.security.ssh.allowedSourceCIDRs = [
     "188.24.176.127/32"
   ];

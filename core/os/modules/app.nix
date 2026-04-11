@@ -9,10 +9,23 @@
 let
   cfg = config.nixpi.app;
   inherit (config.nixpi) primaryUser stateDir;
-  inherit (config.nixpi.agent) piDir;
+  inherit (config.nixpi.agent) piDir envFiles;
   agentStateDir = piDir;
   piAgent = pkgs.callPackage ../pkgs/pi { };
   appPackage = pkgs.callPackage ../pkgs/app { inherit piAgent; };
+  sourceEnvFilesSnippet = lib.concatMapStringsSep "\n" (
+    envFile:
+    let
+      quoted = lib.escapeShellArg (toString envFile);
+    in
+    ''
+      if [ -r ${quoted} ]; then
+        set -a
+        . ${quoted}
+        set +a
+      fi
+    ''
+  ) envFiles;
   piCommand = pkgs.writeShellScriptBin "pi" ''
     export PI_SKIP_VERSION_CHECK=1
     export NIXPI_BOOTSTRAP_MODE="${if config.nixpi.bootstrap.enable then "bootstrap" else "steady"}"
@@ -23,6 +36,7 @@ let
         pkgs.ripgrep
       ]
     }:$PATH"
+${sourceEnvFilesSnippet}
     exec ${appPackage}/share/nixpi/node_modules/.bin/pi "$@"
   '';
   defaultSettings = pkgs.writeText "pi-settings.json" (
@@ -74,6 +88,11 @@ in
     "${stateDir}/services".d = {
       mode = "0770";
       user = primaryUser;
+      group = primaryUser;
+    };
+    "${stateDir}/secrets".d = {
+      mode = "0750";
+      user = "root";
       group = primaryUser;
     };
     "${agentStateDir}".d = {

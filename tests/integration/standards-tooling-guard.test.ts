@@ -31,6 +31,8 @@ describe("repo standards tooling guards", () => {
 		expect(appModule).toContain("pkgs.bash");
 		expect(appModule).toContain("shellPath =");
 		expect(appModule).toContain("/bin/bash");
+		expect(appModule).toContain("envFiles");
+		expect(appModule).toContain("sourceEnvFilesSnippet");
 		expect(appModule).toContain("systemd.tmpfiles.settings.nixpi-app");
 		expect(appModule).toContain("systemd-tmpfiles");
 		expect(existsSync(appModulePath)).toBe(true);
