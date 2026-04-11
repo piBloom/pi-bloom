@@ -37,6 +37,7 @@ describe("runtime package extension list", () => {
 			"./core/pi/extensions/os",
 			"./core/pi/extensions/wiki",
 			"./core/pi/extensions/nixpi",
+			"./core/pi/extensions/exa",
 		]);
 	});
 });
@@ -53,6 +54,23 @@ describe("nixpi registration", () => {
 		expect(toolNames(api)).toEqual(["nixpi_status"]);
 		expect(commandNames(api)).toEqual(["nixpi"]);
 		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start", "resources_discover"]));
+	});
+});
+
+// ---------------------------------------------------------------------------
+// exa
+// ---------------------------------------------------------------------------
+describe("exa registration", () => {
+	it("registers expected tools, command, and event", async () => {
+		const mod = await import("../../core/pi/extensions/exa/index.js");
+		const api = createMockExtensionAPI();
+		mod.default(api as never);
+
+		expect(toolNames(api)).toEqual(
+			expect.arrayContaining(["exa_search", "exa_fetch", "exa_code_context"]),
+		);
+		expect(commandNames(api)).toEqual(expect.arrayContaining(["exa-status"]));
+		expect(eventNames(api)).toEqual(expect.arrayContaining(["session_start"]));
 	});
 });
 

@@ -15,7 +15,8 @@
 			"./core/pi/extensions/persona",
 			"./core/pi/extensions/os",
 			"./core/pi/extensions/wiki",
-			"./core/pi/extensions/nixpi"
+			"./core/pi/extensions/nixpi",
+			"./core/pi/extensions/exa"
 		],
 		"skills": [
 			"./core/pi/skills"
