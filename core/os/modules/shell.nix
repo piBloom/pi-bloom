@@ -17,6 +17,7 @@ let
       [ ];
   inherit (config.nixpi.agent) piDir workspaceDir;
   nodeBinDir = "${builtins.head config.nixpi.agent.packagePaths}/node_modules/.bin";
+  wrapperBinDir = "/run/current-system/sw/bin";
   primaryUserMarker = "${stateDir}/primary-user";
 in
 {
@@ -125,7 +126,7 @@ EOF_AUTHORIZED_KEYS
     programs.bash = {
       enable = true;
       loginShellInit = ''
-        export PATH="${nodeBinDir}:$PATH"
+        export PATH="${wrapperBinDir}:${nodeBinDir}:$PATH"
       '';
       interactiveShellInit = ''
         if command -v chromium >/dev/null 2>&1; then

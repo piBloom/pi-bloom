@@ -71,6 +71,8 @@ in
         "sudo -u pi -- bash -lc '"
         + "test \"$NIXPI_PI_DIR\" = /home/pi/.pi && "
         + "test \"$PI_CODING_AGENT_DIR\" = /home/pi/.pi && "
+        + "test \"$(command -v pi)\" = /run/current-system/sw/bin/pi && "
+        + "printf %s \"$PATH\" | grep -q \"/run/current-system/sw/bin\" && "
         + "printf %s \"$PATH\" | grep -q \"/usr/local/share/nixpi/node_modules/.bin\" && "
         + "pi --help | grep -q \"AI coding assistant\"'"
     )
