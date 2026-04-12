@@ -8,7 +8,7 @@ UNIT_DST="$HOME/.config/systemd/user"
 WANTS_DST="$UNIT_DST/default.target.wants"
 STATE_DIR="${SIGNAL_GATEWAY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/nixpi-signal-gateway}"
 CONFIG_PATH="${SIGNAL_GATEWAY_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/nixpi-signal-gateway/config.yml}"
-SIGNAL_CLI_BIN="${SIGNAL_CLI_BIN:-signal-cli}"
+SIGNAL_CLI_BIN="${SIGNAL_CLI_BIN:-$(command -v signal-cli 2>/dev/null || printf '/run/current-system/sw/bin/signal-cli')}"
 
 mkdir -p "$UNIT_DST" "$WANTS_DST" "$STATE_DIR/tmp"
 
