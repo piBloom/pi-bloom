@@ -23,6 +23,7 @@ in
         bootstrap.ssh.enable = true;
         bootstrap.temporaryAdmin.enable = false;
         security.enforceServiceFirewall = true;
+        security.ssh.allowedSourceCIDRs = [ "192.0.2.10/32" ];
       };
 
       systemd.tmpfiles.rules = [ "d ${homeDir}/.nixpi 0755 ${username} ${username} -" ];

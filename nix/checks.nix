@@ -40,6 +40,7 @@ let
         ];
 
         nixpi.primaryUser = "alex";
+        nixpi.security.ssh.allowedSourceCIDRs = [ "192.0.2.10/32" ];
 
         networking.hostName = "nixos";
         system.stateVersion = "25.05";

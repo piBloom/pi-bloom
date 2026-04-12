@@ -19,6 +19,8 @@ in
     nixpiDefaultInput = nixpiBootstrapDefaultInput;
   };
   nixpi-rebuild = pkgs.callPackage ../core/os/pkgs/nixpi-rebuild { };
+}
+// pkgs.lib.optionalAttrs (builtins.pathExists ../nixos_vps_provisioner/pkgs/plain-host-deploy) {
   plain-host-deploy = pkgs.callPackage ../nixos_vps_provisioner/pkgs/plain-host-deploy {
     nixosAnywherePackage = nixos-anywhere.packages.${system}.nixos-anywhere;
   };

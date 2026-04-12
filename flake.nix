@@ -77,6 +77,7 @@
           type = "app";
           program = "${self.packages.${system}.nixpi-bootstrap-host}/bin/nixpi-bootstrap-host";
         };
+      } // lib.optionalAttrs (self.packages.${system} ? plain-host-deploy) {
         plain-host-deploy = {
           type = "app";
           program = "${self.packages.${system}.plain-host-deploy}/bin/plain-host-deploy";

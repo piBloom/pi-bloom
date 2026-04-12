@@ -21,6 +21,7 @@ in
 
     networking.hostName = "system-flake-test";
     nixpi.primaryUser = username;
+    nixpi.security.ssh.allowedSourceCIDRs = [ "192.0.2.10/32" ];
 
     environment.etc."system-flake-marker".text = "preserved";
   };

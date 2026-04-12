@@ -155,6 +155,7 @@ export async function checkPendingUpdates(systemPrompt: string): Promise<{ syste
 const BOOTSTRAP_DISABLE_RE = /nixpi\.bootstrap\.enable\s*=\s*false/;
 const SSH_DISABLED_RE = /services\.openssh\.enable\s*=\s*false|nixpi\.bootstrap\.ssh\.enable\s*=\s*false/;
 const CIDRS_RE = /allowedSourceCIDRs\s*=\s*\[\s*"/;
+const INTERFACE_SSH_RE = /networking\.firewall\.interfaces\.[A-Za-z0-9_-]+\.allowedTCPPorts\s*=\s*\[[^\]]*\b22\b/;
 
 function isNixHostFile(filePath: string): boolean {
 	return filePath.endsWith("nixpi-host.nix") || /^\/etc\/nixos\/[^/]+\.nix$/.test(filePath);
@@ -169,21 +170,25 @@ export function checkBootstrapDisable(
 
 	const sshEnabled = !SSH_DISABLED_RE.test(postEditContent);
 	const cidrsConfigured = CIDRS_RE.test(postEditContent);
+	const trustedInterfaceSshConfigured = INTERFACE_SSH_RE.test(postEditContent);
 
-	if (sshEnabled && cidrsConfigured) return undefined;
+	if (sshEnabled && (cidrsConfigured || trustedInterfaceSshConfigured)) return undefined;
 
 	const missing: string[] = [];
 	if (!sshEnabled) missing.push("  services.openssh.enable = true;");
-	if (!cidrsConfigured) missing.push('  nixpi.security.ssh.allowedSourceCIDRs = [ "YOUR_IP/32" ];');
+	if (!cidrsConfigured && !trustedInterfaceSshConfigured) {
+		missing.push('  nixpi.security.ssh.allowedSourceCIDRs = [ "YOUR_IP/32" ];');
+		missing.push('  # or: networking.firewall.interfaces.wg0.allowedTCPPorts = [ 22 ];');
+	}
 
 	const reason = [
 		"Disabling bootstrap will remove passwordless sudo and may close SSH.",
 		"",
-		"Before this edit can proceed, add the following to your config:",
+		"Before this edit can proceed, keep SSH reachable via either a public CIDR allowlist or a trusted-interface firewall rule:",
 		"",
 		...missing,
 		"",
-		"Add these lines to nixpi-host.nix, then retry.",
+		"Add the appropriate lines to nixpi-host.nix, then retry.",
 	].join("\n");
 
 	return { block: true, reason };

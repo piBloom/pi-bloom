@@ -43,7 +43,7 @@ in
         message = "nixpi.security.ssh.allowedSourceCIDRs must be set when bootstrap SSH is enabled.";
       }
       {
-        assertion = !config.services.openssh.enable || allowedSourceCIDRs != [ ];
+        assertion = !publicSshEnabled || allowedSourceCIDRs != [ ];
         message = "nixpi.security.ssh.allowedSourceCIDRs must be set when public SSH is enabled.";
       }
       {
@@ -65,7 +65,7 @@ in
     hardware.enableRedistributableFirmware = lib.mkDefault true;
 
     services.openssh = {
-      enable = publicSshEnabled;
+      enable = lib.mkDefault publicSshEnabled;
       openFirewall = false;
       settings = {
         AllowAgentForwarding = false;

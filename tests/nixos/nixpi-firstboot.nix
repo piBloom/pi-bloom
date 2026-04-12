@@ -23,6 +23,7 @@ in
     nixpi = {
       primaryUser = username;
       bootstrap.enable = true;
+      security.ssh.allowedSourceCIDRs = [ "192.0.2.10/32" ];
     };
 
     users.users.${username}.openssh.authorizedKeys.keys = [ testKey ];

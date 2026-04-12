@@ -62,11 +62,13 @@
 
   nixPiModules = [
     self.nixosModules.nixpi
+    { nixpi.security.ssh.allowedSourceCIDRs = [ "192.0.2.10/32" ]; }
   ];
 
   nixPiModulesNoShell = [
     self.nixosModules.nixpi
     { nixpi.shell.enable = false; }
+    { nixpi.security.ssh.allowedSourceCIDRs = [ "192.0.2.10/32" ]; }
   ];
 
 }

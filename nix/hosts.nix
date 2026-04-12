@@ -28,15 +28,11 @@ in
   # Canonical NixPI headless VPS profile used for local builds and CI topology checks.
   vps = mkConfiguredSystem {
     inherit system;
-    modules = [ ../core/os/hosts/vps.nix ];
-  };
-
-  ovh-vps-base = mkConfiguredStableSystem {
-    inherit system;
     modules = [
-      disko.nixosModules.disko
-      ../nixos_vps_provisioner/presets/ovh-single-disk.nix
-      ../nixos_vps_provisioner/presets/ovh-vps-base.nix
+      ../core/os/hosts/vps.nix
+      {
+        nixpi.security.ssh.allowedSourceCIDRs = [ "192.0.2.10/32" ];
+      }
     ];
   };
 
@@ -47,6 +43,7 @@ in
       self.nixosModules.nixpi
       {
         nixpi.primaryUser = "alex";
+        nixpi.security.ssh.allowedSourceCIDRs = [ "192.0.2.10/32" ];
         networking.hostName = "nixos";
         system.stateVersion = "25.05";
         boot.loader = {
@@ -64,6 +61,19 @@ in
           };
         };
       }
+    ];
+  };
+}
+// nixpkgs.lib.optionalAttrs (
+  builtins.pathExists ../nixos_vps_provisioner/presets/ovh-single-disk.nix
+  && builtins.pathExists ../nixos_vps_provisioner/presets/ovh-vps-base.nix
+) {
+  ovh-vps-base = mkConfiguredStableSystem {
+    inherit system;
+    modules = [
+      disko.nixosModules.disko
+      ../nixos_vps_provisioner/presets/ovh-single-disk.nix
+      ../nixos_vps_provisioner/presets/ovh-vps-base.nix
     ];
   };
 }

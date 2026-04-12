@@ -24,6 +24,7 @@ in
           bootstrap.enable = false;
           bootstrap.ssh.enable = true;
           bootstrap.temporaryAdmin.enable = false;
+          security.ssh.allowedSourceCIDRs = [ "192.0.2.10/32" ];
         };
 
         virtualisation.diskSize = 20480;

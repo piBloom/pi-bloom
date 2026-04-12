@@ -462,6 +462,12 @@ const SAFE_DEFAULT_STEADY_SSH = `{
   nixpi.security.ssh.allowedSourceCIDRs = [ "1.2.3.4/32" ];
 }`;
 
+const SAFE_TRUSTED_INTERFACE_SSH = `{
+  nixpi.bootstrap.enable = false;
+  services.openssh.enable = true;
+  networking.firewall.interfaces.wg0.allowedTCPPorts = [ 22 ];
+}`;
+
 const UNSAFE_EXPLICIT_SSH_DISABLED = `{
   nixpi.bootstrap.enable = false;
   nixpi.bootstrap.ssh.enable = false;
@@ -507,6 +513,10 @@ describe("checkBootstrapDisable", () => {
 		expect(checkBootstrapDisable("/etc/nixos/nixpi-host.nix", SAFE_DEFAULT_STEADY_SSH)).toBeUndefined();
 	});
 
+	it("returns undefined when SSH is kept reachable through a trusted interface rule", () => {
+		expect(checkBootstrapDisable("/etc/nixos/nixpi-host.nix", SAFE_TRUSTED_INTERFACE_SSH)).toBeUndefined();
+	});
+
 	it("blocks when SSH is explicitly disabled", () => {
 		const result = checkBootstrapDisable("/etc/nixos/nixpi-host.nix", UNSAFE_EXPLICIT_SSH_DISABLED);
 		expect(result).toBeDefined();
@@ -515,19 +525,21 @@ describe("checkBootstrapDisable", () => {
 		expect(result?.reason).not.toContain("allowedSourceCIDRs");
 	});
 
-	it("blocks when CIDRs are missing", () => {
+	it("blocks when neither CIDRs nor a trusted-interface rule are present", () => {
 		const result = checkBootstrapDisable("/etc/nixos/nixpi-host.nix", UNSAFE_NO_CIDRS);
 		expect(result).toBeDefined();
 		expect(result?.block).toBe(true);
 		expect(result?.reason).toContain("allowedSourceCIDRs");
+		expect(result?.reason).toContain("networking.firewall.interfaces.wg0.allowedTCPPorts");
 		expect(result?.reason).not.toContain("services.openssh.enable");
 	});
 
-	it("blocks and lists only CIDRs when SSH uses the steady-state default", () => {
+	it("blocks and suggests a reachability path when SSH uses the steady-state default", () => {
 		const result = checkBootstrapDisable("/etc/nixos/nixpi-host.nix", UNSAFE_BOTH_MISSING);
 		expect(result).toBeDefined();
 		expect(result?.block).toBe(true);
 		expect(result?.reason).toContain("allowedSourceCIDRs");
+		expect(result?.reason).toContain("networking.firewall.interfaces.wg0.allowedTCPPorts");
 		expect(result?.reason).not.toContain("services.openssh.enable = true");
 	});
 
@@ -564,6 +576,16 @@ describe("tool_call hook — write to nixpi-host.nix", () => {
 			toolCallId: "tc-2",
 			toolName: "write",
 			input: { path: "/etc/nixos/nixpi-host.nix", content: SAFE_CONTENT },
+		});
+		expect(result).toBeUndefined();
+	});
+
+	it("allows write with bootstrap.enable = false when SSH is restricted to a trusted interface", async () => {
+		const result = await api.fireEvent("tool_call", {
+			type: "tool_call",
+			toolCallId: "tc-2b",
+			toolName: "write",
+			input: { path: "/etc/nixos/nixpi-host.nix", content: SAFE_TRUSTED_INTERFACE_SSH },
 		});
 		expect(result).toBeUndefined();
 	});
@@ -623,13 +645,39 @@ describe("tool_call hook — edit to nixpi-host.nix", () => {
 		expect(result).toBeUndefined();
 	});
 
+	it("allows edit that introduces bootstrap.enable = false with trusted-interface-only SSH", async () => {
+		const hostFile = path.join(temp.nixPiDir, "nixpi-host.nix");
+		fs.writeFileSync(
+			hostFile,
+			`{
+        nixpi.bootstrap.enable = true;
+        services.openssh.enable = true;
+        networking.firewall.interfaces.wg0.allowedTCPPorts = [ 22 ];
+      }`,
+			"utf-8",
+		);
+
+		const result = await api.fireEvent("tool_call", {
+			type: "tool_call",
+			toolCallId: "tc-5b",
+			toolName: "edit",
+			input: {
+				path: hostFile,
+				oldText: "nixpi.bootstrap.enable = true;",
+				newText: "nixpi.bootstrap.enable = false;",
+			},
+		});
+		expect(result).toBeUndefined();
+	});
+
 	it("returns undefined when edit target file does not exist", async () => {
+		const missingPath = path.join(temp.nixPiDir, "does-not-exist.nix");
 		const result = await api.fireEvent("tool_call", {
 			type: "tool_call",
 			toolCallId: "tc-6",
 			toolName: "edit",
 			input: {
-				path: "/etc/nixos/nixpi-host.nix",
+				path: missingPath,
 				oldText: "nixpi.bootstrap.enable = true;",
 				newText: "nixpi.bootstrap.enable = false;",
 			},

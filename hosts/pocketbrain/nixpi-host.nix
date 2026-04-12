@@ -2,9 +2,9 @@
 {
   networking.hostName = "pocketbrain";
 
-  # Exit bootstrap flow, but keep remote admin access explicitly enabled.
+  # Exit bootstrap flow and keep sshd only for trusted-interface access.
   nixpi.bootstrap.enable = false;
-  nixpi.bootstrap.ssh.enable = true;
+  nixpi.bootstrap.ssh.enable = false;
   nixpi.bootstrap.temporaryAdmin.enable = false;
 
   nixpi.primaryUser = "alex";
@@ -14,9 +14,9 @@
   nixpi.integrations.exa.enable = true;
   nixpi.integrations.exa.envFile = "/var/lib/nixpi/secrets/exa.env";
 
-  nixpi.security.ssh.allowedSourceCIDRs = [
-    "188.24.176.127/32"
-  ];
+  services.openssh.enable = true;
+  networking.firewall.allowedUDPPorts = [ 51820 ];
+  networking.firewall.interfaces.wg0.allowedTCPPorts = [ 22 ];
 
   users.users.alex.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG0j6qRWHj+WsYYrjJvZAXdc5ukYyb2wtE2Y+BVZd6SQ alex@fedora"
