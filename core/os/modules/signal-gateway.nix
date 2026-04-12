@@ -29,6 +29,20 @@ let
     }
   );
   bootstrapMode = if config.nixpi.bootstrap.enable then "bootstrap" else "steady";
+  defaultPiSettings = pkgs.writeText "nixpi-signal-gateway-settings.json" (
+    builtins.toJSON {
+      packages = config.nixpi.agent.packagePaths;
+      shellPath = "${pkgs.bash}/bin/bash";
+    }
+  );
+  defaultAgentSettings = pkgs.writeText "nixpi-signal-gateway-agent-settings.json" (
+    builtins.toJSON {
+      packages = cfg.packagePaths;
+      extensions = cfg.extensionPaths;
+      defaultProvider = cfg.defaultProvider;
+      defaultModel = cfg.defaultModel;
+    }
+  );
   setupScript = pkgs.writeShellScript "nixpi-signal-gateway-setup" ''
     set -euo pipefail
 
@@ -60,18 +74,6 @@ let
         install -m 0600 -o ${cfg.user} -g ${cfg.group} ${lib.escapeShellArg cfg.sourceAgentDir}/auth.json ${cfg.agentDir}/auth.json
       fi
 
-      if [ -f ${lib.escapeShellArg cfg.sourceAgentDir}/settings.json ] && [ ! -e ${cfg.agentDir}/settings.json ]; then
-        install -m 0644 -o ${cfg.user} -g ${cfg.group} ${lib.escapeShellArg cfg.sourceAgentDir}/settings.json ${cfg.agentDir}/settings.json
-      fi
-
-      if [ -f ${lib.escapeShellArg cfg.sourceAgentDir}/agent/settings.json ] && [ ! -e ${cfg.agentDir}/agent/settings.json ]; then
-        sed "s|${cfg.sourceAgentDir}/agent|${cfg.agentDir}/agent|g" \
-          ${lib.escapeShellArg cfg.sourceAgentDir}/agent/settings.json \
-          > ${cfg.agentDir}/agent/settings.json
-        chown ${cfg.user}:${cfg.group} ${cfg.agentDir}/agent/settings.json
-        chmod 0644 ${cfg.agentDir}/agent/settings.json
-      fi
-
       if [ -d ${lib.escapeShellArg cfg.sourceAgentDir}/agent/extensions ] && [ ! -e ${cfg.agentDir}/agent/extensions ]; then
         cp -a ${lib.escapeShellArg cfg.sourceAgentDir}/agent/extensions ${cfg.agentDir}/agent/extensions
       fi
@@ -81,6 +83,9 @@ let
 
       touch ${cfg.agentDir}/.seeded-from-source-agent
     fi
+
+    install -m 0644 -o ${cfg.user} -g ${cfg.group} ${defaultPiSettings} ${cfg.agentDir}/settings.json
+    install -m 0644 -o ${cfg.user} -g ${cfg.group} ${defaultAgentSettings} ${cfg.agentDir}/agent/settings.json
 
     if [ -e ${cfg.agentDir}/auth.json ]; then
       ln -sfn ../auth.json ${cfg.agentDir}/agent/auth.json
@@ -208,6 +213,7 @@ in
       wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" "nixpi-signal-daemon.service" "nixpi-signal-gateway-setup.service" ];
       wants = [ "network-online.target" "nixpi-signal-daemon.service" "nixpi-signal-gateway-setup.service" ];
+      restartTriggers = [ defaultPiSettings defaultAgentSettings gatewayConfig ];
       serviceConfig = {
         Type = "simple";
         User = cfg.user;

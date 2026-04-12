@@ -204,6 +204,26 @@ in
         default = "/home/${config.nixpi.primaryUser}";
         description = "Working directory used as the Pi SDK cwd for Signal conversations.";
       };
+      defaultProvider = lib.mkOption {
+        type = lib.types.str;
+        default = "cortecs";
+        description = "Default Pi provider used by the Signal gateway's dedicated Pi home.";
+      };
+      defaultModel = lib.mkOption {
+        type = lib.types.str;
+        default = "minimax-m2.5";
+        description = "Default Pi model used by the Signal gateway's dedicated Pi home.";
+      };
+      packagePaths = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ "${config.nixpi.signalGateway.agentDir}/agent/local-packages/node_modules/@jarcelao/pi-exa-api" ];
+        description = "Package paths written into the Signal gateway's dedicated agent/settings.json.";
+      };
+      extensionPaths = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ "${config.nixpi.signalGateway.agentDir}/agent/extensions/wireguard-manager.ts" ];
+        description = "Extension paths written into the Signal gateway's dedicated agent/settings.json.";
+      };
       port = lib.mkOption {
         type = lib.types.port;
         default = 8080;

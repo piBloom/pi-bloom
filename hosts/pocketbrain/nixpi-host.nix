@@ -53,6 +53,8 @@
     allowedNumbers = [ "+40724417990" ];
     adminNumbers = [ "+40724417990" ];
     piCwd = "/home/alex";
+    defaultProvider = "cortecs";
+    defaultModel = "minimax-m2.5";
   };
 
   networking.wireguard.interfaces.wg0 = {
