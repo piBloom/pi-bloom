@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const LEVELS = { observe: 0, maintain: 1, admin: 2 } as const;
+const NIXOS_REBUILD_COMMAND = "/run/current-system/sw/bin/nixos-rebuild";
 const SYSTEMD_UNIT_ALIASES: Record<string, string> = {
 	"nixpi-update.service": "nixos-upgrade.service",
 };
@@ -151,10 +152,10 @@ async function handleNixosUpdateRequest(
 		throw new PermissionError("OS updates are disabled");
 	}
 	if (request.action === "rollback") {
-		return runtime.runCommand(["nixos-rebuild", "switch", "--rollback"]);
+		return runtime.runCommand([NIXOS_REBUILD_COMMAND, "switch", "--rollback"]);
 	}
 	if (request.action === "apply") {
-		return runtime.runCommand(["nixos-rebuild", "switch", "--flake", config.defaultFlake]);
+		return runtime.runCommand([NIXOS_REBUILD_COMMAND, "switch", "--flake", config.defaultFlake]);
 	}
 	throw new Error(`unsupported nixos-update action: ${request.action}`);
 }
@@ -203,7 +204,7 @@ async function handleStagedHostConfigRequest(
 		if (sync.exitCode !== 0) {
 			return sync;
 		}
-		const apply = await runtime.runCommand(["nixos-rebuild", "switch", "--flake", config.defaultFlake]);
+		const apply = await runtime.runCommand([NIXOS_REBUILD_COMMAND, "switch", "--flake", config.defaultFlake]);
 		return {
 			ok: apply.exitCode === 0,
 			stdout: `${sync.stdout}${apply.stdout}`,
