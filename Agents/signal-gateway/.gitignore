@@ -1,0 +1,8 @@
+node_modules/
+dist/
+signal-gateway.yml
+signal-cli-data/
+state/
+tmp/
+.local-runtime/
+*.log

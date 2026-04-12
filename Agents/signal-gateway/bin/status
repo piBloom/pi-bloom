@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STATE_DIR="${SIGNAL_GATEWAY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/nixpi-signal-gateway}"
+TMP="$STATE_DIR/tmp"
+
+show_proc() {
+  local name="$1"
+  local pidfile="$2"
+  if [ ! -f "$pidfile" ]; then
+    echo "$name: not running"
+    return
+  fi
+
+  local pid
+  pid=$(cat "$pidfile" || true)
+  if [ -n "${pid:-}" ] && kill -0 "$pid" 2>/dev/null; then
+    echo "$name: running (pid $pid)"
+  else
+    echo "$name: stale pidfile"
+  fi
+}
+
+if systemctl --user show-environment >/dev/null 2>&1; then
+  echo "systemd user units:"
+  systemctl --user --no-pager --plain --full status nixpi-signal-daemon.service 2>/dev/null | sed -n '1,3p' || true
+  systemctl --user --no-pager --plain --full status nixpi-signal-gateway.service 2>/dev/null | sed -n '1,3p' || true
+else
+  echo "manual pidfile status:"
+  show_proc "signal daemon" "$TMP/signal-daemon.pid"
+  show_proc "gateway" "$TMP/gateway.pid"
+fi
+
+echo
+curl -fsS -o /dev/null http://127.0.0.1:8080/api/v1/check && echo "signal-cli http: healthy" || echo "signal-cli http: unavailable"

@@ -1,0 +1,19 @@
+signal:
+  account: "+15550001111"
+  httpUrl: "http://127.0.0.1:8080"
+
+gateway:
+  dbPath: "/ABSOLUTE/PATH/TO/.local/state/nixpi-signal-gateway/gateway.db"
+  piSessionDir: "/ABSOLUTE/PATH/TO/.local/state/nixpi-signal-gateway/pi-sessions"
+  maxReplyChars: 1400
+  maxReplyChunks: 4
+  directMessagesOnly: true
+
+pi:
+  cwd: "/home/YOUR_USER"
+
+auth:
+  allowedNumbers:
+    - "+15551234567"
+  adminNumbers:
+    - "+15551234567"

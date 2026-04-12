@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+BASE="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+STATE_DIR="${SIGNAL_GATEWAY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/nixpi-signal-gateway}"
+TMP="$STATE_DIR/tmp"
+LOG="$TMP/gateway.log"
+PIDFILE="$TMP/gateway.pid"
+CONFIG_PATH="${SIGNAL_GATEWAY_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/nixpi-signal-gateway/config.yml}"
+
+mkdir -p "$TMP"
+
+if [ -f "$PIDFILE" ]; then
+  PID=$(cat "$PIDFILE" || true)
+  if [ -n "${PID:-}" ] && kill -0 "$PID" 2>/dev/null; then
+    echo "gateway already running (pid $PID)"
+    exit 0
+  fi
+  rm -f "$PIDFILE"
+fi
+
+cd "$BASE"
+nohup npm run dev -- "$CONFIG_PATH" > "$LOG" 2>&1 &
+echo $! > "$PIDFILE"
+sleep 3
+if ! grep -q "Signal gateway started" "$LOG"; then
+  echo "gateway may not have started cleanly; check $LOG"
+  exit 1
+fi
+
+echo "gateway started (pid $(cat "$PIDFILE"))"

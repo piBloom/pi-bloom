@@ -1,0 +1,23 @@
+{
+  "name": "nixpi-signal-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts ./signal-gateway.yml",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js ./signal-gateway.yml"
+  },
+  "dependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "better-sqlite3": "^11.7.0",
+    "eventsource-parser": "^3.0.0",
+    "yaml": "^2.5.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
+  }
+}

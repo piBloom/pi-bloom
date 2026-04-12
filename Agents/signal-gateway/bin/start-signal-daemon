@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+BASE="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+STATE_DIR="${SIGNAL_GATEWAY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/nixpi-signal-gateway}"
+CFG="${SIGNAL_CLI_CONFIG_DIR:-$STATE_DIR/signal-cli-data}"
+TMP="$STATE_DIR/tmp"
+LOG="$TMP/signal-daemon.log"
+PIDFILE="$TMP/signal-daemon.pid"
+SIGNAL_CLI="${SIGNAL_CLI_BIN:-signal-cli}"
+CONFIG_PATH="${SIGNAL_GATEWAY_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/nixpi-signal-gateway/config.yml}"
+ACCOUNT="${SIGNAL_ACCOUNT:-}"
+
+if [ -z "$ACCOUNT" ] && [ -f "$CONFIG_PATH" ]; then
+  ACCOUNT="$({
+    cd "$BASE"
+    node --input-type=module -e 'import { readFileSync } from "node:fs"; import YAML from "yaml"; const cfg = YAML.parse(readFileSync(process.argv[1], "utf8")); process.stdout.write(cfg?.signal?.account ?? "");' "$CONFIG_PATH"
+  } 2>/dev/null || true)"
+fi
+
+if [ -z "$ACCOUNT" ]; then
+  echo "SIGNAL_ACCOUNT is not set and no signal.account could be read from $CONFIG_PATH" >&2
+  exit 1
+fi
+
+mkdir -p "$TMP" "$CFG"
+
+if [ -f "$PIDFILE" ]; then
+  PID=$(cat "$PIDFILE" || true)
+  if [ -n "${PID:-}" ] && kill -0 "$PID" 2>/dev/null; then
+    echo "signal daemon already running (pid $PID)"
+    exit 0
+  fi
+  rm -f "$PIDFILE"
+fi
+
+nohup "$SIGNAL_CLI" \
+  --config "$CFG" \
+  -a "$ACCOUNT" \
+  daemon \
+  --http 127.0.0.1:8080 \
+  --receive-mode on-start \
+  --ignore-attachments \
+  > "$LOG" 2>&1 &
+
+echo $! > "$PIDFILE"
+sleep 3
+curl -fsS http://127.0.0.1:8080/api/v1/check >/dev/null
+echo "signal daemon started (pid $(cat "$PIDFILE"))"

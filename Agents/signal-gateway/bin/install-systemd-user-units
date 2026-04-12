@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+BASE="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+UNIT_SRC="$BASE/systemd/user"
+UNIT_DST="$HOME/.config/systemd/user"
+WANTS_DST="$UNIT_DST/default.target.wants"
+STATE_DIR="${SIGNAL_GATEWAY_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/nixpi-signal-gateway}"
+CONFIG_PATH="${SIGNAL_GATEWAY_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/nixpi-signal-gateway/config.yml}"
+SIGNAL_CLI_BIN="${SIGNAL_CLI_BIN:-signal-cli}"
+
+mkdir -p "$UNIT_DST" "$WANTS_DST" "$STATE_DIR/tmp"
+
+for template in "$UNIT_SRC"/*.service; do
+  unit_name="$(basename "$template")"
+  sed \
+    -e "s|@BASE@|$BASE|g" \
+    -e "s|@CONFIG@|$CONFIG_PATH|g" \
+    -e "s|@STATE_DIR@|$STATE_DIR|g" \
+    -e "s|@SIGNAL_CLI_BIN@|$SIGNAL_CLI_BIN|g" \
+    "$template" > "$UNIT_DST/$unit_name"
+done
+
+echo "Installed user units to $UNIT_DST"
+echo "  base:   $BASE"
+echo "  config: $CONFIG_PATH"
+echo "  state:  $STATE_DIR"
+echo "  signal-cli: $SIGNAL_CLI_BIN"
+
+if systemctl --user daemon-reload 2>/dev/null; then
+  echo "Reloaded user systemd daemon."
+  echo
+  echo "Next commands:"
+  echo "  systemctl --user enable --now nixpi-signal-daemon.service"
+  echo "  systemctl --user enable --now nixpi-signal-gateway.service"
+else
+  echo
+  echo "Could not reach the user systemd bus from this shell."
+  echo "Run the following from a real user session for the target account:"
+  echo "  systemctl --user daemon-reload"
+  echo "  systemctl --user enable --now nixpi-signal-daemon.service"
+  echo "  systemctl --user enable --now nixpi-signal-gateway.service"
+fi
+
+echo
+echo "Optional persistence across logout:"
+echo "  sudo loginctl enable-linger $USER"

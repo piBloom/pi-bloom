@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+UNIT_DST="$HOME/.config/systemd/user"
+WANTS_DST="$UNIT_DST/default.target.wants"
+
+systemctl --user disable --now nixpi-signal-gateway.service 2>/dev/null || true
+systemctl --user disable --now nixpi-signal-daemon.service 2>/dev/null || true
+rm -f "$UNIT_DST/nixpi-signal-gateway.service" "$UNIT_DST/nixpi-signal-daemon.service"
+rm -f "$WANTS_DST/nixpi-signal-gateway.service" "$WANTS_DST/nixpi-signal-daemon.service"
+
+if systemctl --user daemon-reload 2>/dev/null; then
+  echo "Removed NixPI Signal user units"
+else
+  echo "Removed unit files. Run 'systemctl --user daemon-reload' from a real user session if needed."
+fi

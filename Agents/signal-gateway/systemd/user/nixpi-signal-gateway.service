@@ -1,0 +1,16 @@
+[Unit]
+Description=NixPI Signal Gateway
+After=network-online.target nixpi-signal-daemon.service
+Wants=network-online.target nixpi-signal-daemon.service
+
+[Service]
+Type=simple
+WorkingDirectory=@BASE@
+Environment=PATH=/run/current-system/sw/bin
+Environment=SIGNAL_GATEWAY_STATE_DIR=@STATE_DIR@
+ExecStart=/run/current-system/sw/bin/node @BASE@/dist/main.js @CONFIG@
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

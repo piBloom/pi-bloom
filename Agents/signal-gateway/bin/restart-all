@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+"$SCRIPT_DIR/stop-gateway" || true
+"$SCRIPT_DIR/stop-signal-daemon" || true
+"$SCRIPT_DIR/start-signal-daemon"
+"$SCRIPT_DIR/start-gateway"
+"$SCRIPT_DIR/status"
