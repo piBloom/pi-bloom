@@ -349,10 +349,10 @@ in
         default = [ "${config.nixpi.piCore.agentDir}/agent/extensions/wireguard-manager.ts" ];
         description = "Extension paths written into the Pi core service-owned agent/settings.json.";
       };
-      port = lib.mkOption {
-        type = lib.types.port;
-        default = 4510;
-        description = "Loopback HTTP port exposed by the Pi core local API service.";
+      socketPath = lib.mkOption {
+        type = absolutePath;
+        default = "/run/nixpi-pi-core/pi-core.sock";
+        description = "Unix socket path exposed by the Pi core local API service.";
       };
     };
 

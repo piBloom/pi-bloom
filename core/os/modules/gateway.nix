@@ -19,7 +19,7 @@ let
         maxReplyChars = cfg.maxReplyChars;
         maxReplyChunks = cfg.maxReplyChunks;
       };
-      piCore.url = "http://127.0.0.1:${toString piCoreCfg.port}";
+      piCore.socketPath = piCoreCfg.socketPath;
       modules = lib.optionalAttrs signalCfg.enable {
         signal = {
           enabled = true;
@@ -36,13 +36,13 @@ let
     set -euo pipefail
 
     for _ in $(seq 1 30); do
-      if ${pkgs.curl}/bin/curl -fsS http://127.0.0.1:${toString piCoreCfg.port}/api/v1/health >/dev/null; then
+      if ${pkgs.curl}/bin/curl --unix-socket ${lib.escapeShellArg piCoreCfg.socketPath} -fsS http://localhost/api/v1/health >/dev/null; then
         break
       fi
       sleep 1
     done
 
-    ${pkgs.curl}/bin/curl -fsS http://127.0.0.1:${toString piCoreCfg.port}/api/v1/health >/dev/null
+    ${pkgs.curl}/bin/curl --unix-socket ${lib.escapeShellArg piCoreCfg.socketPath} -fsS http://localhost/api/v1/health >/dev/null
 
 ${lib.optionalString signalCfg.enable ''
     for _ in $(seq 1 30); do
@@ -215,6 +215,7 @@ in
         User = cfg.user;
         Group = cfg.group;
         WorkingDirectory = cfg.stateDir;
+        SupplementaryGroups = [ piCoreCfg.group ];
         ExecStartPre = waitForDependencies;
         ExecStart = lib.escapeShellArgs [ "${gatewayPackage}/bin/nixpi-gateway" gatewayConfig ];
         Restart = "on-failure";

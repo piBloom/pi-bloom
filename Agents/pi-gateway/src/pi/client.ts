@@ -1,3 +1,4 @@
+import { request as httpRequest } from "node:http";
 import type { PiReply } from "../models.js";
 
 type PromptResponse = {
@@ -5,13 +6,18 @@ type PromptResponse = {
   sessionPath: string;
 };
 
+type JsonResponse<T> = {
+  statusCode: number;
+  body: T;
+};
+
 export class PiCoreClient {
-  constructor(private readonly baseUrl: string) {}
+  constructor(private readonly socketPath: string) {}
 
   async healthCheck(): Promise<void> {
-    const res = await fetch(`${this.baseUrl}/api/v1/health`);
-    if (!res.ok) {
-      throw new Error(`pi-core health check failed: ${res.status}`);
+    const res = await this.requestJson<{ ok: boolean }>("GET", "/api/v1/health");
+    if (res.statusCode !== 200 || !res.body.ok) {
+      throw new Error(`pi-core health check failed: ${res.statusCode}`);
     }
   }
 
@@ -24,22 +30,66 @@ export class PiCoreClient {
   }
 
   private async prompt(message: string, sessionPath?: string | null): Promise<PiReply> {
-    const res = await fetch(`${this.baseUrl}/api/v1/prompt`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-      },
-      body: JSON.stringify({ prompt: message, sessionPath }),
+    const res = await this.requestJson<PromptResponse>("POST", "/api/v1/prompt", {
+      prompt: message,
+      sessionPath,
     });
 
-    if (!res.ok) {
-      throw new Error(`pi-core prompt failed: ${res.status}`);
+    if (res.statusCode !== 200) {
+      throw new Error(`pi-core prompt failed: ${res.statusCode}`);
     }
 
-    const reply = await res.json() as PromptResponse;
     return {
-      text: reply.text,
-      sessionPath: reply.sessionPath,
+      text: res.body.text,
+      sessionPath: res.body.sessionPath,
     };
+  }
+
+  private async requestJson<T>(
+    method: "GET" | "POST",
+    path: string,
+    body?: unknown,
+  ): Promise<JsonResponse<T>> {
+    const rawBody = body === undefined ? null : JSON.stringify(body);
+
+    return await new Promise<JsonResponse<T>>((resolve, reject) => {
+      const req = httpRequest(
+        {
+          socketPath: this.socketPath,
+          path,
+          method,
+          headers: rawBody
+            ? {
+                "Content-Type": "application/json; charset=utf-8",
+                "Content-Length": Buffer.byteLength(rawBody),
+              }
+            : undefined,
+        },
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on("data", (chunk) => {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          });
+          res.on("end", () => {
+            try {
+              const raw = Buffer.concat(chunks).toString("utf8");
+              const parsed = raw ? JSON.parse(raw) as T : {} as T;
+              resolve({
+                statusCode: res.statusCode ?? 0,
+                body: parsed,
+              });
+            } catch (error) {
+              reject(error);
+            }
+          });
+        },
+      );
+
+      req.on("error", reject);
+      if (rawBody) {
+        req.write(rawBody);
+      }
+      req.end();
+    });
   }
 }

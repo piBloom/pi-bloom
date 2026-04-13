@@ -2,8 +2,7 @@ import { readFileSync } from "node:fs";
 
 export type PiCoreConfig = {
   server: {
-    host: string;
-    port: number;
+    socketPath: string;
   };
   pi: {
     cwd: string;

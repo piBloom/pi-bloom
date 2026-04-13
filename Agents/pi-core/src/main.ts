@@ -1,4 +1,6 @@
+import { chmodSync, lstatSync, mkdirSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
+import { dirname } from "node:path";
 import { loadConfig } from "./config.js";
 import type { PromptRequest } from "./models.js";
 import { PiCoreService } from "./service.js";
@@ -25,6 +27,25 @@ async function main(): Promise<void> {
   const configPath = process.argv[2] ?? "./pi-core.json";
   const config = loadConfig(configPath);
   const service = new PiCoreService(config.pi.cwd, config.pi.sessionDir);
+  const socketPath = config.server.socketPath;
+
+  mkdirSync(dirname(socketPath), { recursive: true });
+  try {
+    const stat = lstatSync(socketPath);
+    if (stat.isSocket()) {
+      rmSync(socketPath, { force: true });
+    }
+  } catch {
+    // socket absent; nothing to clean up
+  }
+
+  const cleanupSocket = (): void => {
+    try {
+      rmSync(socketPath, { force: true });
+    } catch {
+      // best-effort cleanup
+    }
+  };
 
   const server = createServer(async (req, res) => {
     try {
@@ -59,10 +80,15 @@ async function main(): Promise<void> {
 
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
-    server.listen(config.server.port, config.server.host, () => resolve());
+    server.listen(socketPath, () => resolve());
   });
 
-  console.log(`Pi core listening on http://${config.server.host}:${config.server.port}`);
+  chmodSync(socketPath, 0o660);
+  process.on("exit", cleanupSocket);
+  process.on("SIGINT", () => server.close(() => process.exit(0)));
+  process.on("SIGTERM", () => server.close(() => process.exit(0)));
+
+  console.log(`Pi core listening on unix://${socketPath}`);
 }
 
 main().catch((err) => {

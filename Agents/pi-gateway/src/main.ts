@@ -20,7 +20,7 @@ async function main(): Promise<void> {
   }
 
   const store = new Store(config.gateway.dbPath);
-  const pi = new PiCoreClient(config.piCore.url);
+  const pi = new PiCoreClient(config.piCore.socketPath);
   const policy = new Policy();
   const router = new Router(
     store,

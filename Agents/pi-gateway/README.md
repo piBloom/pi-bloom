@@ -24,7 +24,7 @@ gateway:
   maxReplyChunks: 4
 
 piCore:
-  url: http://127.0.0.1:4510
+  socketPath: /run/nixpi-pi-core/pi-core.sock
 
 modules:
   signal:

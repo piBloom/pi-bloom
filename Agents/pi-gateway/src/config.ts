@@ -17,7 +17,7 @@ export type AppConfig = {
     maxReplyChunks: number;
   };
   piCore: {
-    url: string;
+    socketPath: string;
   };
   modules: {
     signal?: SignalModuleConfig;

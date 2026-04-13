@@ -11,8 +11,7 @@ let
   coreConfig = pkgs.writeText "nixpi-pi-core.json" (
     builtins.toJSON {
       server = {
-        host = "127.0.0.1";
-        port = cfg.port;
+        socketPath = cfg.socketPath;
       };
       pi = {
         cwd = cfg.piCwd;
@@ -127,6 +126,11 @@ in
         user = cfg.user;
         group = cfg.group;
       };
+      "${builtins.dirOf cfg.socketPath}".d = {
+        mode = "0750";
+        user = cfg.user;
+        group = cfg.group;
+      };
       "${cfg.sessionDir}".d = {
         mode = "0700";
         user = cfg.user;
@@ -174,6 +178,7 @@ in
         ExecStart = lib.escapeShellArgs [ "${corePackage}/bin/nixpi-pi-core" coreConfig ];
         Restart = "on-failure";
         RestartSec = 3;
+        UMask = "0007";
         Environment = [
           "HOME=${cfg.agentDir}"
           "PI_CODING_AGENT_DIR=${cfg.agentDir}"
