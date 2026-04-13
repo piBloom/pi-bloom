@@ -152,7 +152,8 @@ in
       description = "NixPI Pi core setup and migration";
       wantedBy = [ "multi-user.target" ];
       before = [ "nixpi-pi-core.service" ];
-      after = [ "systemd-tmpfiles-setup.service" "nixpi-app-setup.service" ];
+      after = [ "systemd-tmpfiles-setup.service" "systemd-tmpfiles-resetup.service" "nixpi-app-setup.service" ];
+      wants = [ "systemd-tmpfiles-resetup.service" ];
       requires = [ "nixpi-app-setup.service" ];
       serviceConfig = {
         Type = "oneshot";

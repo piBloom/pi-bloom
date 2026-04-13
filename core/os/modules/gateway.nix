@@ -163,7 +163,8 @@ in
       description = "NixPI gateway setup and migration";
       wantedBy = [ "multi-user.target" ];
       before = [ "nixpi-gateway.service" ] ++ lib.optionals signalCfg.enable [ "nixpi-signal-daemon.service" ];
-      after = [ "systemd-tmpfiles-setup.service" ];
+      after = [ "systemd-tmpfiles-setup.service" "systemd-tmpfiles-resetup.service" ];
+      wants = [ "systemd-tmpfiles-resetup.service" ];
       serviceConfig = {
         Type = "oneshot";
         User = "root";
