@@ -165,14 +165,30 @@ describe("os local NixPI repo handler", () => {
 
 	it("applies local repo state by overriding nixpi in the installed host flake", async () => {
 		fs.mkdirSync(path.join(repoDir, ".git"), { recursive: true });
-		runMock.mockResolvedValueOnce({ stdout: "applied\n", stderr: "", exitCode: 0 });
+		runMock
+			.mockResolvedValueOnce({
+				stdout: '{"defaultAutonomy":"maintain","effectiveAutonomy":"maintain","elevatedUntil":null}\n',
+				stderr: "",
+				exitCode: 0,
+			})
+			.mockResolvedValueOnce({ stdout: '{"effectiveAutonomy":"admin","until":9999}\n', stderr: "", exitCode: 0 })
+			.mockResolvedValueOnce({ stdout: "applied\n", stderr: "", exitCode: 0 })
+			.mockResolvedValueOnce({ stdout: '{"effectiveAutonomy":"maintain"}\n', stderr: "", exitCode: 0 });
 
 		const ctx = createMockExtensionContext({ hasUI: true });
 		const { handleNixConfigProposal } = await import("../../core/pi/extensions/os/actions-proposal.js");
 		const result = await handleNixConfigProposal("apply", undefined, ctx as never);
 
 		expect(ctx.ui.confirm).toHaveBeenCalled();
-		expect(runMock).toHaveBeenCalledWith(
+		expect(runMock).toHaveBeenNthCalledWith(1, "nixpi-brokerctl", ["status"], undefined);
+		expect(runMock).toHaveBeenNthCalledWith(
+			2,
+			"/run/wrappers/bin/sudo",
+			["-n", "nixpi-brokerctl", "grant-admin", "5m"],
+			undefined,
+		);
+		expect(runMock).toHaveBeenNthCalledWith(
+			3,
 			"nixpi-brokerctl",
 			[
 				"nixos-update",
@@ -182,6 +198,12 @@ describe("os local NixPI repo handler", () => {
 				"nixpi",
 				`path:${PROPOSAL_REPO_DIR}`,
 			],
+			undefined,
+		);
+		expect(runMock).toHaveBeenNthCalledWith(
+			4,
+			"/run/wrappers/bin/sudo",
+			["-n", "nixpi-brokerctl", "revoke-admin"],
 			undefined,
 		);
 		expect(result.isErr()).toBe(false);
@@ -272,6 +294,26 @@ describe("os local NixPI repo handler", () => {
 		expect(result._unsafeUnwrapErr()).toContain("System flake not found at");
 		expect(result._unsafeUnwrapErr()).toContain("running system's source of truth");
 		expect(runMock).not.toHaveBeenCalled();
+	});
+
+	it("returns an actionable error when temporary admin elevation cannot be obtained for apply", async () => {
+		fs.mkdirSync(path.join(repoDir, ".git"), { recursive: true });
+		runMock
+			.mockResolvedValueOnce({
+				stdout: '{"defaultAutonomy":"maintain","effectiveAutonomy":"maintain","elevatedUntil":null}\n',
+				stderr: "",
+				exitCode: 0,
+			})
+			.mockResolvedValueOnce({ stdout: "", stderr: "sudo denied", exitCode: 1 });
+
+		const ctx = createMockExtensionContext({ hasUI: true });
+		const { handleNixConfigProposal } = await import("../../core/pi/extensions/os/actions-proposal.js");
+		const result = await handleNixConfigProposal("apply", undefined, ctx as never);
+
+		expect(result.isErr()).toBe(true);
+		expect(result._unsafeUnwrapErr()).toContain("Unable to obtain temporary admin autonomy");
+		expect(result._unsafeUnwrapErr()).toContain("sudo denied");
+		expect(runMock).toHaveBeenCalledTimes(2);
 	});
 
 	it("returns current repo details without cloning when setup is called on an existing clone", async () => {

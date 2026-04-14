@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { run } from "../../../lib/exec.js";
+import { run, type RunResult } from "../../../lib/exec.js";
 import { getSystemFlakeDir } from "../../../lib/filesystem.js";
 import { requireConfirmation } from "../../../lib/interactions.js";
 import { type ActionResult, err, ok, truncate } from "../../../lib/utils.js";
@@ -14,6 +14,7 @@ const LOCAL_REPO_DIR = "/var/lib/nixpi/pi-nixpi";
 const REMOTE_REPO_URL = "https://github.com/alexradunet/NixPI.git";
 const DEFAULT_REMOTE = "origin";
 const DEFAULT_COMMIT_MESSAGE = "Update NixPI repository state";
+const SUDO_COMMAND = "/run/wrappers/bin/sudo";
 
 interface RepoState {
 	created: boolean;
@@ -32,6 +33,60 @@ function missingRepoError(repoDir: string): string {
 
 function summarizeOutput(result: { stdout: string; stderr: string; exitCode: number }): string {
 	return truncate((result.stdout || result.stderr || "").trim() || "(no output)");
+}
+
+interface BrokerStatus {
+	effectiveAutonomy?: string;
+}
+
+async function loadBrokerStatus(signal: AbortSignal | undefined): Promise<BrokerStatus | { error: string }> {
+	const status = await run("nixpi-brokerctl", ["status"], signal);
+	if (status.exitCode !== 0) {
+		return { error: `Failed to inspect broker autonomy:\n${summarizeOutput(status)}` };
+	}
+
+	try {
+		const parsed = JSON.parse(status.stdout || status.stderr) as BrokerStatus;
+		if (typeof parsed?.effectiveAutonomy !== "string") {
+			return { error: `Unexpected broker status output:\n${summarizeOutput(status)}` };
+		}
+		return parsed;
+	} catch {
+		return { error: `Unexpected broker status output:\n${summarizeOutput(status)}` };
+	}
+}
+
+async function runWithTemporaryBrokerAdmin(
+	purpose: string,
+	signal: AbortSignal | undefined,
+	runOperation: () => Promise<RunResult>,
+): Promise<{ result: RunResult; cleanupWarning?: string } | { error: string }> {
+	const status = await loadBrokerStatus(signal);
+	if ("error" in status) return status;
+	if (status.effectiveAutonomy === "admin") {
+		return { result: await runOperation() };
+	}
+
+	const grant = await run(SUDO_COMMAND, ["-n", "nixpi-brokerctl", "grant-admin", "5m"], signal);
+	if (grant.exitCode !== 0) {
+		return {
+			error:
+				`Unable to obtain temporary admin autonomy for ${purpose}:\n${summarizeOutput(grant)}\n\n` +
+				`Try again from the primary operator account or repair the sudo rule for nixpi-brokerctl grant-admin.`,
+		};
+	}
+
+	const result = await runOperation();
+	const revoke = await run(SUDO_COMMAND, ["-n", "nixpi-brokerctl", "revoke-admin"], signal);
+	if (revoke.exitCode !== 0) {
+		return {
+			result,
+			cleanupWarning:
+				`Warning: ${purpose} completed, but temporary admin autonomy could not be revoked:\n${summarizeOutput(revoke)}`,
+		};
+	}
+
+	return { result };
 }
 
 function initializedFrom(repo: RepoState): string[] {
@@ -243,20 +298,28 @@ async function handleRepoApply(
 
 	const flake = `${systemFlakeDir}#nixos`;
 	const repoRef = `path:${repoDir}`;
-	const apply = await run(
-		"nixpi-brokerctl",
-		["nixos-update", "apply", flake, "--override-input", "nixpi", repoRef],
+	const apply = await runWithTemporaryBrokerAdmin(
+		`apply local NixPI repo state from ${repoDir}`,
 		signal,
+		() => run("nixpi-brokerctl", ["nixos-update", "apply", flake, "--override-input", "nixpi", repoRef], signal),
 	);
-	if (apply.exitCode !== 0) {
-		return err(`Failed to apply local repo state from ${repoDir} through ${flake}:\n${summarizeOutput(apply)}`);
+	if ("error" in apply) return err(apply.error);
+	if (apply.result.exitCode !== 0) {
+		const failure = `Failed to apply local repo state from ${repoDir} through ${flake}:\n${summarizeOutput(apply.result)}`;
+		return err(apply.cleanupWarning ? `${failure}\n\n${apply.cleanupWarning}` : failure);
 	}
 
+	const text = truncate(
+		[
+			`Applied local NixPI repo state from ${repoDir} by overriding nixpi in ${flake}.`,
+			"",
+			summarizeOutput(apply.result),
+			...(apply.cleanupWarning ? ["", apply.cleanupWarning] : []),
+		].join("\n"),
+	);
 	return ok({
-		text: truncate(
-			`Applied local NixPI repo state from ${repoDir} by overriding nixpi in ${flake}.\n\n${summarizeOutput(apply)}`,
-		),
-		details: { repoDir, exitCode: apply.exitCode },
+		text,
+		details: { repoDir, exitCode: apply.result.exitCode },
 	});
 }
 
