@@ -1,5 +1,5 @@
 {
-  description = "Nazar Proxmox NixOS VM fleet";
+  description = "Nazar NixOS VM fleet";
 
   nixConfig = {
     extra-substituters = [ "https://cache.numtide.com" ];
@@ -44,7 +44,6 @@
       url = "git+ssh://git@git.nazar.studio:10022/nazar/minecraft.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
   };
 
   outputs =
@@ -52,7 +51,6 @@
       self,
       nixpkgs,
       disko,
-      microvm,
       sops-nix,
       deploy-rs,
       ...
@@ -76,7 +74,6 @@
         ./nix/modules/common/security.nix
         ./nix/modules/common/networking.nix
         ./nix/modules/common/development.nix
-        ./nix/modules/common/netbird.nix
         ./nix/modules/common/sops.nix
         ./nix/modules/common/nazar-context.nix
       ];
@@ -87,7 +84,7 @@
         {
           name,
           module,
-          includeProxmox ? false,
+          includeQemuGuest ? false,
           includeAgent ? true,
         }:
         mkNixosHost {
@@ -98,7 +95,7 @@
             sops-nix.nixosModules.sops
           ]
           ++ commonVmModules
-          ++ nixpkgs.lib.optionals includeProxmox [ ./nix/modules/common/proxmox-guest.nix ]
+          ++ nixpkgs.lib.optionals includeQemuGuest [ ./nix/modules/common/qemu-guest.nix ]
           ++ nixpkgs.lib.optionals includeAgent agentVmModules
           ++ [ module ];
         };
@@ -138,7 +135,7 @@
         git = mkExternalVm {
           name = "git";
           module = inputs.forgejo.nixosModules.forgejo;
-          includeProxmox = true;
+          includeQemuGuest = true;
         };
 
         gitImage = mkExternalImage {
@@ -159,14 +156,13 @@
         dav = mkExternalVm {
           name = "dav";
           module = ./nix/modules/services/dav.nix;
-          includeProxmox = true;
+          includeQemuGuest = true;
         };
 
         davImage = mkExternalImage {
           name = "dav";
           module = ./nix/modules/services/dav.nix;
         };
-
       };
 
       packages.${system} = {
@@ -176,7 +172,7 @@
       };
 
       deploy.nodes = nixpkgs.lib.mapAttrs (name: vm: {
-        # Deploy from the Proxmox host `nazar` over vmbr1 private NAT aliases.
+        # Deploy over private VM aliases.
         # `alex` is the canonical VM admin user; deploy-rs escalates to the
         # root system profile through passwordless sudo declared in common users.
         hostname = vm.hostname;
@@ -247,8 +243,7 @@
           pkgs.nixfmt
         ];
         text = ''
-          find flake.nix nix -type f -name '*.nix' -print0 \
-            | xargs -0 --no-run-if-empty nixfmt
+          find flake.nix nix -type f -name '*.nix' -print0             | xargs -0 --no-run-if-empty nixfmt
         '';
       };
     };

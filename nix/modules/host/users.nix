@@ -21,8 +21,7 @@ in
       "kvm"
     ];
     # Public OpenSSH is allowed only for alex, key-only, and only with the
-    # deliberately small personal-device key set below. Other devices should use
-    # NetBird SSH/JWT identity instead of raw OpenSSH keys.
+    # deliberately small personal-device key set below.
     openssh.authorizedKeys.keys = alexPublicSshKeys;
     hashedPassword = "!";
   };
@@ -36,7 +35,6 @@ in
     "d /srv 0755 root root - -"
     "d /srv/nazar 0755 alex users - -"
     "d /var/lib/nazar 0750 root root - -"
-    "d /var/lib/nazar/bootstrap 0700 root root - -"
   ];
 
 }

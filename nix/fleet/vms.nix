@@ -1,6 +1,6 @@
 {
   defaults = {
-    bridge = "vmbr1";
+    bridge = "nazar0";
     gateway = "10.10.10.1";
     prefixLength = 24;
     interface = "ens18";
@@ -35,7 +35,6 @@
     git = {
       vmid = 101;
       hostname = "git";
-      proxmoxName = "git";
       service = "forgejo";
       ip = "10.10.10.21";
       mac = "BC:24:11:0A:4B:0E";
@@ -52,7 +51,6 @@
         ];
       };
       dns = "git.nazar.studio";
-      netbirdName = "git.netbird.cloud";
       webPort = 3000;
       sshPort = 10022;
       cores = 2;
@@ -67,7 +65,6 @@
     minecraft = {
       vmid = 110;
       hostname = "minecraft";
-      proxmoxName = "minecraft";
       service = "minecraft";
       ip = "10.10.10.30";
       mac = "BC:24:11:0A:4B:10";
@@ -83,8 +80,7 @@
           }
         ];
       };
-      dns = "mc.nazar.studio";
-      netbirdName = "minecraft.netbird.cloud";
+      dns = "balaur.org";
       cores = 2;
       memoryMiB = 4096;
       balloonMiB = 1024;
@@ -101,7 +97,7 @@
         paperHash = "sha256-t7lYFmSr+0cGgjx2+4qCheko1pB3DwOBPkqC40iaeOU=";
         jvmOpts = "-Xms1G -Xmx2500M";
         maxPlayers = 10;
-        motd = "Nazar Minecraft";
+        motd = "Balaur Minecraft";
         levelSeed = "298649991203052898";
         operatorPermissionLevel = 4;
         operators = [
@@ -124,7 +120,7 @@
         };
 
         # Public UDP port used by Simple Voice Chat. Requires matching host and
-        # Hetzner Robot firewall forwarding in addition to the guest firewall.
+        # provider firewall forwarding in addition to the guest firewall.
         voiceChatPort = 24454;
 
         pluginConfigs."voicechat/voicechat-server.properties" = ''
@@ -172,7 +168,6 @@
     dav = {
       vmid = 121;
       hostname = "dav";
-      proxmoxName = "dav";
       service = "dav";
       ip = "10.10.10.41";
       mac = "BC:24:11:0A:4B:21";
@@ -196,7 +191,6 @@
       };
       dns = "dav.nazar.studio";
       aliases = [ ];
-      netbirdName = "dav.netbird.cloud";
       cores = 2;
       memoryMiB = 4096;
       balloonMiB = 1024;
@@ -237,12 +231,10 @@
     dav-vault = {
       vmid = 122;
       hostname = "dav-vault";
-      proxmoxName = "dav-vault";
       service = "dav-vault";
       ip = "10.10.10.42";
       mac = "BC:24:11:0A:4B:22";
       dns = "vault.nazar.studio";
-      netbirdName = "dav-vault.netbird.cloud";
       role = "reserved future secrets/vault VM; Bitwarden/Vaultwarden not enabled";
       enabled = false;
     };

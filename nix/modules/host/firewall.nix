@@ -1,6 +1,7 @@
 { fleet, lib, ... }:
 let
   minecraft = fleet.vms.minecraft;
+  minecraftWebPorts = minecraft.webPorts or [ 80 ];
   mcPort = minecraft.minecraft.port or 25565;
   mcVoicePort = minecraft.minecraft.voiceChatPort or 24454;
 in
@@ -19,26 +20,17 @@ in
     allowedTCPPorts = [ ];
     allowedUDPPorts = [ ];
 
-    # NetBird-private host/reverse-proxy surface. 80 serves private Forgejo
-    # initially; 443 is reserved for private dashboard/TLS restoration after
-    # cutover; 10022 proxies Forgejo Git SSH to the git MicroVM.
-    interfaces.wt0.allowedTCPPorts = [
-      22
-      80
-      443
-      10022
-    ];
-
     extraForwardRules = ''
       # Let MicroVMs initiate egress and reply traffic through the host.
       ip saddr 10.10.10.0/24 accept
       ip daddr 10.10.10.0/24 ct state established,related accept
 
-      # Allow NetBird-private clients to reach routed MicroVM services once
-      # NetBird routes/policies are configured.
-      iifname "wt0" ip daddr 10.10.10.0/24 accept
-
-      # Approved public Minecraft exposure.
+      # Approved public Balaur exposure: the small website plus Minecraft game
+      # traffic are DNATed to the Minecraft MicroVM. Administration is SSH-only
+      # as alex on the host, then private NAT aliases from nazar.
+      ${lib.concatMapStringsSep "\n      " (
+        port: ''iifname "enp0s31f6" ip daddr ${minecraft.ip} tcp dport ${toString port} accept''
+      ) minecraftWebPorts}
       iifname "enp0s31f6" ip daddr ${minecraft.ip} tcp dport ${toString mcPort} accept
       iifname "enp0s31f6" ip daddr ${minecraft.ip} udp dport ${toString mcVoicePort} accept
     '';
@@ -49,18 +41,24 @@ in
     externalInterface = "enp0s31f6";
     externalIP = "167.235.12.22";
     internalIPs = [ "10.10.10.0/24" ];
-    forwardPorts = [
-      {
-        sourcePort = mcPort;
-        destination = "${minecraft.ip}:${toString mcPort}";
+    forwardPorts =
+      (map (port: {
+        sourcePort = port;
+        destination = "${minecraft.ip}:${toString port}";
         proto = "tcp";
-      }
-      {
-        sourcePort = mcVoicePort;
-        destination = "${minecraft.ip}:${toString mcVoicePort}";
-        proto = "udp";
-      }
-    ];
+      }) minecraftWebPorts)
+      ++ [
+        {
+          sourcePort = mcPort;
+          destination = "${minecraft.ip}:${toString mcPort}";
+          proto = "tcp";
+        }
+        {
+          sourcePort = mcVoicePort;
+          destination = "${minecraft.ip}:${toString mcVoicePort}";
+          proto = "udp";
+        }
+      ];
   };
 
   boot.kernel.sysctl = {

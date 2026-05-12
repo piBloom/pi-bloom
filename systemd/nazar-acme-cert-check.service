@@ -1,8 +1,0 @@
-[Unit]
-Description=Nazar ACME certificate expiry alert check
-After=pve-cluster.service network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/sbin/nazar-acme-cert-check

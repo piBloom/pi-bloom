@@ -32,7 +32,7 @@ in
     "d /var/lib/nazar/secrets 0700 root root -"
   ];
 
-  # Optional console/noVNC break-glass password. SSH password auth remains
+  # Optional console break-glass password. SSH password auth remains
   # disabled in security.nix; this only makes root password usable from a real
   # console/recovery path when the external secret file has been provisioned.
   system.activationScripts.nazar-root-break-glass-password = {

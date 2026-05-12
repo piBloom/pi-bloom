@@ -30,10 +30,9 @@ let
   repoUrl = "ssh://git@10.10.10.21:10022/nazar/${repoName}.git";
   deployApp = "deploy-${vm.hostname}";
   serviceName = vm.service or vm.hostname;
-  netbirdName = vm.netbirdName or "";
   dnsName = vm.dns or "";
   includeCommonAgent = true;
-  includeProxmox = lib.elem vm.hostname [
+  includeQemuGuest = lib.elem vm.hostname [
     "git"
     "dav"
   ];
@@ -42,13 +41,12 @@ let
   context = {
     host = "nazar";
     orchestratorRepo = "/root/nazar";
-    orchestrator = "Debian/Proxmox host nazar";
+    orchestrator = "Nazar host";
     vm = {
       hostname = vm.hostname;
       service = serviceName;
       ip = vm.ip;
       dns = dnsName;
-      netbirdName = netbirdName;
     };
     serviceRepo = {
       name = repoName;
@@ -89,18 +87,17 @@ let
     | Service | `${serviceName}` |
     | NAT IP | `${vm.ip}` |
     | Service DNS | `${dnsName}` |
-    | NetBird name | `${netbirdName}` |
     | VM-owned repo | `${repoRoot}` |
     | Forgejo remote | `${repoUrl}` |
     | Nazar flake input | `${repoInputName}` |
     | VM-local rebuild flake | `${selfSwitchFlake}` |
     | Nazar fallback deploy app | `.#${deployApp}` |
 
-    ## Canonical workflow for Pi and humans on this VM
+    ## Canonical workflow for agents and humans on this VM
 
     This VM-owned repository exports the service module for this whole NixOS VM.
     The VM is allowed to rebuild and activate itself. Nazar still owns the
-    infrastructure boundary: Proxmox lifecycle, VMID/IP/MAC sizing, NAT/forwarding,
+    infrastructure boundary: host lifecycle, VMID/IP/MAC sizing, NAT/forwarding,
     public exposure, and shared network policy.
 
     Author, test, commit, push, and deploy from this VM:
@@ -118,8 +115,8 @@ let
     ```
 
     `/etc/nazar/self` is a generated VM-local integration flake. It composes the
-    current Nazar VM baseline with the local checkout at `${repoRoot}`, so Pi can
-    evolve this VM without asking an agent on Nazar to deploy every service edit.
+    current Nazar VM baseline with the local checkout at `${repoRoot}`, so agents
+    can evolve this VM without asking an agent on Nazar to deploy every service edit.
 
     Nazar remains a fallback deploy authority and can still deploy the pushed
     service commit from the orchestrator repository:
@@ -131,14 +128,14 @@ let
     nix run .#${deployApp}
     ```
 
-    Do not make Proxmox lifecycle, NetBird identity, VMID/IP/MAC, public firewall,
+    Do not make host lifecycle, VMID/IP/MAC, public firewall,
     or NAT forwarding changes from this VM repo. Those still belong to Nazar's
     infrastructure repository.
   '';
   agentsMarkdown = pkgs.writeText "nazar-vm-agents.md" ''
     # Nazar VM Agent Instructions
 
-    You are running inside a Nazar NixOS VM, not on the Proxmox host.
+    You are running inside a Nazar NixOS VM, not on the host.
 
     Read `/etc/nazar/vm-context.md` or run `nazar-vm-context` for the current VM
     identity, repository, and deployment commands.
@@ -152,9 +149,9 @@ let
       `sudo nixos-rebuild switch --flake ${selfSwitchFlake}`.
     - Commit and push durable service changes from `${repoRoot}` so Nazar's
       fallback deploy path can reproduce them.
-    - Nazar owns infrastructure and networking: Proxmox VM lifecycle, VMID/IP/MAC,
+    - Nazar owns infrastructure and networking: host VM lifecycle, VMID/IP/MAC,
       sizing, NAT/forwarding, public exposure, and shared network policy.
-    - Do not create public exposure, firewall, NetBird, VMID/IP/MAC, or Proxmox
+    - Do not create public exposure, firewall, VMID/IP/MAC, or host
       lifecycle changes from a VM repo. Those belong to `/root/nazar`.
 
     Helpful commands:
@@ -325,12 +322,12 @@ let
             ./nix/modules/common/users.nix
             ./nix/modules/common/security.nix
             ./nix/modules/common/networking.nix
-            ./nix/modules/common/netbird.nix
+            ./nix/modules/common/development.nix
             ./nix/modules/common/sops.nix
             ./nix/modules/common/nazar-context.nix
           ];
           agentVmModules = [ ./nix/modules/common/hermes-agent.nix ];
-          proxmoxVmModules = [ ./nix/modules/common/proxmox-guest.nix ];
+          qemuGuestModules = [ ./nix/modules/common/qemu-guest.nix ];
           serviceModule =
             if "${serviceModuleName}" == "dav" then
               ./nix/modules/services/dav.nix
@@ -349,7 +346,7 @@ let
                 sops-nix.nixosModules.sops
               ]
               ++ commonVmModules
-              ++ nixpkgs.lib.optionals ${if includeProxmox then "true" else "false"} proxmoxVmModules
+              ++ nixpkgs.lib.optionals ${if includeQemuGuest then "true" else "false"} qemuGuestModules
               ++ nixpkgs.lib.optionals ${if includeCommonAgent then "true" else "false"} agentVmModules
               ++ [ serviceModule ];
           };
@@ -367,11 +364,11 @@ let
     cp ${./users.nix} "$out/nix/modules/common/users.nix"
     cp ${./security.nix} "$out/nix/modules/common/security.nix"
     cp ${./networking.nix} "$out/nix/modules/common/networking.nix"
-    cp ${./netbird.nix} "$out/nix/modules/common/netbird.nix"
+    cp ${./development.nix} "$out/nix/modules/common/development.nix"
     cp ${./sops.nix} "$out/nix/modules/common/sops.nix"
     cp ${./nazar-context.nix} "$out/nix/modules/common/nazar-context.nix"
     cp ${./hermes-agent.nix} "$out/nix/modules/common/hermes-agent.nix"
-    cp ${./proxmox-guest.nix} "$out/nix/modules/common/proxmox-guest.nix"
+    cp ${./qemu-guest.nix} "$out/nix/modules/common/qemu-guest.nix"
     cp ${../services/dav.nix} "$out/nix/modules/services/dav.nix"
   '';
 in

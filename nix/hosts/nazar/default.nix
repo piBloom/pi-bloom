@@ -14,7 +14,6 @@
     ../../modules/host/networking.nix
     ../../modules/common/development.nix
     ../../modules/host/firewall.nix
-    ../../modules/host/netbird.nix
     ../../modules/host/llm-agents.nix
     inputs.hermes-agent.nixosModules.default
     ../../modules/host/hermes-agent.nix
