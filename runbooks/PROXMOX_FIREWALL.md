@@ -74,7 +74,7 @@ curl -k --connect-timeout 5 https://nazar.studio/           # private dashboard 
 curl -k --connect-timeout 5 https://nazar.studio/zellij/    # Zellij web login from NetBird client
 curl -k --connect-timeout 5 https://pve.nazar.studio/       # Proxmox UI from NetBird client; self-signed cert for now
 curl --connect-timeout 5 http://git.nazar.studio/             # Forgejo web UI from NetBird client
-curl -k --connect-timeout 5 https://100.124.39.100:8006/      # direct Proxmox overlay fallback
+curl -k --connect-timeout 5 https://100.124.51.27:8006/      # direct Proxmox overlay fallback
 netbird ssh root@nazar                                        # OK over NetBird SSH
 ssh nazar-public                                              # expected to time out in normal boot
 ```

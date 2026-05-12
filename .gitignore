@@ -26,3 +26,6 @@ id_ed25519
 *secret*
 *.env
 .env
+
+__pycache__/
+*.py[cod]

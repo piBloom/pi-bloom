@@ -73,7 +73,7 @@ Admin peers ───────────────┐
                            |
                            v
                       nazar / Proxmox
-                      100.124.39.100
+                      100.124.51.27
                       vmbr1: 10.10.10.1/24
                            |
        ┌───────────────────┼───────────────────┐
@@ -204,12 +204,12 @@ nazar.studio
 Records:
 
 ```text
-nazar.studio          -> 100.124.39.100
-pve.nazar.studio      -> 100.124.39.100
-git.nazar.studio      -> 100.124.39.100
+nazar.studio          -> 100.124.51.27
+pve.nazar.studio      -> 100.124.51.27
+git.nazar.studio      -> 100.124.51.27
 ownloom.nazar.studio  -> 100.124.202.128
 data.nazar.studio     -> 100.124.7.246
-mc.nazar.studio       -> 100.124.39.100
+mc.nazar.studio       -> 100.124.51.27
 ```
 
 ---

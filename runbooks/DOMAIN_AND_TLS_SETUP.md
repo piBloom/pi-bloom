@@ -18,12 +18,12 @@ Current canonical naming is `nazar.studio`. Older sections that mention `pve.own
 NetBird Custom Zone:
 
 ```text
-nazar.studio          -> 100.124.39.100  # private dashboard and /zellij/ via NetBird-only nginx
-pve.nazar.studio      -> 100.124.39.100  # Proxmox UI via NetBird-only nginx; HTTP redirects to HTTPS
-git.nazar.studio      -> 100.124.39.100  # Forgejo web via NetBird-only nginx on :80 and Git SSH on :10022
+nazar.studio          -> 100.124.51.27  # private dashboard and /zellij/ via NetBird-only nginx
+pve.nazar.studio      -> 100.124.51.27  # Proxmox UI via NetBird-only nginx; HTTP redirects to HTTPS
+git.nazar.studio      -> 100.124.51.27  # Forgejo web via NetBird-only nginx on :80 and Git SSH on :10022
 ownloom.nazar.studio  -> 100.124.202.128
 data.nazar.studio     -> 100.124.7.246   # DAV/wiki data backend
-mc.nazar.studio       -> 100.124.39.100  # NetBird-private Minecraft forward through nazar
+mc.nazar.studio       -> 100.124.51.27  # NetBird-private Minecraft forward through nazar
 ```
 
 Public DNS / Reverse Proxy:
@@ -39,18 +39,18 @@ NetBird Reverse Proxy services exist for `pve`, `git`, `ownloom`, and `data`, bu
 ```text
 nazar.studio
   -> Proxmox host NetBird IP, then local NetBird-bound nginx
-  -> NetBird IP: 100.124.39.100
+  -> NetBird IP: 100.124.51.27
   -> Private dashboard: https://nazar.studio/
   -> Zellij web terminal: https://nazar.studio/zellij/
 
 pve.nazar.studio
   -> Proxmox host NetBird IP, then local NetBird-bound nginx proxy to pveproxy
-  -> NetBird IP: 100.124.39.100
+  -> NetBird IP: 100.124.51.27
   -> Proxmox UI: https://pve.nazar.studio/
 
 git.nazar.studio
   -> Proxmox host NetBird IP, then local NetBird-bound nginx proxy to Git VM 101
-  -> NetBird IP: 100.124.39.100
+  -> NetBird IP: 100.124.51.27
   -> Forgejo web: http://git.nazar.studio/
   -> Git SSH: ssh://git@git.nazar.studio:10022/nazar/nazar.git
 
@@ -66,7 +66,7 @@ data.nazar.studio
 
 mc.nazar.studio
   -> Proxmox host NetBird IP, then wt0-bound forwarding to Minecraft VM 110
-  -> NetBird IP: 100.124.39.100
+  -> NetBird IP: 100.124.51.27
   -> Minecraft: TCP/25565, voice: UDP/24454
 ```
 
@@ -77,7 +77,7 @@ An A record maps a DNS name to an IPv4 address.
 For example:
 
 ```text
-pve.ownloom.com -> 100.124.39.100
+pve.ownloom.com -> 100.124.51.27
 ```
 
 The IPs used here are NetBird overlay IPs. They are not normal public web-service IPs. Public DNS can resolve public records such as `pve.ownloom.com`, but only devices connected to the NetBird network with matching policy can actually reach the services. New private-only infrastructure records should prefer the current NetBird Custom Zone `nazar.studio`, which is distributed inside the overlay. The older `nb.ownloom.com` zone is historical/rollback metadata only.
@@ -91,14 +91,14 @@ Registrar/DNS provider: Gandi LiveDNS.
 ```text
 Type: A
 Name: pve
-Value: 100.124.39.100
+Value: 100.124.51.27
 TTL: 300 or provider default
 ```
 
 ```text
 Type: A
 Name: git
-Value: 100.124.39.100
+Value: 100.124.51.27
 TTL: 300 or provider default
 ```
 
@@ -111,7 +111,7 @@ DNS provider: Hetzner Console.
 ```text
 Type: A
 Name: pve
-Value: 100.124.39.100
+Value: 100.124.51.27
 TTL: 300
 ```
 
@@ -148,20 +148,20 @@ Google 8.8.8.8
 Expected public/private DNS results:
 
 ```text
-pve.nazar.studio          -> 100.124.39.100
-git.nazar.studio         -> 100.124.39.100
-pve.ownloom.com           -> 100.124.39.100
+pve.nazar.studio          -> 100.124.51.27
+git.nazar.studio         -> 100.124.51.27
+pve.ownloom.com           -> 100.124.51.27
 ```
 
 Expected NetBird Custom Zone results on peers with NetBird DNS enabled:
 
 ```text
-nazar.studio           -> 100.124.39.100
-pve.nazar.studio       -> 100.124.39.100
-git.nazar.studio       -> 100.124.39.100
+nazar.studio           -> 100.124.51.27
+pve.nazar.studio       -> 100.124.51.27
+git.nazar.studio       -> 100.124.51.27
 ownloom.nazar.studio   -> 100.124.202.128
 data.nazar.studio      -> 100.124.7.246
-mc.nazar.studio        -> 100.124.39.100
+mc.nazar.studio        -> 100.124.51.27
 ```
 
 Connectivity verified:
@@ -278,10 +278,10 @@ Current behavior:
 
 ```text
 http://nazar.studio/       -> 301 redirect to https://nazar.studio/
-https://nazar.studio/      -> nginx on 100.124.39.100:443 -> /var/www/nazar-dashboard
-https://nazar.studio/zellij/ -> nginx on 100.124.39.100:443 -> http://127.0.0.1:8082
+https://nazar.studio/      -> nginx on 100.124.51.27:443 -> /var/www/nazar-dashboard
+https://nazar.studio/zellij/ -> nginx on 100.124.51.27:443 -> http://127.0.0.1:8082
 http://pve.nazar.studio/   -> 301 redirect to https://pve.nazar.studio/
-https://pve.nazar.studio/  -> nginx on 100.124.39.100:443 -> https://127.0.0.1:8006
+https://pve.nazar.studio/  -> nginx on 100.124.51.27:443 -> https://127.0.0.1:8006
 ```
 
 Self-signed certificate files:
@@ -301,8 +301,8 @@ Nginx private vhost config:
 Important: nginx listens only on the NetBird overlay IP for these vhosts:
 
 ```text
-100.124.39.100:80
-100.124.39.100:443
+100.124.51.27:80
+100.124.51.27:443
 ```
 
 This is separate from Proxmox's existing trusted `pve.ownloom.com` ACME certificate. The `pve.ownloom.com` certificate was not removed or replaced.
@@ -312,8 +312,8 @@ This is separate from Proxmox's existing trusted `pve.ownloom.com` ACME certific
 `git.nazar.studio` points to the Proxmox host's NetBird IP and is routed by NetBird-only nginx/socat to the NixOS Forgejo VM:
 
 ```text
-http://git.nazar.studio/ -> nginx 100.124.39.100:80 -> 10.10.10.21:3000
-ssh://git@git.nazar.studio:10022/nazar/nazar.git -> socat 100.124.39.100:10022 -> 10.10.10.21:10022
+http://git.nazar.studio/ -> nginx 100.124.51.27:80 -> 10.10.10.21:3000
+ssh://git@git.nazar.studio:10022/nazar/nazar.git -> socat 100.124.51.27:10022 -> 10.10.10.21:10022
 ```
 
 See `runbooks/FORGEJO_GIT_VM.md` for the Forgejo VM and repo bootstrap details.
@@ -348,7 +348,7 @@ https://pve.ownloom.com:8006
 Fallback Proxmox UI by NetBird IP:
 
 ```text
-https://100.124.39.100:8006
+https://100.124.51.27:8006
 ```
 
 Canonical shell access:

@@ -5,20 +5,20 @@
 ```text
 Local desktop NetBird IP: 100.124.32.110
 Local desktop FQDN:      evo-x1.netbird.cloud
-Proxmox NetBird IP:      100.124.39.100
-Proxmox FQDN:            nazar.netbird.cloud
+Nazar NetBird IP:        100.124.51.27
+Nazar FQDN:              nazar.netbird.cloud
 Private dashboard DNS:   nazar.studio
 Proxmox private DNS:     pve.nazar.studio
 Forgejo private DNS:     git.nazar.studio
 Git VM NAT IP:           10.10.10.21
 Git VM NetBird IP:       100.124.135.247
 Git VM NetBird FQDN:     git.netbird.cloud
-Private HTTP(S) vhosts:  nginx on 100.124.39.100:80 and :443
-Forgejo private endpoint:git.nazar.studio -> 100.124.39.100:80 -> 10.10.10.21:3000
-Dashboard endpoint:     nazar.studio -> 100.124.39.100:443 -> /var/www/nazar-dashboard
-Zellij web endpoint:    nazar.studio/zellij/ -> 100.124.39.100:443 -> 127.0.0.1:8082
-Proxmox private endpoint:pve.nazar.studio -> 100.124.39.100:443 -> 127.0.0.1:8006
-Forgejo Git SSH endpoint:100.124.39.100:10022 -> 10.10.10.21:10022
+Private HTTP(S) vhosts:  nginx on 100.124.51.27:80 and :443
+Forgejo private endpoint:git.nazar.studio -> 100.124.51.27:80 -> 10.10.10.21:3000
+Dashboard endpoint:     nazar.studio -> 100.124.51.27:443 -> /var/www/nazar-dashboard
+Zellij web endpoint:    nazar.studio/zellij/ -> 100.124.51.27:443 -> 127.0.0.1:8082
+Proxmox private endpoint:pve.nazar.studio -> 100.124.51.27:443 -> 127.0.0.1:8006
+Forgejo Git SSH endpoint:100.124.51.27:10022 -> 10.10.10.21:10022
 OwnLoom VM NetBird IP:   100.124.202.128
 OwnLoom VM FQDN:         ownloom.netbird.cloud
 OwnLoom VM NAT IP:       10.10.10.40
@@ -41,7 +41,7 @@ https://nazar.studio/          # private dashboard + service links
 https://nazar.studio/zellij/   # Zellij web terminal, token required
 https://pve.nazar.studio/      # Proxmox UI alias
 http://pve.nazar.studio/       # redirects to HTTPS
-https://100.124.39.100:8006    # direct Proxmox fallback
+https://100.124.51.27:8006    # direct Proxmox fallback
 ```
 
 Forgejo private Git server:
@@ -232,12 +232,12 @@ Search domain: disabled
 Records:
 
 ```text
-nazar.studio          -> 100.124.39.100
-pve.nazar.studio      -> 100.124.39.100
-git.nazar.studio      -> 100.124.39.100
+nazar.studio          -> 100.124.51.27
+pve.nazar.studio      -> 100.124.51.27
+git.nazar.studio      -> 100.124.51.27
 ownloom.nazar.studio  -> 100.124.202.128
 data.nazar.studio     -> 100.124.7.246
-mc.nazar.studio       -> 100.124.39.100
+mc.nazar.studio       -> 100.124.51.27
 ```
 
 The old `nb.ownloom.com` zone is disabled and kept only as historical/rollback metadata. Public Gandi DNS uses `*.nazar.studio -> eu1.netbird.services.` for the NetBird Reverse Proxy wildcard, while NetBird peers receive the private `nazar.studio` answers above.
