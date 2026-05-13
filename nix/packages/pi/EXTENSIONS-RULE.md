@@ -3,24 +3,24 @@
 ## The Problem
 
 NixOS runs from a read-only `/nix/store`. Pi's package manager installs
-user-scoped extensions via `npm install -g`, which writes to npm's *prefix*.
+user-scoped extensions via `npm install -g`, which writes to npm's _prefix_.
 Out of the box on NixOS, that prefix is inside the read-only store, so every
 `npm install -g` fails with EROFS/EACCES.
 
 Pi's startup auto-installs any package listed in `settings.json.packages`
 that it can't find in the npm global tree. This means a broken prefix blocks
-*all* extensions — not just new installs.
+_all_ extensions — not just new installs.
 
 ## The Rule
 
 > **Pi extensions live in `~/.pi/npm-global`.** Three independent layers
 > ensure `npm install -g` always writes there. All three must be in place:
 
-| # | Layer | What it does | Where it lives | Why it's needed |
-|---|-------|-------------|----------------|-----------------|
-| 1 | **Wrapper `--run`** | Exports `NPM_CONFIG_PREFIX` before every `pi` invocation | `nix/packages/pi/default.nix` | Catches interactive shells, scripts, and NixPi — anywhere the wrapper binary runs |
-| 2 | **Session variable** | Sets `NPM_CONFIG_PREFIX` in PAM/environment | `pi-default-packages.nix` | Catches bare `npm install -g` typed by the user; inherited by all child processes |
-| 3 | **`~/.npmrc`** | Writes `prefix=~/.pi/npm-global` to npm's user config | Created by activation script | Last-resort fallback — npm reads this even if env vars are missing (e.g. `sudo -E`, `env -i`) |
+| #   | Layer                | What it does                                             | Where it lives                | Why it's needed                                                                               |
+| --- | -------------------- | -------------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------- |
+| 1   | **Wrapper `--run`**  | Exports `NPM_CONFIG_PREFIX` before every `pi` invocation | `nix/packages/pi/default.nix` | Catches interactive shells, scripts, and NixPi — anywhere the wrapper binary runs             |
+| 2   | **Session variable** | Sets `NPM_CONFIG_PREFIX` in PAM/environment              | `pi-default-packages.nix`     | Catches bare `npm install -g` typed by the user; inherited by all child processes             |
+| 3   | **`~/.npmrc`**       | Writes `prefix=~/.pi/npm-global` to npm's user config    | Created by activation script  | Last-resort fallback — npm reads this even if env vars are missing (e.g. `sudo -E`, `env -i`) |
 
 If any one layer is missing, the other two cover the gap. If two are missing,
 the third still works. All three together eliminate the class of bug entirely.
@@ -52,7 +52,7 @@ pi -e npm:some-extension          # temporary — gone after the session
 
 User-installed extensions persist in `~/.pi/npm-global` until manually removed
 with `pi remove`. They survive `nixos-rebuild switch` because the activation
-script only *appends* to the packages list.
+script only _appends_ to the packages list.
 
 ## Per-Environment Details
 
@@ -70,6 +70,7 @@ host/pi-agent.nix        →  adds PI_TELEMETRY, PI_SKIP_VERSION_CHECK
 provides the `npm` and `node` binaries pi's package-manager spawns.
 
 **Required in `environment.systemPackages`:**
+
 - `pi` (the wrapped binary — includes `NPM_CONFIG_PREFIX` in its `--run`)
 - `pkgs.nodejs` — so pi can run `npm install -g` for extensions
 
@@ -94,6 +95,7 @@ invocations spawned by pi outside the wrapper (e.g., the `npm install -g`
 that pi's package-manager runs).
 
 **Also required:**
+
 - `path = [ pkgs.nodejs_22 ]` — npm must be in `$PATH` for pi to spawn it
 - `~/.npmrc` written by the activation script (if `pi-default-packages.nix`
   is imported by the VM config)
@@ -140,6 +142,7 @@ nixos-rebuild switch
 **Cause:** `NPM_CONFIG_PREFIX` not set, or `~/.npmrc` missing.
 
 **Fix:**
+
 ```bash
 # Verify the three layers:
 echo $NPM_CONFIG_PREFIX           # → /home/alex/.pi/npm-global
@@ -148,6 +151,7 @@ cat ~/.npmrc                       # → prefix=/home/alex/.pi/npm-global
 ```
 
 If any is wrong, re-run `nixos-rebuild switch` or manually:
+
 ```bash
 npm config set prefix ~/.pi/npm-global
 ```
@@ -159,12 +163,14 @@ partially-written `node_modules/` directory. npm can't unpack over it or
 clean it up.
 
 **Fix:** Nuclear cleanup of the corrupted package, then reinstall:
+
 ```bash
 rm -rf ~/.pi/npm-global/lib/node_modules/<package-name>
 npm install -g <package-name>     # let it finish completely!
 ```
 
 For a full reset:
+
 ```bash
 rm -rf ~/.pi/npm-global/lib/node_modules/* ~/.pi/npm-global/bin/*
 pi  # first launch re-installs everything from settings.json
@@ -174,6 +180,7 @@ pi  # first launch re-installs everything from settings.json
 
 This is a harmless warning — pi tries to create a lockfile in `~/.pi/agent/`
 and fails if the directory permissions are wrong. Verify ownership:
+
 ```bash
 ls -la ~/.pi/agent/
 # Should be: drwxr-xr-x alex users ... .pi/agent
@@ -181,14 +188,14 @@ ls -la ~/.pi/agent/
 
 ## What NOT To Do
 
-| ❌ Don't | ✅ Do instead |
-|---------|--------------|
-| Run `npm install -g` without `NPM_CONFIG_PREFIX` set | Verify with `npm config get prefix` first |
-| Kill `pi` during first launch (extensions installing) | Let npm finish — pi-lens takes ~60s |
-| Build pi extensions as Nix derivations with `buildNpmPackage` | Let pi's own package-manager handle `npm install -g` at runtime |
-| Install extensions as root in activation script | Only write config dirs and `settings.json` as root; let pi (user) do npm installs |
-| Use `programs.npm.npmrc` for the prefix | Use activation script + session var + wrapper — covers systemd too |
-| Remove `nodejs` from `systemPackages` or `path` | Pi needs `npm` binary in `$PATH` to install extensions |
+| ❌ Don't                                                      | ✅ Do instead                                                                     |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Run `npm install -g` without `NPM_CONFIG_PREFIX` set          | Verify with `npm config get prefix` first                                         |
+| Kill `pi` during first launch (extensions installing)         | Let npm finish — pi-lens takes ~60s                                               |
+| Build pi extensions as Nix derivations with `buildNpmPackage` | Let pi's own package-manager handle `npm install -g` at runtime                   |
+| Install extensions as root in activation script               | Only write config dirs and `settings.json` as root; let pi (user) do npm installs |
+| Use `programs.npm.npmrc` for the prefix                       | Use activation script + session var + wrapper — covers systemd too                |
+| Remove `nodejs` from `systemPackages` or `path`               | Pi needs `npm` binary in `$PATH` to install extensions                            |
 
 ## Declarative Package List
 
@@ -206,11 +213,13 @@ defaultPiPackages = [
 ```
 
 To add a new default extension:
+
 1. Add it to `defaultPiPackages` in `pi-default-packages.nix`
 2. Run `nixos-rebuild switch` — activation script merges it into `settings.json`
 3. Next `pi` launch auto-installs it via `npm install -g`
 
 To remove a default extension:
+
 1. Remove it from `defaultPiPackages`
 2. **Also** manually remove it from `~/.pi/agent/settings.json` (activation
    script only appends, never removes)
