@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#1a1a2e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script src="/lib/marked.umd.js"></script>
-<script src="/lib/purify.js"></script>
+<script src="lib/marked.umd.js"></script>
+<script src="lib/purify.js"></script>
 <style>
   :root {
     --bg: #1a1a2e;
@@ -535,6 +535,13 @@
 </div>
 
 <script>
+// ── App path helpers ──────────────────────────────────────────────────────
+const NIXPI_BASE_PATH = (() => {
+  const path = window.location.pathname;
+  return path === "/nixpi" || path.startsWith("/nixpi/") ? "/nixpi" : "";
+})();
+function appUrl(path) { return `${NIXPI_BASE_PATH}${path}`; }
+
 // ── Markdown setup ────────────────────────────────────────────────────────
 marked.setOptions({ breaks: true, gfm: true });
 function md(text) {
@@ -662,14 +669,14 @@ applySidebarState();
 // ── Session management ────────────────────────────────────────────────────
 async function loadSessions() {
   try {
-    const res = await fetch("/api/sessions");
+    const res = await fetch(appUrl("/api/sessions"));
     const data = await res.json();
     const active = data.currentFile || currentSessionFile;
     if (data.currentFile) currentSessionFile = data.currentFile;
     renderSessionList(data.sessions || [], active);
     // Check if there are archived sessions to show the toggle
     try {
-      const ar = await fetch("/api/sessions/archived");
+      const ar = await fetch(appUrl("/api/sessions/archived"));
       const ad = await ar.json();
       const toggle = document.getElementById("archived-toggle");
       if (toggle) toggle.style.display = ad.sessions?.length ? "flex" : "none";
@@ -800,7 +807,7 @@ function showDeleteConfirm(el, file, isActive) {
 function closeSessionMenu() { if (_dropdownEl) { _dropdownEl.remove(); _dropdownEl = null; } }
 async function doArchiveSession(file, isActive) {
   try {
-    const res = await fetch("/api/sessions/archive", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({file})});
+    const res = await fetch(appUrl("/api/sessions/archive"), {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({file})});
     const data = await res.json();
     if (data.ok) { addMsg("system", "Chat archived.", true); if (isActive && ws?.readyState===1) ws.send(JSON.stringify({type:"new_session"})); else loadSessions(); }
     else addMsg("error", `⚠ Archive failed: ${esc(data.error||"Unknown")}`, true);
@@ -808,7 +815,7 @@ async function doArchiveSession(file, isActive) {
 }
 async function doDeleteSession(file, isActive) {
   try {
-    const res = await fetch("/api/sessions", {method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({file})});
+    const res = await fetch(appUrl("/api/sessions"), {method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({file})});
     const data = await res.json();
     if (data.ok) { if (isActive && ws?.readyState===1) { msgs.innerHTML=""; ws.send(JSON.stringify({type:"new_session"})); } else loadSessions(); }
     else addMsg("error", `⚠ Delete failed: ${esc(data.error||"Unknown")}`, true);
@@ -979,8 +986,8 @@ async function handleFiles(files) {
 // ── WebSocket ─────────────────────────────────────────────────────────────
 function connect() {
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
-  console.log("[WS] Connecting to", `${proto}//${location.host}/ws`);
-  ws = new WebSocket(`${proto}//${location.host}/ws`);
+  console.log("[WS] Connecting to", `${proto}//${location.host}${appUrl("/ws")}`);
+  ws = new WebSocket(`${proto}//${location.host}${appUrl("/ws")}`);
   ws.onopen = () => {
     console.log("[WS] Connected");
     dot.className = "connected";
@@ -1304,7 +1311,7 @@ async function loadArchivedSessions() {
   if (!list) return;
   list.innerHTML = '<div style="padding:6px 14px;font-size:11px;color:#3d4a5c">Loading…</div>';
   try {
-    const res = await fetch("/api/sessions/archived");
+    const res = await fetch(appUrl("/api/sessions/archived"));
     const data = await res.json();
     if (!data.sessions.length) { list.innerHTML = '<div style="padding:8px 14px;font-size:11px;color:#3d4a5c">No archived chats</div>'; return; }
     list.innerHTML = data.sessions.map(s => `
@@ -1315,7 +1322,7 @@ async function loadArchivedSessions() {
     list.querySelectorAll(".archived-restore").forEach(btn => {
       btn.addEventListener("click", async () => {
         const file = btn.dataset.file;
-        const res = await fetch("/api/sessions/restore", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({file})});
+        const res = await fetch(appUrl("/api/sessions/restore"), {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({file})});
         const d = await res.json();
         if (d.ok) { await loadSessions(); await loadArchivedSessions(); }
         else addMsg("error", `⚠ Restore failed: ${esc(d.error||"“unknown”")}`, true);
@@ -1566,7 +1573,7 @@ if (micBtn) {
             return;
           }
           try {
-            const resp = await fetch("/api/transcribe", {
+            const resp = await fetch(appUrl("/api/transcribe"), {
               method: "POST",
               headers: { "Content-Type": "audio/webm" },
               body: blob,

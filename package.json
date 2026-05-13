@@ -1,6 +1,6 @@
 {
   "name": "nixpi",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Nazar's private web interface for Pi Coding Agent",
   "type": "module",
   "bin": {

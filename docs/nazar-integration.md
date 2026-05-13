@@ -28,7 +28,15 @@ NixPi should be integrated into Nazar as a private, WireGuard-only Pi web surfac
 6. Bind the host service to `127.0.0.1:4815` and proxy it from host nginx on WireGuard only.
 7. Bind MicroVM services to `0.0.0.0:4815`, firewall them to the MicroVM bridge gateway (`10.10.10.1`) only, and proxy through host nginx.
 
-## Suggested private DNS
+## Suggested routing
+
+Primary per-service routes should use `/nixpi/` on the existing private service domains:
+
+- `git.nazar.studio/nixpi/` -> `git` VM NixPi
+- `ownloom.nazar.studio/nixpi/` -> `ownloom` VM NixPi
+- `dav.nazar.studio/nixpi/` -> `dav-server` VM NixPi
+
+Dedicated private names can also be kept for direct access:
 
 - `nixpi.nazar.studio` -> host `nazar`
 - `nixpi-git.nazar.studio` -> `git` VM
@@ -36,7 +44,7 @@ NixPi should be integrated into Nazar as a private, WireGuard-only Pi web surfac
 - `nixpi-ownloom.nazar.studio` -> `ownloom` VM
 - `nixpi-dav-server.nazar.studio` -> `dav-server` VM
 
-All records should resolve to `10.44.0.1` from dnsmasq on WireGuard and should not exist in public DNS.
+All dedicated records should resolve to `10.44.0.1` from dnsmasq on WireGuard and should not exist in public DNS.
 
 ## Security stance
 
@@ -58,6 +66,8 @@ From a WireGuard client:
 
 ```bash
 dig @10.44.0.1 nixpi.nazar.studio +short
+curl -I http://git.nazar.studio/nixpi/
+curl -I http://ownloom.nazar.studio/nixpi/
 curl -I http://nixpi.nazar.studio/
 curl -I http://nixpi-ownloom.nazar.studio/
 ```
