@@ -90,11 +90,13 @@ in
 
     keyPath = lib.mkOption {
       type = lib.types.str;
-      default = "/home/alex/.ssh/nazar_ed25519";
+      default = "/home/alex/.ssh/id_ed25519";
       description = ''
-        Private key used for the tunnel. The sshuttle systemd unit is skipped
-        when this path does not exist, so the laptop configuration can stay
-        declarative while the secret key remains outside the repository.
+        Private key used for the tunnel. This should be the private half of a
+        public key listed in nix/users/alex-public-ssh-keys.nix. The sshuttle
+        systemd unit is skipped when this path does not exist, so the laptop
+        configuration can stay declarative while the secret key remains outside
+        the repository.
       '';
     };
 
