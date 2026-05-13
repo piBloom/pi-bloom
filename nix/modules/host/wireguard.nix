@@ -7,6 +7,11 @@
     "git.nazar.studio"
     "dav.nazar.studio"
     "ownloom.nazar.studio"
+    "nixpi.nazar.studio"
+    "nixpi-git.nazar.studio"
+    "nixpi-minecraft.nazar.studio"
+    "nixpi-ownloom.nazar.studio"
+    "nixpi-dav-server.nazar.studio"
   ];
 
   networking.wireguard.interfaces.wg0 = {
@@ -51,6 +56,11 @@
         "/git.nazar.studio/10.44.0.1"
         "/dav.nazar.studio/10.44.0.1"
         "/ownloom.nazar.studio/10.44.0.1"
+        "/nixpi.nazar.studio/10.44.0.1"
+        "/nixpi-git.nazar.studio/10.44.0.1"
+        "/nixpi-minecraft.nazar.studio/10.44.0.1"
+        "/nixpi-ownloom.nazar.studio/10.44.0.1"
+        "/nixpi-dav-server.nazar.studio/10.44.0.1"
       ];
     };
   };

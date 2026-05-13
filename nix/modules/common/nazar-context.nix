@@ -1,4 +1,5 @@
 {
+  inputs,
   lib,
   pkgs,
   vm,
@@ -22,7 +23,7 @@ let
   serviceModuleName =
     {
       git = "forgejo";
-      minecraft = "minecraft";
+      minecraft = "minecraft-service";
       dav-server = "dav-server";
     }
     .${vm.hostname} or vm.hostname;
@@ -313,6 +314,16 @@ let
           inputs.nixpkgs.follows = "nixpkgs";
         };
 
+        microvm = {
+          url = "github:astro/microvm.nix";
+          inputs.nixpkgs.follows = "nixpkgs";
+        };
+
+        nixpi = {
+          url = "path:./nixpi-source";
+          inputs.nixpkgs.follows = "nixpkgs";
+        };
+
         llm-agents.url = "github:numtide/llm-agents.nix";
 
         ${lib.optionalString (vm.hostname != "git") ''
@@ -339,13 +350,16 @@ let
             ./nix/modules/common/base.nix
             ./nix/modules/common/users.nix
             ./nix/modules/common/security.nix
-            ./nix/modules/common/networking.nix
             ./nix/modules/common/development.nix
             ./nix/modules/common/sops.nix
             ./nix/modules/common/nazar-context.nix
+            ./nix/modules/common/nixpi.nix
           ];
           agentVmModules = [ ./nix/modules/common/pi-agent.nix ];
-          qemuGuestModules = [ ./nix/modules/common/qemu-guest.nix ];
+          microvmGuestModules = [
+            inputs.microvm.nixosModules.microvm
+            ./nix/modules/host/microvm-guest.nix
+          ];
           serviceModules =
             if "${serviceModuleName}" == "forgejo" then
               [
@@ -371,7 +385,7 @@ let
                 sops-nix.nixosModules.sops
               ]
               ++ commonVmModules
-              ++ nixpkgs.lib.optionals ${if includeQemuGuest then "true" else "false"} qemuGuestModules
+              ++ microvmGuestModules
               ++ nixpkgs.lib.optionals ${if includeCommonAgent then "true" else "false"} agentVmModules
               ++ serviceModules;
           };
@@ -392,11 +406,17 @@ let
     cp ${./development.nix} "$out/nix/modules/common/development.nix"
     cp ${./sops.nix} "$out/nix/modules/common/sops.nix"
     cp ${./nazar-context.nix} "$out/nix/modules/common/nazar-context.nix"
+    cp ${./nixpi.nix} "$out/nix/modules/common/nixpi.nix"
     cp ${./pi-agent.nix} "$out/nix/modules/common/pi-agent.nix"
+    mkdir -p "$out/nixpi-source"
+    cp -R ${inputs.nixpi}/. "$out/nixpi-source/"
+    chmod -R u+w "$out/nixpi-source"
     cp ${../../packages/pi/default.nix} "$out/nix/packages/pi/default.nix"
     cp ${../../packages/pi/hashes.json} "$out/nix/packages/pi/hashes.json"
     cp ${../../packages/pi/package-lock.json} "$out/nix/packages/pi/package-lock.json"
+    mkdir -p "$out/nix/modules/host"
     cp ${./qemu-guest.nix} "$out/nix/modules/common/qemu-guest.nix"
+    cp ${../host/microvm-guest.nix} "$out/nix/modules/host/microvm-guest.nix"
     cp ${../services/forgejo.nix} "$out/nix/modules/services/forgejo.nix"
     cp ${../services/forgejo-bootstrap.nix} "$out/nix/modules/services/forgejo-bootstrap.nix"
     cp ${../services/ownloom.nix} "$out/nix/modules/services/ownloom.nix"

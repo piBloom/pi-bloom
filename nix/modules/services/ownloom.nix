@@ -1,9 +1,14 @@
 {
+  fleet,
   inputs,
   lib,
   vm,
   ...
 }:
+let
+  ownloomHttpPort = vm.ownloom.web.httpPort or 80;
+  gateway = fleet.defaults.gateway;
+in
 {
   imports = [
     inputs.ownloom.nixosModules.ownloom-core
@@ -16,7 +21,7 @@
       message = "The OwnLoom service module should only be imported by the ownloom VM.";
     }
     {
-      assertion = (vm.ownloom.web.httpPort or 80) == 80;
+      assertion = ownloomHttpPort == 80;
       message = "OwnLoom is expected to expose HTTP on port 80 inside the private MicroVM network.";
     }
     {
@@ -31,5 +36,11 @@
 
   # OwnLoom intentionally runs the phase-1 private web UI as the VM admin user
   # through the upstream module, so it can drive Pi/self-evolution workflows.
-  # Keep exposure WireGuard-only.
+  # Keep exposure limited to the Nazar host proxy on the MicroVM bridge.
+  networking.firewall.extraCommands = lib.mkAfter ''
+    iptables -A nixos-fw -p tcp -s ${gateway} --dport ${toString ownloomHttpPort} -j nixos-fw-accept
+  '';
+  networking.firewall.extraStopCommands = lib.mkAfter ''
+    iptables -D nixos-fw -p tcp -s ${gateway} --dport ${toString ownloomHttpPort} -j nixos-fw-accept 2>/dev/null || true
+  '';
 }

@@ -1,9 +1,38 @@
-{ fleet, pkgs, ... }:
+{
+  fleet,
+  lib,
+  pkgs,
+  ...
+}:
 let
   git = fleet.vms.git;
   ownloom = fleet.vms.ownloom;
   davServer = fleet.vms."dav-server";
   wireguardIp = "10.44.0.1";
+  hostNixpiDns = "nixpi.nazar.studio";
+  hostNixpiPort = 4815;
+  microvmUnits = map (name: "microvm@${name}.service") (lib.attrNames fleet.vms);
+  mkNixpiVhost = proxyPass: {
+    listen = [
+      {
+        addr = wireguardIp;
+        port = 80;
+      }
+    ];
+    locations."/" = {
+      inherit proxyPass;
+      proxyWebsockets = true;
+      extraConfig = ''
+        client_max_body_size 25m;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+      '';
+    };
+  };
+  nixpiVirtualHosts = lib.mapAttrs' (
+    _name: vm:
+    lib.nameValuePair vm.nixpi.dns (mkNixpiVhost "http://${vm.ip}:${toString (vm.nixpi.port or 4815)}")
+  ) fleet.vms;
 in
 {
   services.nginx = {
@@ -12,53 +41,56 @@ in
     recommendedOptimisation = true;
     recommendedProxySettings = true;
 
-    virtualHosts.${git.dns} = {
-      listen = [
-        {
-          addr = wireguardIp;
-          port = 80;
-        }
-      ];
-      locations."/" = {
-        proxyPass = "http://${git.ip}:${toString git.webPort}";
-        proxyWebsockets = true;
+    virtualHosts = {
+      ${git.dns} = {
+        listen = [
+          {
+            addr = wireguardIp;
+            port = 80;
+          }
+        ];
+        locations."/" = {
+          proxyPass = "http://${git.ip}:${toString git.webPort}";
+          proxyWebsockets = true;
+        };
       };
-    };
 
-    virtualHosts.${ownloom.dns} = {
-      listen = [
-        {
-          addr = wireguardIp;
-          port = 80;
-        }
-      ];
-      locations."/" = {
-        proxyPass = "http://${ownloom.ip}:${toString (ownloom.ownloom.web.httpPort or 80)}";
-        proxyWebsockets = true;
+      ${ownloom.dns} = {
+        listen = [
+          {
+            addr = wireguardIp;
+            port = 80;
+          }
+        ];
+        locations."/" = {
+          proxyPass = "http://${ownloom.ip}:${toString (ownloom.ownloom.web.httpPort or 80)}";
+          proxyWebsockets = true;
+        };
       };
-    };
 
-    virtualHosts.${davServer.dns} = {
-      listen = [
-        {
-          addr = wireguardIp;
-          port = 80;
-        }
-      ];
-      locations."/" = {
-        proxyPass = "http://${davServer.ip}:${toString davServer.davServer.httpPort}";
-        proxyWebsockets = true;
+      ${davServer.dns} = {
+        listen = [
+          {
+            addr = wireguardIp;
+            port = 80;
+          }
+        ];
+        locations."/" = {
+          proxyPass = "http://${davServer.ip}:${toString davServer.davServer.httpPort}";
+          proxyWebsockets = true;
+        };
       };
-    };
+
+      ${hostNixpiDns} = mkNixpiVhost "http://127.0.0.1:${toString hostNixpiPort}";
+    }
+    // nixpiVirtualHosts;
   };
 
   systemd.services.nginx = {
     after = [
       "wireguard-wg0.service"
-      "microvm@git.service"
-      "microvm@ownloom.service"
-      "microvm@dav-server.service"
-    ];
+      "nixpi.service"
+    ] ++ microvmUnits;
     wants = [ "wireguard-wg0.service" ];
   };
 

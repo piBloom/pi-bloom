@@ -14,8 +14,14 @@ let
     ../common/security.nix
     ../common/development.nix
     ../common/sops.nix
+    ../common/nazar-context.nix
+    ../common/nixpi.nix
     ./microvm-guest.nix
   ];
+
+  # OwnLoom provides its own Pi integration through its service module; every
+  # other MicroVM gets the Nazar common Pi agent module here.
+  commonPiAgentModules = [ ../common/pi-agent.nix ];
 
   serviceModules = {
     git = [
@@ -23,10 +29,7 @@ let
       ../services/forgejo-bootstrap.nix
     ];
     minecraft = [ inputs.minecraft.nixosModules.minecraft-service ];
-    ownloom = [
-      ../common/nazar-context.nix
-      ../services/ownloom.nix
-    ];
+    ownloom = [ ../services/ownloom.nix ];
     dav-server = [ ../services/dav-server.nix ];
   };
 
@@ -38,15 +41,20 @@ let
       inherit inputs fleet vm;
     };
     config = {
-      imports = commonGuestModules ++ serviceModules.${name};
+      imports =
+        commonGuestModules
+        ++ lib.optionals (name != "ownloom") commonPiAgentModules
+        ++ serviceModules.${name};
     };
   };
 
-  guestShareDirs = lib.concatMap (vm: map (share: share.source) (vm.microvm.shares or [ ])) (
-    lib.attrValues fleet.vms
-  );
-
-  guestShareTmpfiles = map (dir: "d ${dir} 0755 root root - -") guestShareDirs;
+  guestShareTmpfiles = lib.concatMap (
+    vm:
+    map (
+      share:
+      "d ${share.source} ${share.mode or "0755"} ${share.owner or "root"} ${share.group or "root"} - -"
+    ) (vm.microvm.shares or [ ])
+  ) (lib.attrValues fleet.vms);
 in
 {
   imports = [ inputs.microvm.nixosModules.host ];

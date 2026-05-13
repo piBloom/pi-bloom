@@ -48,6 +48,15 @@
             mountPoint = "/var/lib/forgejo";
             proto = "virtiofs";
           }
+          {
+            tag = "git-pi";
+            source = "/persist/microvms/git/pi";
+            mountPoint = "/home/alex/.pi";
+            proto = "virtiofs";
+            owner = "alex";
+            group = "users";
+            mode = "0750";
+          }
         ];
       };
       dns = "git.nazar.studio";
@@ -60,6 +69,11 @@
       onboot = true;
       startupOrder = 20;
       role = "private Git forge for the nazar infrastructure repository";
+      nixpi = {
+        dns = "nixpi-git.nazar.studio";
+        port = 4815;
+        workingDirectory = "/home/alex/nazar";
+      };
     };
 
     minecraft = {
@@ -78,6 +92,24 @@
             mountPoint = "/var/lib/minecraft";
             proto = "virtiofs";
           }
+          {
+            tag = "minecraft-repo";
+            source = "/persist/microvms/minecraft/repo";
+            mountPoint = "/home/alex/minecraft";
+            proto = "virtiofs";
+            owner = "alex";
+            group = "users";
+            mode = "0755";
+          }
+          {
+            tag = "minecraft-pi";
+            source = "/persist/microvms/minecraft/pi";
+            mountPoint = "/home/alex/.pi";
+            proto = "virtiofs";
+            owner = "alex";
+            group = "users";
+            mode = "0750";
+          }
         ];
       };
       dns = "balaur.eu";
@@ -89,6 +121,11 @@
       onboot = true;
       startupOrder = 30;
       role = "small PaperMC Minecraft server";
+      nixpi = {
+        dns = "nixpi-minecraft.nazar.studio";
+        port = 4815;
+        workingDirectory = "/home/alex/minecraft";
+      };
 
       minecraft = {
         port = 25565;
@@ -181,6 +218,9 @@
             source = "/persist/microvms/ownloom/repo";
             mountPoint = "/home/alex/ownloom";
             proto = "virtiofs";
+            owner = "alex";
+            group = "users";
+            mode = "0755";
           }
           {
             tag = "ownloom-state";
@@ -194,6 +234,15 @@
             mountPoint = "/var/lib/ownloom-web";
             proto = "virtiofs";
           }
+          {
+            tag = "ownloom-pi";
+            source = "/persist/microvms/ownloom/pi";
+            mountPoint = "/home/alex/.pi";
+            proto = "virtiofs";
+            owner = "alex";
+            group = "users";
+            mode = "0750";
+          }
         ];
       };
       dns = "ownloom.nazar.studio";
@@ -205,6 +254,11 @@
       onboot = true;
       startupOrder = 40;
       role = "private OwnLoom self-evolving personal agent and web app VM";
+      nixpi = {
+        dns = "nixpi-ownloom.nazar.studio";
+        port = 4815;
+        workingDirectory = "/home/alex/ownloom";
+      };
 
       ownloom = {
         root = "/home/alex/ownloom";
@@ -251,6 +305,15 @@
             mountPoint = "/var/lib/radicale/collections";
             proto = "virtiofs";
           }
+          {
+            tag = "dav-server-pi";
+            source = "/persist/microvms/dav-server/pi";
+            mountPoint = "/home/alex/.pi";
+            proto = "virtiofs";
+            owner = "alex";
+            group = "users";
+            mode = "0750";
+          }
         ];
       };
       dns = "dav.nazar.studio";
@@ -262,6 +325,11 @@
       onboot = false;
       startupOrder = 41;
       role = "private personal DAV, CalDAV, CardDAV, WebDAV, and markdown wiki data VM";
+      nixpi = {
+        dns = "nixpi-dav-server.nazar.studio";
+        port = 4815;
+        workingDirectory = "/home/alex/dav-server";
+      };
 
       davServer = {
         radicalePort = 5232;

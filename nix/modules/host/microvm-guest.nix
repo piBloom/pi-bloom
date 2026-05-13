@@ -8,9 +8,15 @@ let
   gateway = fleet.defaults.gateway;
   dnsServers = fleet.defaults.nameservers;
   serviceExtraTcpPorts = {
-    ownloom = [ (vm.ownloom.web.httpPort or 80) ];
     dav-server = [ (vm.davServer.httpPort or 80) ];
   };
+  guestShare =
+    share:
+    builtins.removeAttrs share [
+      "owner"
+      "group"
+      "mode"
+    ];
 in
 {
   networking = {
@@ -72,7 +78,7 @@ in
         readOnly = true;
       }
     ]
-    ++ (vm.microvm.shares or [ ]);
+    ++ map guestShare (vm.microvm.shares or [ ]);
   };
 
   networking.firewall.allowedTCPPorts = lib.mkAfter (serviceExtraTcpPorts.${vm.hostname} or [ ]);

@@ -17,6 +17,7 @@
     ../../modules/host/firewall.nix
     ../../modules/host/llm-agents.nix
     ../../modules/host/pi-agent.nix
+    ../../modules/host/nixpi.nix
     ../../modules/host/microvm-host.nix
     ../../modules/host/forgejo-proxy.nix
     ../../modules/host/backup.nix
