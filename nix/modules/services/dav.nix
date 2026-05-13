@@ -46,6 +46,7 @@ in
       locations."/".return = "200 'Nazar DAV VM\n/files/ WebDAV\n/radicale/ CalDAV/CardDAV\n'";
       locations."/files/" = {
         root = cfg.stateDir;
+        basicAuthFile = lib.mkIf (cfg.auth.enable or false) cfg.auth.htpasswdFile;
         extraConfig = ''
           dav_methods PUT DELETE MKCOL COPY MOVE;
           dav_ext_methods PROPFIND OPTIONS;
@@ -57,6 +58,7 @@ in
       };
       locations."/radicale/" = {
         proxyPass = "http://127.0.0.1:${toString cfg.radicalePort}/";
+        basicAuthFile = lib.mkIf (cfg.auth.enable or false) cfg.auth.htpasswdFile;
         extraConfig = ''
           proxy_set_header X-Script-Name /radicale;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -79,7 +81,7 @@ in
   assertions = [
     {
       assertion = cfg.httpPort == 80;
-      message = "DAV VM currently expects HTTP port 80 behind private NetBird/Nazar routing.";
+      message = "DAV VM currently expects HTTP port 80 behind private WireGuard/Nazar routing.";
     }
   ];
 }

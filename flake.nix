@@ -13,7 +13,6 @@
     # agent packages do not need to rebuild against the fleet nixpkgs input.
     llm-agents.url = "github:numtide/llm-agents.nix";
 
-
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -80,6 +79,74 @@
 
       agentVmModules = [ ./nix/modules/common/pi-agent.nix ];
 
+      minecraftServiceModule = inputs.minecraft.nixosModules.minecraft-service;
+
+      minecraftStandaloneModule =
+        { ... }:
+        {
+          imports = [ minecraftServiceModule ];
+
+          # Keep the standalone VM profile service-only: no Minecraft webapp.
+          boot.loader.grub = {
+            enable = true;
+            device = "/dev/vda";
+          };
+          boot.growPartition = true;
+          boot.kernelParams = [ "console=ttyS0" ];
+          boot.initrd.availableKernelModules = [
+            "virtio_pci"
+            "virtio_blk"
+            "virtio_scsi"
+            "sd_mod"
+            "sr_mod"
+          ];
+
+          fileSystems."/" = {
+            device = "/dev/disk/by-label/nixos";
+            fsType = "ext4";
+            options = [
+              "x-systemd.growfs"
+              "x-initrd.mount"
+            ];
+          };
+
+          swapDevices = [ ];
+
+          services.qemuGuest.enable = true;
+          services.fstrim.enable = true;
+
+          system.stateVersion = "26.05";
+        };
+
+      minecraftImageModule =
+        { vm, ... }:
+        {
+          imports = [ minecraftServiceModule ];
+
+          image = {
+            baseName = "nixos-${vm.hostname}";
+            format = "qcow2";
+            efiSupport = false;
+          };
+
+          virtualisation.diskSize = 8192;
+
+          services.qemuGuest.enable = true;
+          services.fstrim.enable = true;
+
+          boot.growPartition = true;
+          boot.kernelParams = [ "console=ttyS0" ];
+          boot.initrd.availableKernelModules = [
+            "virtio_pci"
+            "virtio_blk"
+            "virtio_scsi"
+            "sd_mod"
+            "sr_mod"
+          ];
+
+          system.stateVersion = "26.05";
+        };
+
       mkExternalVm =
         {
           name,
@@ -145,12 +212,12 @@
 
         minecraft = mkExternalVm {
           name = "minecraft";
-          module = inputs.minecraft.nixosModules.minecraft;
+          module = minecraftStandaloneModule;
         };
 
         minecraftImage = mkExternalImage {
           name = "minecraft";
-          module = inputs.minecraft.nixosModules.minecraft-image;
+          module = minecraftImageModule;
         };
 
         dav = mkExternalVm {

@@ -22,10 +22,7 @@ let
       inputs.forgejo.nixosModules.forgejo-service
       inputs.forgejo.nixosModules.forgejo-bootstrap
     ];
-    minecraft = [
-      inputs.minecraft.nixosModules.minecraft-service
-      inputs.minecraft.nixosModules.minecraft-web
-    ];
+    minecraft = [ inputs.minecraft.nixosModules.minecraft-service ];
     dav = [ ../services/dav.nix ];
   };
 

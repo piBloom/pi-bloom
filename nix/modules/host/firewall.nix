@@ -1,7 +1,6 @@
-{ fleet, lib, ... }:
+{ fleet, ... }:
 let
   minecraft = fleet.vms.minecraft;
-  minecraftWebPorts = minecraft.webPorts or [ 80 ];
   mcPort = minecraft.minecraft.port or 25565;
   mcVoicePort = minecraft.minecraft.voiceChatPort or 24454;
 in
@@ -13,10 +12,10 @@ in
     allowPing = true;
     checkReversePath = "loose";
 
-    # Most public host services stay closed here. Public OpenSSH is deliberately
-    # opened in nix/modules/host/ssh.nix for alex-only key-based access; root SSH
-    # is disabled. Public Minecraft is DNATed to the Minecraft MicroVM below, not
-    # accepted as host-local INPUT traffic.
+    # Public OpenSSH stays open in nix/modules/host/ssh.nix as a hardened
+    # alex-only, key-only break-glass path. Public WireGuard is opened in
+    # nix/modules/host/wireguard.nix. All application services stay private to
+    # wg0 except the approved Minecraft game/voice DNAT below.
     allowedTCPPorts = [ ];
     allowedUDPPorts = [ ];
 
@@ -25,12 +24,8 @@ in
       ip saddr 10.10.10.0/24 accept
       ip daddr 10.10.10.0/24 ct state established,related accept
 
-      # Approved public Balaur exposure: the small website plus Minecraft game
-      # traffic are DNATed to the Minecraft MicroVM. Administration is SSH-only
-      # as alex on the host, then private NAT aliases from nazar.
-      ${lib.concatMapStringsSep "\n      " (
-        port: ''iifname "enp0s31f6" ip daddr ${minecraft.ip} tcp dport ${toString port} accept''
-      ) minecraftWebPorts}
+      # Approved public Balaur exposure: Minecraft game traffic only. There is
+      # intentionally no public TCP/80 web DNAT to the Minecraft MicroVM.
       iifname "enp0s31f6" ip daddr ${minecraft.ip} tcp dport ${toString mcPort} accept
       iifname "enp0s31f6" ip daddr ${minecraft.ip} udp dport ${toString mcVoicePort} accept
     '';
@@ -41,24 +36,18 @@ in
     externalInterface = "enp0s31f6";
     externalIP = "167.235.12.22";
     internalIPs = [ "10.10.10.0/24" ];
-    forwardPorts =
-      (map (port: {
-        sourcePort = port;
-        destination = "${minecraft.ip}:${toString port}";
+    forwardPorts = [
+      {
+        sourcePort = mcPort;
+        destination = "${minecraft.ip}:${toString mcPort}";
         proto = "tcp";
-      }) minecraftWebPorts)
-      ++ [
-        {
-          sourcePort = mcPort;
-          destination = "${minecraft.ip}:${toString mcPort}";
-          proto = "tcp";
-        }
-        {
-          sourcePort = mcVoicePort;
-          destination = "${minecraft.ip}:${toString mcVoicePort}";
-          proto = "udp";
-        }
-      ];
+      }
+      {
+        sourcePort = mcVoicePort;
+        destination = "${minecraft.ip}:${toString mcVoicePort}";
+        proto = "udp";
+      }
+    ];
   };
 
   boot.kernel.sysctl = {
