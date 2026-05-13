@@ -8,6 +8,11 @@ in
   environment.systemPackages = [
     pi
     pkgs.nodejs
+
+    # LSP servers for pi-lens (avoids broken auto-installer)
+    pkgs.nixd                       # Nix
+    pkgs.typescript-language-server  # TypeScript/JavaScript
+    pkgs.python3.pkgs.pyright       # Python
   ];
 
   environment.sessionVariables = {
