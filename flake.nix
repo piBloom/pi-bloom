@@ -33,11 +33,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    forgejo = {
-      url = "git+ssh://git@git.nazar.studio:10022/nazar/forgejo.git";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     minecraft = {
       url = "git+ssh://git@git.nazar.studio:10022/nazar/minecraft.git";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -80,6 +75,80 @@
       ];
 
       agentVmModules = [ ./nix/modules/common/pi-agent.nix ];
+
+      forgejoServiceModules = [
+        ./nix/modules/services/forgejo.nix
+        ./nix/modules/services/forgejo-bootstrap.nix
+      ];
+
+      forgejoStandaloneModule =
+        { lib, ... }:
+        {
+          imports = forgejoServiceModules;
+
+          # VM 101 is deployed from the generated qcow2 image on a single legacy-BIOS
+          # VirtIO disk. Keep the normal rebuild/deploy target aligned with that
+          # installed shape so deploy-rs can switch it without expecting an EFI /boot.
+          boot.loader.systemd-boot.enable = lib.mkForce false;
+          boot.loader.efi.canTouchEfiVariables = lib.mkForce false;
+          boot.loader.grub = {
+            enable = true;
+            device = "/dev/vda";
+          };
+          boot.growPartition = true;
+          boot.kernelParams = [ "console=ttyS0" ];
+          boot.initrd.availableKernelModules = [
+            "virtio_pci"
+            "virtio_blk"
+            "virtio_scsi"
+            "sd_mod"
+            "sr_mod"
+          ];
+
+          fileSystems."/" = {
+            device = lib.mkForce "/dev/disk/by-label/nixos";
+            fsType = lib.mkForce "ext4";
+            options = lib.mkForce [
+              "x-systemd.growfs"
+              "x-initrd.mount"
+            ];
+          };
+
+          swapDevices = [ ];
+
+          system.stateVersion = "26.05";
+        };
+
+      forgejoImageModule =
+        { vm, ... }:
+        {
+          imports = forgejoServiceModules;
+
+          image = {
+            baseName = "nixos-${vm.hostname}";
+            format = "qcow2";
+            # Use legacy BIOS for the imported Proxmox qcow2 to avoid needing an EFI
+            # vars disk in the initial rebuild. Future VMs can choose OVMF explicitly.
+            efiSupport = false;
+          };
+
+          virtualisation.diskSize = 8192;
+
+          services.qemuGuest.enable = true;
+          services.fstrim.enable = true;
+
+          boot.growPartition = true;
+          boot.kernelParams = [ "console=ttyS0" ];
+          boot.initrd.availableKernelModules = [
+            "virtio_pci"
+            "virtio_blk"
+            "virtio_scsi"
+            "sd_mod"
+            "sr_mod"
+          ];
+
+          system.stateVersion = "26.05";
+        };
 
       minecraftServiceModule = inputs.minecraft.nixosModules.minecraft-service;
 
@@ -149,6 +218,35 @@
           system.stateVersion = "26.05";
         };
 
+      davServerImageModule =
+        { vm, ... }:
+        {
+          imports = [ ./nix/modules/services/dav-server.nix ];
+
+          image = {
+            baseName = "nixos-${vm.hostname}";
+            format = "qcow2";
+            efiSupport = false;
+          };
+
+          virtualisation.diskSize = 8192;
+
+          services.qemuGuest.enable = true;
+          services.fstrim.enable = true;
+
+          boot.growPartition = true;
+          boot.kernelParams = [ "console=ttyS0" ];
+          boot.initrd.availableKernelModules = [
+            "virtio_pci"
+            "virtio_blk"
+            "virtio_scsi"
+            "sd_mod"
+            "sr_mod"
+          ];
+
+          system.stateVersion = "26.05";
+        };
+
       mkExternalVm =
         {
           name,
@@ -188,6 +286,15 @@
         };
     in
     {
+      nixosModules = {
+        forgejo-service = ./nix/modules/services/forgejo.nix;
+        forgejo-bootstrap = ./nix/modules/services/forgejo-bootstrap.nix;
+        forgejo = forgejoStandaloneModule;
+        forgejo-image = forgejoImageModule;
+        dav-server-service = ./nix/modules/services/dav-server.nix;
+        dav-server-image = davServerImageModule;
+      };
+
       nixosConfigurations = {
         nazar = nixpkgs.lib.nixosSystem {
           inherit system;
@@ -211,13 +318,13 @@
 
         git = mkExternalVm {
           name = "git";
-          module = inputs.forgejo.nixosModules.forgejo;
+          module = forgejoStandaloneModule;
           includeQemuGuest = true;
         };
 
         gitImage = mkExternalImage {
           name = "git";
-          module = inputs.forgejo.nixosModules.forgejo-image;
+          module = forgejoImageModule;
         };
 
         minecraft = mkExternalVm {
@@ -230,15 +337,15 @@
           module = minecraftImageModule;
         };
 
-        dav = mkExternalVm {
-          name = "dav";
-          module = ./nix/modules/services/dav.nix;
+        "dav-server" = mkExternalVm {
+          name = "dav-server";
+          module = ./nix/modules/services/dav-server.nix;
           includeQemuGuest = true;
         };
 
-        davImage = mkExternalImage {
-          name = "dav";
-          module = ./nix/modules/services/dav.nix;
+        "dav-server-image" = mkExternalImage {
+          name = "dav-server";
+          module = davServerImageModule;
         };
       };
 
@@ -246,7 +353,7 @@
         inherit pi;
         git-qcow2 = self.nixosConfigurations.gitImage.config.system.build.image;
         minecraft-qcow2 = self.nixosConfigurations.minecraftImage.config.system.build.image;
-        dav-qcow2 = self.nixosConfigurations.davImage.config.system.build.image;
+        dav-server-qcow2 = self.nixosConfigurations."dav-server-image".config.system.build.image;
       };
 
       deploy.nodes = nixpkgs.lib.mapAttrs (name: vm: {
@@ -286,7 +393,7 @@
           };
           deploy-git = mkDeployApp "git";
           deploy-minecraft = mkDeployApp "minecraft";
-          deploy-dav = mkDeployApp "dav";
+          deploy-dav-server = mkDeployApp "dav-server";
           deploy-all = {
             type = "app";
             program = toString (

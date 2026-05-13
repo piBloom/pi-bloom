@@ -7,23 +7,23 @@
 let
   repoInputName =
     {
-      git = "forgejo";
+      git = "nazar";
       minecraft = "minecraft";
-      dav = "dav";
+      dav-server = "dav-server";
     }
     .${vm.hostname} or vm.hostname;
   repoName =
     {
-      git = "forgejo";
+      git = "nazar";
       minecraft = "minecraft";
-      dav = "dav";
+      dav-server = "dav-server";
     }
     .${vm.hostname} or vm.hostname;
   serviceModuleName =
     {
       git = "forgejo";
       minecraft = "minecraft";
-      dav = "dav";
+      dav-server = "dav-server";
     }
     .${vm.hostname} or vm.hostname;
   repoRoot = "/home/alex/${repoName}";
@@ -38,10 +38,16 @@ let
   includeCommonAgent = true;
   includeQemuGuest = lib.elem vm.hostname [
     "git"
-    "dav"
+    "dav-server"
   ];
   selfFlakeRoot = "/etc/nazar/self";
-  selfSwitchFlake = "${selfFlakeRoot}#${vm.hostname}";
+  selfSwitchFlake =
+    if vm.hostname == "git" then "${repoRoot}#${vm.hostname}" else "${selfFlakeRoot}#${vm.hostname}";
+  fallbackUpdateCommand =
+    if vm.hostname == "git" then
+      "# no flake lock update needed; Forgejo is part of the Nazar flake"
+    else
+      "nix flake lock --update-input ${repoInputName}";
   context = {
     host = "nazar";
     orchestratorRepo = "/root/nazar";
@@ -70,7 +76,7 @@ let
     productionDeploy = {
       authority = vm.hostname;
       app = deployApp;
-      updateLockCommand = "nix flake lock --update-input ${repoInputName}";
+      updateLockCommand = fallbackUpdateCommand;
       deployCommand = "nix run .#${deployApp}";
       fallbackAuthority = "nazar";
     };
@@ -131,7 +137,7 @@ let
 
     ```bash
     cd /root/nazar
-    nix flake lock --update-input ${repoInputName}
+    ${fallbackUpdateCommand}
     nix flake check --no-build
     nix run .#${deployApp}
     ```
@@ -232,6 +238,7 @@ let
     repo_input=${lib.escapeShellArg repoInputName}
     deploy_app=${lib.escapeShellArg deployApp}
     self_flake=${lib.escapeShellArg selfSwitchFlake}
+    fallback_update_command=${lib.escapeShellArg fallbackUpdateCommand}
 
     if [ ! -d "$repo_root/.git" ]; then
       echo "No git checkout found at $repo_root." >&2
@@ -282,7 +289,7 @@ let
     Nazar fallback deploy path after the desired commit is pushed:
 
       cd /root/nazar
-      nix flake lock --update-input $repo_input
+      $fallback_update_command
       nix flake check --no-build
       nix run .#$deploy_app
 
@@ -307,10 +314,12 @@ let
 
         llm-agents.url = "github:numtide/llm-agents.nix";
 
-        "${repoInputName}" = {
-          url = "path:${repoRoot}";
-          inputs.nixpkgs.follows = "nixpkgs";
-        };
+        ${lib.optionalString (vm.hostname != "git") ''
+          "${repoInputName}" = {
+            url = "path:${repoRoot}";
+            inputs.nixpkgs.follows = "nixpkgs";
+          };
+        ''}
       };
 
       outputs =
@@ -336,11 +345,16 @@ let
           ];
           agentVmModules = [ ./nix/modules/common/pi-agent.nix ];
           qemuGuestModules = [ ./nix/modules/common/qemu-guest.nix ];
-          serviceModule =
-            if "${serviceModuleName}" == "dav" then
-              ./nix/modules/services/dav.nix
+          serviceModules =
+            if "${serviceModuleName}" == "forgejo" then
+              [
+                ./nix/modules/services/forgejo.nix
+                ./nix/modules/services/forgejo-bootstrap.nix
+              ]
+            else if "${serviceModuleName}" == "dav-server" then
+              [ ./nix/modules/services/dav-server.nix ]
             else
-              inputs."${repoInputName}".nixosModules."${serviceModuleName}";
+              [ inputs."${repoInputName}".nixosModules."${serviceModuleName}" ];
         in
         {
           nixosConfigurations."${vm.hostname}" = nixpkgs.lib.nixosSystem {
@@ -356,7 +370,7 @@ let
               ++ commonVmModules
               ++ nixpkgs.lib.optionals ${if includeQemuGuest then "true" else "false"} qemuGuestModules
               ++ nixpkgs.lib.optionals ${if includeCommonAgent then "true" else "false"} agentVmModules
-              ++ [ serviceModule ];
+              ++ serviceModules;
           };
         };
     }
@@ -380,7 +394,9 @@ let
     cp ${../../packages/pi/hashes.json} "$out/nix/packages/pi/hashes.json"
     cp ${../../packages/pi/package-lock.json} "$out/nix/packages/pi/package-lock.json"
     cp ${./qemu-guest.nix} "$out/nix/modules/common/qemu-guest.nix"
-    cp ${../services/dav.nix} "$out/nix/modules/services/dav.nix"
+    cp ${../services/forgejo.nix} "$out/nix/modules/services/forgejo.nix"
+    cp ${../services/forgejo-bootstrap.nix} "$out/nix/modules/services/forgejo-bootstrap.nix"
+    cp ${../services/dav-server.nix} "$out/nix/modules/services/dav-server.nix"
   '';
 in
 {

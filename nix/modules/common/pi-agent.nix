@@ -7,9 +7,9 @@
 let
   repoName =
     {
-      git = "forgejo";
+      git = "nazar";
       minecraft = "minecraft";
-      dav = "dav";
+      dav-server = "dav-server";
     }
     .${vm.hostname} or vm.hostname;
   repoRoot = "/home/alex/${repoName}";

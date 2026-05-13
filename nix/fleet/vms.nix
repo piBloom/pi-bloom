@@ -166,10 +166,10 @@
       };
     };
 
-    dav = {
+    dav-server = {
       vmid = 121;
-      hostname = "dav";
-      service = "dav";
+      hostname = "dav-server";
+      service = "dav-server";
       ip = "10.10.10.41";
       mac = "BC:24:11:0A:4B:21";
       microvm = {
@@ -177,14 +177,14 @@
         mac = "02:00:00:00:00:41";
         shares = [
           {
-            tag = "dav-data";
-            source = "/persist/microvms/dav/data";
-            mountPoint = "/var/lib/dav";
+            tag = "dav-server-data";
+            source = "/persist/microvms/dav-server/data";
+            mountPoint = "/var/lib/dav-server";
             proto = "virtiofs";
           }
           {
-            tag = "dav-radicale";
-            source = "/persist/microvms/dav/radicale";
+            tag = "dav-server-radicale";
+            source = "/persist/microvms/dav-server/radicale";
             mountPoint = "/var/lib/radicale/collections";
             proto = "virtiofs";
           }
@@ -200,28 +200,27 @@
       startupOrder = 41;
       role = "private personal DAV, CalDAV, CardDAV, WebDAV, and markdown wiki data VM";
 
-      dav = {
-        domain = "dav.nazar.studio";
+      davServer = {
         radicalePort = 5232;
         httpPort = 80;
         auth = {
           enable = true;
           realm = "Nazar DAV";
-          htpasswdFile = "/var/lib/dav/secrets/dav-htpasswd";
+          htpasswdFile = "/var/lib/dav-server/secrets/dav-server-htpasswd";
         };
-        stateDir = "/var/lib/dav";
-        webdavRoot = "/var/lib/dav/webdav";
+        stateDir = "/var/lib/dav-server";
+        webdavRoot = "/var/lib/dav-server/webdav";
         radicaleStateDir = "/var/lib/radicale/collections";
         gitBackup = {
           enable = true;
-          sourceDir = "/var/lib/dav/webdav/wiki";
-          workTree = "/var/lib/dav/wiki-git-backup";
+          sourceDir = "/var/lib/dav-server/webdav/wiki";
+          workTree = "/var/lib/dav-server/wiki-git-backup";
           # Use the private NAT bridge for VM-to-VM backup pushes. Public and
           # admin clients continue to use git.nazar.studio through nazar.
           repo = "ssh://git@10.10.10.21:10022/nazar/personal-wiki-backup.git";
           branch = "main";
-          sshKeyFile = "/var/lib/dav/secrets/wiki-backup-ed25519";
-          knownHostsFile = "/var/lib/dav/secrets/wiki-backup-known_hosts";
+          sshKeyFile = "/var/lib/dav-server/secrets/dav-server-wiki-backup-ed25519";
+          knownHostsFile = "/var/lib/dav-server/secrets/dav-server-wiki-backup-known_hosts";
           onCalendar = "hourly";
         };
       };

@@ -19,11 +19,11 @@ let
 
   serviceModules = {
     git = [
-      inputs.forgejo.nixosModules.forgejo-service
-      inputs.forgejo.nixosModules.forgejo-bootstrap
+      ../services/forgejo.nix
+      ../services/forgejo-bootstrap.nix
     ];
     minecraft = [ inputs.minecraft.nixosModules.minecraft-service ];
-    dav = [ ../services/dav.nix ];
+    dav-server = [ ../services/dav-server.nix ];
   };
 
   mkMicrovm = name: vm: {

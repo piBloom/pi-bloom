@@ -1,7 +1,7 @@
 { fleet, pkgs, ... }:
 let
   git = fleet.vms.git;
-  dav = fleet.vms.dav;
+  davServer = fleet.vms."dav-server";
   wireguardIp = "10.44.0.1";
 in
 {
@@ -24,7 +24,7 @@ in
       };
     };
 
-    virtualHosts.${dav.dns} = {
+    virtualHosts.${davServer.dns} = {
       listen = [
         {
           addr = wireguardIp;
@@ -32,7 +32,7 @@ in
         }
       ];
       locations."/" = {
-        proxyPass = "http://${dav.ip}:${toString dav.dav.httpPort}";
+        proxyPass = "http://${davServer.ip}:${toString davServer.davServer.httpPort}";
         proxyWebsockets = true;
       };
     };
@@ -42,7 +42,7 @@ in
     after = [
       "wireguard-wg0.service"
       "microvm@git.service"
-      "microvm@dav.service"
+      "microvm@dav-server.service"
     ];
     wants = [ "wireguard-wg0.service" ];
   };

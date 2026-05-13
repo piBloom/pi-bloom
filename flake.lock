@@ -138,26 +138,6 @@
         "type": "github"
       }
     },
-    "forgejo": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1778613883,
-        "narHash": "sha256-JUmMBjcWUUtdNmvcbIVPIvGUBKzyHrJicepwYD41cT8=",
-        "ref": "refs/heads/main",
-        "rev": "aaee75c479d461880353d61271a9b0c65b5b67e2",
-        "revCount": 1,
-        "type": "git",
-        "url": "ssh://git@git.nazar.studio:10022/nazar/forgejo.git"
-      },
-      "original": {
-        "type": "git",
-        "url": "ssh://git@git.nazar.studio:10022/nazar/forgejo.git"
-      }
-    },
     "llm-agents": {
       "inputs": {
         "blueprint": "blueprint",
@@ -258,7 +238,6 @@
       "inputs": {
         "deploy-rs": "deploy-rs",
         "disko": "disko",
-        "forgejo": "forgejo",
         "llm-agents": "llm-agents",
         "microvm": "microvm",
         "minecraft": "minecraft",

@@ -8,7 +8,7 @@ let
   gateway = fleet.defaults.gateway;
   dnsServers = fleet.defaults.nameservers;
   serviceExtraTcpPorts = {
-    dav = [ (vm.dav.httpPort or 80) ];
+    dav-server = [ (vm.davServer.httpPort or 80) ];
   };
 in
 {
