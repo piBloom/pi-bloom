@@ -40,7 +40,7 @@ Private WireGuard services:
 - `git.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to Forgejo and Git SSH via host socat on `10022/tcp`.
 - `ownloom.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to the OwnLoom MicroVM.
 - `dav.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to the DAV Server MicroVM when it is running.
-- `/nixpi/` on `git.nazar.studio`, `ownloom.nazar.studio`, and `dav.nazar.studio`, HTTP via host nginx to the matching VM-local NixPi service.
+- `/nixpi/` on each VM service domain/alias (`git.nazar.studio`, `balaur.eu`, `balaur.nazar.studio`, `ownloom.nazar.studio`, `dav.nazar.studio`), HTTP via host nginx to the matching VM-local NixPi service.
 - `nixpi.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to the host-local NixPi service.
 - `nixpi-git.nazar.studio`, `nixpi-minecraft.nazar.studio`, `nixpi-ownloom.nazar.studio`, `nixpi-dav-server.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to each VM-local NixPi service.
 - DNS for WireGuard clients is dnsmasq on `10.44.0.1`, bound to `wg0` only, forwarding other queries upstream.
@@ -67,11 +67,11 @@ runbooks/                 # operational runbooks
 | Minecraft | `minecraft` / `10.10.10.30` | `balaur.eu`, `balaur.nazar.studio`; public game `25565/tcp`, voice `24454/udp` | no public webapp |
 | OwnLoom | `ownloom` / `10.10.10.40` | `ownloom.nazar.studio` on WireGuard (`10.44.0.1`) | private self-evolving agent web app; connected to DAV wiki scope `/files/wiki/ownloom/` |
 | DAV Server | `dav-server` / `10.10.10.41` | `dav.nazar.studio` on WireGuard (`10.44.0.1`) | WebDAV `/files/`, CalDAV/CardDAV `/radicale/`; autostarted for OwnLoom |
-| NixPi | host + every MicroVM | `/nixpi/` on private service domains plus `nixpi*.nazar.studio` on WireGuard | private web interface for Pi RPC sessions; no public exposure |
+| NixPi | host + every MicroVM | `/nixpi/` on each private service domain/alias plus `nixpi*.nazar.studio` on WireGuard | private web interface for Pi RPC sessions; route exposure controlled by `nix/fleet/exposure.nix` |
 
 ## DNS intent
 
-Public DNS should publish only names that are intentionally public, currently the Minecraft game names `balaur.eu` and `balaur.nazar.studio` pointing at `167.235.12.22`. Private service names such as `git.nazar.studio`, `ownloom.nazar.studio`, `dav.nazar.studio`, and all `nixpi*.nazar.studio` names should not have public A/AAAA records; WireGuard clients resolve them through dnsmasq on `10.44.0.1`.
+Public DNS should publish only names that are intentionally public, currently the Minecraft game names `balaur.eu` and `balaur.nazar.studio` pointing at `167.235.12.22`. WireGuard dnsmasq overrides private HTTP/operator routes to `10.44.0.1`, including `balaur.eu`/`balaur.nazar.studio` for `/nixpi/`. Private service names such as `git.nazar.studio`, `ownloom.nazar.studio`, `dav.nazar.studio`, and all `nixpi*.nazar.studio` names should not have public A/AAAA records.
 
 ## Fleet orchestration
 
@@ -112,6 +112,7 @@ dig @10.44.0.1 nixpi.nazar.studio +short
 dig @10.44.0.1 nixpi-ownloom.nazar.studio +short
 curl -I http://git.nazar.studio/
 curl -I http://git.nazar.studio/nixpi/
+curl -I http://balaur.nazar.studio/nixpi/
 git ls-remote ssh://git@git.nazar.studio:10022/nazar/nazar.git
 ```
 

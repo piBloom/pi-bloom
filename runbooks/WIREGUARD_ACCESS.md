@@ -53,6 +53,8 @@ sudo wg show wg0 public-key
 Private records served by dnsmasq on `10.44.0.1`:
 
 - `git.nazar.studio` -> `10.44.0.1`
+- `balaur.eu` -> `10.44.0.1` for private HTTP/operator paths such as `/nixpi/`
+- `balaur.nazar.studio` -> `10.44.0.1` for private HTTP/operator paths such as `/nixpi/`
 - `ownloom.nazar.studio` -> `10.44.0.1`
 - `dav.nazar.studio` -> `10.44.0.1`
 - `nixpi.nazar.studio` -> `10.44.0.1`
@@ -65,7 +67,7 @@ Other DNS queries are forwarded upstream by dnsmasq.
 
 ## Public exposure model
 
-Keep public DNS limited to intentionally public services such as Minecraft game names `balaur.eu` and `balaur.nazar.studio` pointing at `167.235.12.22`. Do not publish public A/AAAA/CNAME records for `git.nazar.studio`, `ownloom.nazar.studio`, `dav.nazar.studio`, or `nixpi*.nazar.studio`; those names are private WireGuard DNS records.
+Keep public DNS limited to intentionally public services such as Minecraft game names `balaur.eu` and `balaur.nazar.studio` pointing at `167.235.12.22`. WireGuard dnsmasq intentionally overrides those Minecraft names to `10.44.0.1` for private HTTP/operator paths such as `/nixpi/`. Do not publish public A/AAAA/CNAME records for `git.nazar.studio`, `ownloom.nazar.studio`, `dav.nazar.studio`, or `nixpi*.nazar.studio`; those names are private WireGuard DNS records.
 
 Public firewall intent:
 
@@ -97,10 +99,12 @@ From a WireGuard client:
 dig @10.44.0.1 git.nazar.studio +short
 dig @10.44.0.1 ownloom.nazar.studio +short
 dig @10.44.0.1 dav.nazar.studio +short
+dig @10.44.0.1 balaur.nazar.studio +short
 dig @10.44.0.1 nixpi.nazar.studio +short
 dig @10.44.0.1 nixpi-ownloom.nazar.studio +short
 curl -I http://git.nazar.studio/
 curl -I http://git.nazar.studio/nixpi/
+curl -I http://balaur.nazar.studio/nixpi/
 curl -I http://ownloom.nazar.studio/
 curl -I http://dav.nazar.studio/
 curl -I http://nixpi.nazar.studio/

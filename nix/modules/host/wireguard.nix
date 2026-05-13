@@ -1,18 +1,53 @@
 {
+  fleet,
+  lib,
+  ...
+}:
+let
+  exposure = import ../../fleet/exposure.nix;
+
+  isPrivateAccess = route:
+    (route.enable or false) && lib.elem (route.access or "wireguard") [
+      "wireguard"
+      "public"
+    ];
+
+  domainsFor = vm: [ vm.dns ] ++ (vm.aliases or [ ]);
+
+  vmHasPrivateRoute = name:
+    let
+      vmExposure = exposure.vms.${name} or { };
+    in
+    lib.any isPrivateAccess [
+      (vmExposure.service or { })
+      (vmExposure.nixpi or { })
+      (vmExposure.subagent or { })
+    ];
+
+  privateServiceDomains = lib.concatMap (
+    name:
+    if vmHasPrivateRoute name then domainsFor fleet.vms.${name} else [ ]
+  ) (lib.attrNames fleet.vms);
+
+  privateNixpiDomains = lib.concatMap (
+    name:
+    let
+      vm = fleet.vms.${name};
+      vmExposure = exposure.vms.${name} or { };
+    in
+    lib.optional (isPrivateAccess (vmExposure.nixpi or { })) vm.nixpi.dns
+  ) (lib.attrNames fleet.vms);
+
+  hostNixpiDomains = lib.optional (isPrivateAccess (exposure.host.nixpi or { })) exposure.host.nixpi.domain;
+
+  privateDomains = lib.unique (privateServiceDomains ++ privateNixpiDomains ++ hostNixpiDomains);
+in
+{
   networking.wireguard.useNetworkd = false;
 
   # Keep the host itself aligned with the WireGuard-private DNS view so local
   # deploy/push commands use the private proxies instead of public DNS.
-  networking.hosts."10.44.0.1" = [
-    "git.nazar.studio"
-    "dav.nazar.studio"
-    "ownloom.nazar.studio"
-    "nixpi.nazar.studio"
-    "nixpi-git.nazar.studio"
-    "nixpi-minecraft.nazar.studio"
-    "nixpi-ownloom.nazar.studio"
-    "nixpi-dav-server.nazar.studio"
-  ];
+  networking.hosts."10.44.0.1" = privateDomains;
 
   networking.wireguard.interfaces.wg0 = {
     ips = [ "10.44.0.1/24" ];
@@ -52,16 +87,7 @@
         "1.1.1.1"
         "9.9.9.9"
       ];
-      address = [
-        "/git.nazar.studio/10.44.0.1"
-        "/dav.nazar.studio/10.44.0.1"
-        "/ownloom.nazar.studio/10.44.0.1"
-        "/nixpi.nazar.studio/10.44.0.1"
-        "/nixpi-git.nazar.studio/10.44.0.1"
-        "/nixpi-minecraft.nazar.studio/10.44.0.1"
-        "/nixpi-ownloom.nazar.studio/10.44.0.1"
-        "/nixpi-dav-server.nazar.studio/10.44.0.1"
-      ];
+      address = map (domain: "/${domain}/10.44.0.1") privateDomains;
     };
   };
 

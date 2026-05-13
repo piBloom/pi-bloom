@@ -9,10 +9,9 @@ NixPi is an operator surface: it can drive Pi as `alex` in the configured workin
 Primary per-service paths:
 
 - Git VM UI: `http://git.nazar.studio/nixpi/` -> `10.10.10.21:4815`
+- Minecraft VM UI: `http://balaur.eu/nixpi/` and `http://balaur.nazar.studio/nixpi/` -> `10.10.10.30:4815` over WireGuard DNS
 - OwnLoom VM UI: `http://ownloom.nazar.studio/nixpi/` -> `10.10.10.40:4815`
 - DAV Server VM UI: `http://dav.nazar.studio/nixpi/` -> `10.10.10.41:4815`
-
-There is no public `/nixpi/` route on Minecraft game domains such as `balaur.eu`; use the dedicated private WireGuard name for the Minecraft VM.
 
 Dedicated private names are also available:
 
@@ -22,7 +21,29 @@ Dedicated private names are also available:
 - OwnLoom VM UI: `http://nixpi-ownloom.nazar.studio/` -> `10.10.10.40:4815`
 - DAV Server VM UI: `http://nixpi-dav-server.nazar.studio/` -> `10.10.10.41:4815`
 
-All dedicated names resolve to `10.44.0.1` through WireGuard dnsmasq and are proxied by host nginx. Do not add public DNS for these names.
+All private service domains and dedicated NixPi names resolve to `10.44.0.1` through WireGuard dnsmasq and are proxied by host nginx. Do not add public DNS for `nixpi*.nazar.studio` names.
+
+## Declarative exposure switch
+
+HTTP route policy lives in `nix/fleet/exposure.nix`.
+
+Each route has an `access` value:
+
+- `"wireguard"` — route is served only on host nginx's WireGuard listener (`10.44.0.1:80`).
+- `"public"` — route is also served on the host public IPv4 listener and opens public TCP/80.
+
+Current routes are WireGuard-only. To intentionally publish a future route such as `/subagent/`, enable it and set its access explicitly, for example:
+
+```nix
+vms.ownloom.subagent = {
+  enable = true;
+  path = "/subagent/";
+  port = 4815;
+  access = "public";
+};
+```
+
+Do not set `access = "public"` for NixPi unless the operator surface has had a separate auth/hardening review.
 
 ## State
 
@@ -83,6 +104,7 @@ From a WireGuard client:
 dig @10.44.0.1 nixpi.nazar.studio +short
 dig @10.44.0.1 nixpi-ownloom.nazar.studio +short
 curl -I http://git.nazar.studio/nixpi/
+curl -I http://balaur.nazar.studio/nixpi/
 curl -I http://ownloom.nazar.studio/nixpi/
 curl -I http://nixpi.nazar.studio/
 curl -I http://nixpi-ownloom.nazar.studio/
@@ -94,6 +116,23 @@ Inside each VM:
 systemctl is-active nixpi
 curl -I http://127.0.0.1:4815/
 ```
+
+## Troubleshooting 502 Bad Gateway
+
+A 502 from `*/nixpi/` means host nginx is reachable but the backend NixPi service is not reachable. Check:
+
+```bash
+# host
+systemctl status nginx
+journalctl -u nginx -n 100 --no-pager
+
+# matching VM
+ssh alex@<vm-hostname>
+systemctl status nixpi
+curl -I http://127.0.0.1:4815/
+```
+
+If the host was rebuilt but the VM was not redeployed, run the relevant deploy app (`nix run .#deploy-git`, `.#deploy-minecraft`, `.#deploy-ownloom`, or `.#deploy-dav-server`) so the VM-local `nixpi` systemd service exists and is running.
 
 ## Rollback
 
