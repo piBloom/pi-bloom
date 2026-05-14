@@ -108,15 +108,18 @@ in
       token_file=${cfg.stateDir}/.nazar-vm-git-key-sync-token
       key_root=/var/lib/nazar/fleet-git-keys
       api=http://127.0.0.1:${toString cfg.settings.server.HTTP_PORT}/api/v1
+      forgejo_cli() {
+        ${pkgs.util-linux}/bin/runuser -u ${cfg.user} -- ${forgejo} "$@"
+      }
 
-      if ! ${forgejo} admin user list | awk '{ print $2 }' | grep -qx nazar; then
+      if ! forgejo_cli admin user list | awk '{ print $2 }' | grep -qx nazar; then
         echo "Forgejo user nazar does not exist yet; skipping VM Git key sync."
         exit 0
       fi
 
       if [ ! -s "$token_file" ]; then
         umask 077
-        ${forgejo} admin user generate-access-token \
+        forgejo_cli admin user generate-access-token \
           --username nazar \
           --token-name nazar-vm-git-key-sync \
           --scopes all > "$token_file.raw"
