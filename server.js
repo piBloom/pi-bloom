@@ -15,19 +15,20 @@
  */
 
 import { spawn } from "node:child_process";
-import {
-	existsSync,
-	mkdirSync,
-	readdirSync,
-	readFileSync,
-	renameSync,
-	unlinkSync,
-} from "node:fs";
+import { existsSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import express from "express";
 import { WebSocketServer } from "ws";
+import {
+	archiveSession,
+	deleteSession,
+	parseArchivedSessions,
+	parseSessions,
+	restoreSession,
+} from "./sessions.js";
+import { createWorkspaceManager } from "./workspaces.js";
 
 // ── Config ──────────────────────────────────────────────────────────────
 const PORT = parseInt(process.env.NIXPI_PORT || "4815", 10);
@@ -71,243 +72,24 @@ const DOMPURIFY_PATH = resolveModuleFile("dompurify", "dist/purify.js");
 // Workspace config is loaded from workspaces.json (Nix-managed).
 // Each workspace has: name, cwd, mode ("local"|"ssh"), context, and
 // optional sshHost/sshUser for remote workspaces.
-
-const workspaceConfig = (() => {
-	if (!WORKSPACES_CONFIG) return null;
-	try {
-		const raw = readFileSync(WORKSPACES_CONFIG, "utf8");
-		return JSON.parse(raw);
-	} catch (e) {
-		console.error(
-			`  workspaces config: failed to load ${WORKSPACES_CONFIG}:`,
-			e.message,
-		);
-		return null;
-	}
-})();
-
-const workspaces = new Map(); // name → workspace state
-let activeWorkspaceName = null;
-
-function initWorkspaces() {
-	if (!workspaceConfig?.workspaces) {
-		// Legacy single-workspace mode (no workspaces.json)
-		workspaces.set("default", {
-			name: "default",
-			cwd: CWD,
-			mode: "local",
-			context: "",
-			sshHost: null,
-			sshUser: "alex",
-			// Runtime state
-			piProc: null,
-			busy: false,
-			piConnected: false,
-			piHealthInterval: null,
-			idleTimer: null,
-			lineBuffer: "",
-			requestId: 0,
-			pendingRequests: new Map(),
-			restarting: false,
-			cachedCommands: [],
-			currentSessionFile: null,
-			currentSessionId: null,
-			historyLoadPending: false,
-			currentModel: null,
-			currentThinkingLevel: "medium",
-		});
-		activeWorkspaceName = "default";
-		return;
-	}
-
-	const defaultName =
-		workspaceConfig.default || Object.keys(workspaceConfig.workspaces)[0];
-	for (const [name, ws] of Object.entries(workspaceConfig.workspaces)) {
-		workspaces.set(name, {
-			name,
-			cwd: ws.cwd || CWD,
-			mode: ws.mode || "local",
-			sshHost: ws.sshHost || null,
-			sshUser: ws.sshUser || "alex",
-			context: ws.context || "",
-			// Runtime state
-			piProc: null,
-			busy: false,
-			piConnected: false,
-			piHealthInterval: null,
-			idleTimer: null,
-			lineBuffer: "",
-			requestId: 0,
-			pendingRequests: new Map(),
-			restarting: false,
-			cachedCommands: [],
-			currentSessionFile: null,
-			currentSessionId: null,
-			historyLoadPending: false,
-			currentModel: null,
-			currentThinkingLevel: "medium",
-		});
-	}
-	activeWorkspaceName = defaultName;
-}
-
-function getActive() {
-	return workspaces.get(activeWorkspaceName);
-}
-
-// Kill a workspace's pi subprocess after idle timeout.
-function scheduleIdleKill(ws) {
-	clearIdleTimer(ws);
-	ws.idleTimer = setTimeout(() => {
-		if (ws.piProc && !ws.piProc.killed && !ws.busy) {
-			console.log(
-				`  [idle] killing pi for workspace '${ws.name}' after ${IDLE_TIMEOUT_MS / 1000}s idle`,
-			);
-			ws.piProc.kill("SIGTERM");
-			ws.piProc = null;
-			ws.piConnected = false;
-			broadcast({
-				type: "pi_health",
-				connected: false,
-				busy: false,
-				workspace: ws.name,
-			});
-		}
-		ws.idleTimer = null;
-	}, IDLE_TIMEOUT_MS);
-}
-
-function clearIdleTimer(ws) {
-	if (ws.idleTimer) {
-		clearTimeout(ws.idleTimer);
-		ws.idleTimer = null;
-	}
-}
-
-function switchWorkspace(name) {
-	if (!workspaces.has(name)) return;
-	if (name === activeWorkspaceName) return;
-
-	const oldWs = getActive();
-	const newWs = workspaces.get(name);
-
-	// Schedule idle kill for the old workspace's pi
-	if (oldWs.piProc && !oldWs.piProc.killed && !oldWs.busy) {
-		scheduleIdleKill(oldWs);
-	}
-
-	activeWorkspaceName = name;
-	console.log(`  switched to workspace '${name}'`);
-
-	// Notify all clients about the switch
-	broadcast({
-		type: "workspace_switched",
-		workspace: name,
-		workspaces: getWorkspacesInfo(),
-	});
-
-	// Ensure the new workspace has pi running
-	ensurePi(newWs);
-	clearIdleTimer(newWs);
-}
-
-function getWorkspacesInfo() {
-	const result = {};
-	for (const [name, ws] of workspaces) {
-		result[name] = {
-			name,
-			cwd: ws.cwd,
-			mode: ws.mode,
-			context: ws.context,
-			active: name === activeWorkspaceName,
-			piConnected: ws.piConnected,
-			busy: ws.busy,
-		};
-	}
-	return result;
-}
-
-initWorkspaces();
+const workspaceManager = createWorkspaceManager({
+	workspaceConfigPath: WORKSPACES_CONFIG,
+	cwd: CWD,
+	idleTimeoutMs: IDLE_TIMEOUT_MS,
+	broadcast,
+	ensurePi,
+});
+const {
+	workspaces,
+	getActive,
+	clearIdleTimer,
+	switchWorkspace,
+	getWorkspacesInfo,
+	getActiveWorkspaceName,
+} = workspaceManager;
 
 // ── State ───────────────────────────────────────────────────────────────
 const clients = new Set();
-
-// ── Session utilities ────────────────────────────────────────────────────
-function parseSessions(ws) {
-	ws = ws || getActive();
-	const homeDir = process.env.HOME || "";
-	const sessionBaseDir = join(homeDir, ".pi", "agent", "sessions");
-	// /home/alex/repos/nixpi → --home-alex-repos-nixpi--
-	const cwdKey = "--" + ws.cwd.replace(/^\//, "").replace(/\//g, "-") + "--";
-	const sessionDir = join(sessionBaseDir, cwdKey);
-
-	if (!existsSync(sessionDir)) return [];
-
-	const files = readdirSync(sessionDir)
-		.filter((f) => f.endsWith(".jsonl"))
-		.map((f) => join(sessionDir, f));
-
-	const sessions = [];
-	for (const file of files) {
-		try {
-			const content = readFileSync(file, "utf8");
-			const lines = content
-				.trim()
-				.split("\n")
-				.filter((l) => l.trim());
-
-			let header = null;
-			let name = null;
-			let firstUserMessage = null;
-			let messageCount = 0;
-			let lastTimestamp = null;
-
-			for (const line of lines) {
-				try {
-					const entry = JSON.parse(line);
-					if (entry.type === "session") {
-						header = entry;
-					} else if (entry.type === "session_info" && entry.name) {
-						name = entry.name; // keep latest
-					} else if (entry.type === "message") {
-						if (entry.message?.role === "user") {
-							if (!firstUserMessage) {
-								const c = entry.message.content;
-								if (typeof c === "string") firstUserMessage = c.slice(0, 80);
-								else if (Array.isArray(c)) {
-									const t = c.find((b) => b.type === "text");
-									if (t) firstUserMessage = t.text.slice(0, 80);
-								}
-							}
-							messageCount++;
-						} else if (entry.message?.role === "assistant") {
-							messageCount++;
-						}
-						if (entry.timestamp) lastTimestamp = entry.timestamp;
-					}
-				} catch {}
-			}
-
-			if (!header) continue;
-
-			sessions.push({
-				id: header.id,
-				file,
-				cwd: header.cwd || ws.cwd,
-				timestamp: header.timestamp,
-				lastTimestamp: lastTimestamp || header.timestamp,
-				name,
-				preview: name || firstUserMessage || "New session",
-				messageCount,
-			});
-		} catch {}
-	}
-
-	sessions.sort(
-		(a, b) => new Date(b.lastTimestamp) - new Date(a.lastTimestamp),
-	);
-	return sessions;
-}
 
 // ── Express ─────────────────────────────────────────────────────────────
 const app = express();
@@ -427,68 +209,7 @@ app.get("/api/sessions", (_req, res) => {
 app.get("/api/sessions/archived", (_req, res) => {
 	try {
 		const ws = getActive();
-		const sessionBaseDir = join(
-			process.env.HOME || "",
-			".pi",
-			"agent",
-			"sessions",
-		);
-		const cwdKey = "--" + ws.cwd.replace(/^\//, "").replace(/\//g, "-") + "--";
-		const archiveDir = join(sessionBaseDir, cwdKey, "archived");
-		if (!existsSync(archiveDir)) return res.json({ sessions: [] });
-		const files = readdirSync(archiveDir)
-			.filter((f) => f.endsWith(".jsonl"))
-			.map((f) => join(archiveDir, f));
-		const sessions = [];
-		for (const file of files) {
-			try {
-				const lines = readFileSync(file, "utf8")
-					.trim()
-					.split("\n")
-					.filter(Boolean);
-				let header = null,
-					name = null,
-					firstUserMessage = null,
-					lastTimestamp = null;
-				for (const line of lines) {
-					try {
-						const e = JSON.parse(line);
-						if (e.type === "session") header = e;
-						else if (e.type === "session_info" && e.name) name = e.name;
-						else if (
-							e.type === "message" &&
-							e.message?.role === "user" &&
-							!firstUserMessage
-						) {
-							const c = e.message.content;
-							firstUserMessage =
-								typeof c === "string"
-									? c.slice(0, 80)
-									: Array.isArray(c)
-										? (c.find((b) => b.type === "text")?.text || "").slice(
-												0,
-												80,
-											)
-										: "";
-						}
-						if (e.timestamp) lastTimestamp = e.timestamp;
-					} catch {}
-				}
-				if (!header) continue;
-				sessions.push({
-					id: header.id,
-					file,
-					timestamp: header.timestamp,
-					lastTimestamp: lastTimestamp || header.timestamp,
-					name,
-					preview: name || firstUserMessage || "Archived session",
-				});
-			} catch {}
-		}
-		sessions.sort(
-			(a, b) => new Date(b.lastTimestamp) - new Date(a.lastTimestamp),
-		);
-		res.json({ sessions });
+		res.json({ sessions: parseArchivedSessions(ws) });
 	} catch (e) {
 		res.status(500).json({ error: e.message });
 	}
@@ -497,67 +218,33 @@ app.get("/api/sessions/archived", (_req, res) => {
 // Restore archived session
 app.post("/api/sessions/restore", (req, res) => {
 	const { file } = req.body || {};
-	if (!file || !file.endsWith(".jsonl"))
-		return res.status(400).json({ error: "Invalid file" });
-	const sessionBaseDir = join(
-		process.env.HOME || "",
-		".pi",
-		"agent",
-		"sessions",
-	);
-	if (!file.startsWith(sessionBaseDir))
-		return res.status(403).json({ error: "Forbidden" });
 	try {
-		const dest = join(dirname(file), "..", basename(file));
-		renameSync(file, dest);
+		const dest = restoreSession(file);
 		res.json({ ok: true, restoredTo: dest });
 	} catch (e) {
-		res.status(500).json({ error: e.message });
+		res.status(e.statusCode || 500).json({ error: e.message });
 	}
 });
 
 // Archive session (move to archived/ subfolder)
 app.post("/api/sessions/archive", (req, res) => {
 	const { file } = req.body || {};
-	if (!file || !file.endsWith(".jsonl"))
-		return res.status(400).json({ error: "Invalid file" });
-	const sessionBaseDir = join(
-		process.env.HOME || "",
-		".pi",
-		"agent",
-		"sessions",
-	);
-	if (!file.startsWith(sessionBaseDir))
-		return res.status(403).json({ error: "Forbidden" });
 	try {
-		const archiveDir = join(dirname(file), "archived");
-		if (!existsSync(archiveDir)) mkdirSync(archiveDir, { recursive: true });
-		const dest = join(archiveDir, basename(file));
-		renameSync(file, dest);
+		const dest = archiveSession(file);
 		res.json({ ok: true, archivedTo: dest });
 	} catch (e) {
-		res.status(500).json({ error: e.message });
+		res.status(e.statusCode || 500).json({ error: e.message });
 	}
 });
 
 // Delete session permanently
 app.delete("/api/sessions", (req, res) => {
 	const { file } = req.body || {};
-	if (!file || !file.endsWith(".jsonl"))
-		return res.status(400).json({ error: "Invalid file" });
-	const sessionBaseDir = join(
-		process.env.HOME || "",
-		".pi",
-		"agent",
-		"sessions",
-	);
-	if (!file.startsWith(sessionBaseDir))
-		return res.status(403).json({ error: "Forbidden" });
 	try {
-		unlinkSync(file);
+		deleteSession(file);
 		res.json({ ok: true });
 	} catch (e) {
-		res.status(500).json({ error: e.message });
+		res.status(e.statusCode || 500).json({ error: e.message });
 	}
 });
 
@@ -609,13 +296,9 @@ app.post(
 		if (!req.body?.length)
 			return res.status(400).json({ error: "No audio data" });
 		try {
-			const { default: fetch } = await import("node-fetch");
-			const FormData = (await import("form-data")).default;
 			const form = new FormData();
-			form.append("file", req.body, {
-				filename: "audio.webm",
-				contentType: "audio/webm",
-			});
+			const file = new Blob([req.body], { type: "audio/webm" });
+			form.append("file", file, "audio.webm");
 			form.append("model", "whisper-1");
 			form.append("language", "en");
 			form.append("response_format", "json");
@@ -623,7 +306,6 @@ app.post(
 				method: "POST",
 				headers: {
 					Authorization: `Bearer ${OPENAI_API_KEY}`,
-					...form.getHeaders(),
 				},
 				body: form,
 			});
@@ -651,7 +333,7 @@ server.on("error", (err) => {
 	if (err.code === "EADDRINUSE") {
 		console.error(`❌ Port ${PORT} is already in use.`);
 		console.error("   Make sure no other instance of nixpi is running.");
-		console.error("   Run: ./nixpi.sh stop");
+		console.error("   Stop the existing nixpi process, then retry.");
 		process.exit(1);
 	} else {
 		console.error("Server error:", err);
@@ -758,7 +440,7 @@ async function handleClientMessage(clientWs, msg) {
 				JSON.stringify({
 					type: "workspaces",
 					workspaces: getWorkspacesInfo(),
-					active: activeWorkspaceName,
+					active: getActiveWorkspaceName(),
 				}),
 			);
 			break;
@@ -1260,13 +942,13 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 // ── Boot ────────────────────────────────────────────────────────────────
-if (workspaces.size === 1 && activeWorkspaceName === "default") {
+if (workspaces.size === 1 && getActiveWorkspaceName() === "default") {
 	// Legacy single-workspace mode
 	console.log(`  CWD:   ${CWD}`);
 } else {
 	console.log(`  Workspaces:`);
 	for (const [name, ws] of workspaces) {
-		const marker = name === activeWorkspaceName ? "→" : " ";
+		const marker = name === getActiveWorkspaceName() ? "→" : " ";
 		const mode =
 			ws.mode === "ssh" ? `ssh ${ws.sshUser}@${ws.sshHost}` : "local";
 		console.log(

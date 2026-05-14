@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented here.
 
+## Unreleased
+
+### Changed
+- Removed the macOS-only `nixpi.sh` helper; use the NixOS module or `make dev` / `make start`.
+- Split session and workspace handling out of `server.js` into focused modules.
+- Switched Whisper uploads to Node 22 built-in `fetch`, `FormData`, and `Blob`.
+
+### Removed
+- Removed unused `node-fetch` and `form-data` dependencies.
+
 ## [1.6.3] - 2026-05-13
 
 ### Added

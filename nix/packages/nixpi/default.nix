@@ -16,7 +16,7 @@ buildNpmPackage' {
   src = lib.cleanSource ../../..;
 
   npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-AKUWEkJgdaGfAQZJtjTc3E3lbcahvM5uXnpQ25BhqdQ=";
+  npmDepsHash = "sha256-5GGa9oKTijwGljUi3Ea5zTScb+YcouW444NhscMf1UY=";
 
   nativeBuildInputs = [ makeWrapper ];
 
@@ -30,6 +30,8 @@ buildNpmPackage' {
       package.json \
       package-lock.json \
       server.js \
+      sessions.js \
+      workspaces.js \
       public \
       node_modules \
       $out/lib/nixpi/
