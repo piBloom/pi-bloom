@@ -2,7 +2,7 @@
 
 DAV Server MicroVM service repository for Nazar's private personal info and data service.
 
-This repository owns the DAV service modules used by the canonical Nazar MicroVM fleet. The `/root/nazar` repository remains the fleet orchestrator and owns MicroVM lifecycle, IDs, IP/MAC/DNS/resources, private DNS policy, deploy-rs apps, Forgejo infrastructure, and secrets policy.
+This repository owns the DAV service modules used by the canonical Nazar MicroVM fleet. The `/root/nazar` repository remains the fleet orchestrator and owns MicroVM lifecycle, IDs, IP/MAC/DNS/resources, private DNS policy, deploy-rs apps, Git server, and secrets policy.
 
 ## Exports
 
@@ -21,7 +21,7 @@ nazar-vm-repo-bootstrap
 cd ~/dav-server
 pi
 nix flake check --no-build
-# commit and push to Forgejo
+# commit and push to the Git server
 nazar-vm-switch
 ```
 
