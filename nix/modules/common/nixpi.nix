@@ -1,3 +1,6 @@
+# DEPRECATED: This module is no longer imported by default.
+# NixPi now runs centrally on the host with multi-workspace support.
+# This file is kept for reference or standalone VM nixpi deployments.
 {
   fleet,
   inputs,

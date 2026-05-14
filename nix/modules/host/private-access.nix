@@ -22,8 +22,6 @@ let
     in
     lib.any isPrivateAccess [
       (vmExposure.service or { })
-      (vmExposure.nixpi or { })
-      (vmExposure.subagent or { })
     ];
 
   privateServiceDomains = lib.concatMap (
@@ -32,7 +30,10 @@ let
 
   hostSiteDomains = lib.optional (isPrivateAccess hostSite && hostSite ? domain) hostSite.domain;
 
-  hostNixpiDomains = lib.optionals (isPrivateAccess hostNixpi) (hostNixpi.pathDomains or [ ]);
+  hostNixpiDomains = lib.optionals (isPrivateAccess hostNixpi) (
+    lib.optional (hostNixpi ? domain) hostNixpi.domain
+    ++ (hostNixpi.pathDomains or [ ])
+  );
 
   privateDomainExclusions = exposure.privateDomainExclusions or [ ];
   privateDomains = lib.subtractLists privateDomainExclusions (

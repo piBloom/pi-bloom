@@ -15,10 +15,11 @@ let
     ../common/development.nix
     ../common/sops.nix
     ../common/nazar-context.nix
-    ../common/nixpi.nix
     ./microvm-guest.nix
   ];
 
+  # Pi agent is now opt-in per VM via vm.piAgent.enable.
+  # Removed ../common/nixpi.nix — NixPi runs centrally on the host.
   commonPiAgentModules = [ ../common/pi-agent.nix ];
 
   serviceModules = {
@@ -41,7 +42,9 @@ let
       inherit inputs fleet vm;
     };
     config = {
-      imports = commonGuestModules ++ commonPiAgentModules ++ serviceModules.${name};
+      imports = commonGuestModules
+        ++ lib.optional (vm.piAgent.enable or false) commonPiAgentModules
+        ++ serviceModules.${name};
     };
   };
 

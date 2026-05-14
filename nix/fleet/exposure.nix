@@ -7,9 +7,9 @@
   # and opens TCP/80. Only use after an explicit hardening review.
 
   # Domains listed here stay out of generated private /etc/hosts entries.
-  # Keep this empty so operator laptops can reach same-domain /nixpi/ routes
-  # through sshuttle on nazar.studio, mc.nazar.studio, and dav.nazar.studio.
-  privateDomainExclusions = [ ];
+  # nixpi.nazar.studio is excluded so operator laptops resolve it through
+  # public DNS instead of the sshuttle private /etc/hosts override.
+  privateDomainExclusions = [ "nixpi.nazar.studio" ];
 
   host = {
     site = {
@@ -21,8 +21,7 @@
 
     nixpi = {
       enable = true;
-      pathDomains = [ "nazar.studio" ];
-      path = "/nixpi/";
+      domain = "nixpi.nazar.studio";
       port = 4815;
       access = "private";
     };
@@ -34,48 +33,15 @@
         enable = true;
         access = "private";
       };
-      nixpi = {
-        enable = true;
-        path = "/nixpi/";
-        access = "private";
-      };
-      subagent = {
-        enable = false;
-        path = "/subagent/";
-        port = 4815;
-        access = "private";
-      };
     };
 
     minecraft = {
       service.enable = false;
-      nixpi = {
-        enable = true;
-        path = "/nixpi/";
-        access = "private";
-      };
-      subagent = {
-        enable = false;
-        path = "/subagent/";
-        port = 4815;
-        access = "private";
-      };
     };
 
     dav-server = {
       service = {
         enable = true;
-        access = "private";
-      };
-      nixpi = {
-        enable = true;
-        path = "/nixpi/";
-        access = "private";
-      };
-      subagent = {
-        enable = false;
-        path = "/subagent/";
-        port = 4815;
         access = "private";
       };
     };

@@ -48,15 +48,6 @@
             mountPoint = "/var/lib/forgejo";
             proto = "virtiofs";
           }
-          {
-            tag = "git-pi";
-            source = "/persist/microvms/git/pi";
-            mountPoint = "/home/alex/.pi";
-            proto = "virtiofs";
-            owner = "alex";
-            group = "users";
-            mode = "0750";
-          }
         ];
       };
       dns = "git.nazar.studio";
@@ -104,15 +95,6 @@
             owner = "alex";
             group = "users";
             mode = "0755";
-          }
-          {
-            tag = "minecraft-pi";
-            source = "/persist/microvms/minecraft/pi";
-            mountPoint = "/home/alex/.pi";
-            proto = "virtiofs";
-            owner = "alex";
-            group = "users";
-            mode = "0750";
           }
         ];
       };
@@ -228,15 +210,6 @@
             source = "/persist/microvms/dav-server/radicale";
             mountPoint = "/var/lib/radicale/collections";
             proto = "virtiofs";
-          }
-          {
-            tag = "dav-server-pi";
-            source = "/persist/microvms/dav-server/pi";
-            mountPoint = "/home/alex/.pi";
-            proto = "virtiofs";
-            owner = "alex";
-            group = "users";
-            mode = "0750";
           }
         ];
       };

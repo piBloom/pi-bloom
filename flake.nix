@@ -75,7 +75,6 @@
         ./nix/modules/common/development.nix
         ./nix/modules/common/sops.nix
         ./nix/modules/common/nazar-context.nix
-        ./nix/modules/common/nixpi.nix
       ];
 
       agentVmModules = [ ./nix/modules/common/pi-agent.nix ];
@@ -349,7 +348,6 @@
             ./nix/modules/common/development.nix
             ./nix/modules/common/sops.nix
             ./nix/modules/common/nazar-context.nix
-            ./nix/modules/common/nixpi.nix
             ./nix/modules/common/pi-agent.nix
             ./nix/modules/host/microvm-guest.nix
             ./nix/modules/services/minecraft-identity.nix

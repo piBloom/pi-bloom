@@ -318,11 +318,6 @@ let
           inputs.nixpkgs.follows = "nixpkgs";
         };
 
-        nixpi = {
-          url = "path:./nixpi-source";
-          inputs.nixpkgs.follows = "nixpkgs";
-        };
-
         llm-agents.url = "github:numtide/llm-agents.nix";
 
         ${lib.optionalString (vm.hostname != "git") ''
@@ -352,7 +347,6 @@ let
             ./nix/modules/common/development.nix
             ./nix/modules/common/sops.nix
             ./nix/modules/common/nazar-context.nix
-            ./nix/modules/common/nixpi.nix
           ];
           agentVmModules = [ ./nix/modules/common/pi-agent.nix ];
           microvmGuestModules = [
@@ -403,12 +397,8 @@ let
     cp ${./development.nix} "$out/nix/modules/common/development.nix"
     cp ${./sops.nix} "$out/nix/modules/common/sops.nix"
     cp ${./nazar-context.nix} "$out/nix/modules/common/nazar-context.nix"
-    cp ${./nixpi.nix} "$out/nix/modules/common/nixpi.nix"
     cp ${./pi-agent.nix} "$out/nix/modules/common/pi-agent.nix"
     cp ${./pi-default-packages.nix} "$out/nix/modules/common/pi-default-packages.nix"
-    mkdir -p "$out/nixpi-source"
-    cp -R ${inputs.nixpi}/. "$out/nixpi-source/"
-    chmod -R u+w "$out/nixpi-source"
     cp ${../../packages/pi/default.nix} "$out/nix/packages/pi/default.nix"
     cp ${../../packages/pi/hashes.json} "$out/nix/packages/pi/hashes.json"
     cp ${../../packages/pi/package-lock.json} "$out/nix/packages/pi/package-lock.json"

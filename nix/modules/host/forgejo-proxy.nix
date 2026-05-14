@@ -177,6 +177,21 @@ let
     access = hostSite.access or "private";
   };
 
+  hostNixpiRoute = {
+    name = "host-nixpi";
+    enable = hostNixpi.enable or false;
+    path = "/";
+    backend = "http://127.0.0.1:${toString (hostNixpi.port or 4815)}";
+    access = hostNixpi.access or "private";
+    stripPrefix = false;
+  };
+
+  # When nixpi has a dedicated domain, it gets its own vhost.
+  # When nixpi uses pathDomains (legacy), it's merged into the host site vhost.
+  nixpiOwnDomain = hostNixpi.domain or null;
+  nixpiPathDomains = hostNixpi.pathDomains or [ ];
+
+  # Legacy path-based route (used when pathDomains is set)
   hostNixpiPathRoute = {
     name = "host-nixpi-path";
     enable = hostNixpi.enable or false;
@@ -186,25 +201,29 @@ let
     stripPrefix = true;
   };
 
+  # Host domains: site domain + nixpi path domains (legacy mode only)
   hostDomains = lib.unique (
-    (lib.optional (hostSite ? domain) hostSite.domain) ++ (hostNixpi.pathDomains or [ ])
+    (lib.optional (hostSite ? domain) hostSite.domain)
+    ++ nixpiPathDomains
   );
 
   routesForHostDomain =
     domain:
     (lib.optional ((hostSite.enable or false) && (hostSite.domain or null) == domain) hostSiteRoute)
     ++ (lib.optional (
-      (hostNixpi.enable or false) && lib.elem domain (hostNixpi.pathDomains or [ ])
+      (hostNixpi.enable or false) && nixpiPathDomains != [ ] && lib.elem domain nixpiPathDomains
     ) hostNixpiPathRoute);
 
   hostDomainVhosts = lib.concatMap (
     domain: mkDomainVhosts domain (routesForHostDomain domain)
   ) hostDomains;
+
+  # Dedicated nixpi domain vhost (new mode)
+  nixpiDomainVhosts = lib.optionals (nixpiOwnDomain != null && (hostNixpi.enable or false)) (
+    mkDomainVhosts nixpiOwnDomain [ hostNixpiRoute ]
+  );
   allRouteLists = [
-    [
-      hostSiteRoute
-      hostNixpiPathRoute
-    ]
+    [ hostSiteRoute hostNixpiRoute ]
   ]
   ++ (map (name: routesForVm name fleet.vms.${name}) (lib.attrNames fleet.vms));
   publicHttpEnabled = lib.any (
@@ -218,7 +237,7 @@ in
     recommendedOptimisation = true;
     recommendedProxySettings = true;
 
-    virtualHosts = lib.listToAttrs (hostDomainVhosts ++ vmDomainVhosts);
+    virtualHosts = lib.listToAttrs (hostDomainVhosts ++ nixpiDomainVhosts ++ vmDomainVhosts);
   };
 
   systemd.services.nginx = {
