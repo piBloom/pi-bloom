@@ -28,11 +28,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    deploy-rs = {
-      url = "github:serokell/deploy-rs";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     minecraft = {
       url = "git+ssh://git@git.nazar.studio:10022/nazar/minecraft.git";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -50,7 +45,6 @@
       nixpkgs,
       disko,
       sops-nix,
-      deploy-rs,
       ...
     }:
     let
@@ -143,40 +137,42 @@
         inherit pi;
       };
 
-      deploy.nodes = nixpkgs.lib.mapAttrs (name: vm: {
-        # Deploy over private MicroVM aliases from the Nazar orchestrator.
-        # Use root for deploy-rs store copies/activation; root SSH is key-only
-        # and trusted only from the declarative Nazar host/admin key set.
-        hostname = vm.hostname;
-        fastConnection = true;
-        remoteBuild = false;
-        profiles.system = {
-          sshUser = "root";
-          user = "root";
-          path = deploy-rs.lib.${system}.activate.nixos self.nixosConfigurations.${name};
-        };
-      }) fleet.vms;
-
       apps.${system} =
         let
-          deployBin = "${deploy-rs.packages.${system}.deploy-rs}/bin/deploy";
           deployNodeNames = nixpkgs.lib.attrNames fleet.vms;
           deployNodeList = nixpkgs.lib.concatStringsSep " " deployNodeNames;
+          mkDeployProgram = name: nodes:
+            pkgs.writeShellApplication {
+              name = "nazar-deploy-${name}";
+              runtimeInputs = [ pkgs.systemd ];
+              text = ''
+                set -euo pipefail
+
+                if [ "$EUID" -ne 0 ]; then
+                  exec sudo "$0" "$@"
+                fi
+
+                cd ${self.outPath}
+                nixos-rebuild switch --flake ${self.outPath}#nazar --impure "$@"
+
+                for node in ${nixpkgs.lib.concatStringsSep " " nodes}; do
+                  echo "==> restarting MicroVM $node"
+                  systemctl restart "microvm@$node.service"
+                  systemctl is-active --quiet "microvm@$node.service"
+                done
+              '';
+            };
           mkDeployApp = name: {
             type = "app";
-            program = toString (
-              pkgs.writeShellScript "nazar-deploy-${name}" ''
-                exec ${deployBin} "$@" "${self.outPath}#${name}"
-              ''
-            );
-            meta.description = "Deploy the ${name} NixOS MicroVM from nazar with deploy-rs";
+            program = "${mkDeployProgram name [ name ]}/bin/nazar-deploy-${name}";
+            meta.description = "Apply the Nazar host configuration and restart the ${name} MicroVM";
           };
         in
         {
           deploy = {
             type = "app";
-            program = deployBin;
-            meta.description = "Run deploy-rs for the nazar NixOS MicroVM fleet";
+            program = "${mkDeployProgram "fleet" deployNodeNames}/bin/nazar-deploy-fleet";
+            meta.description = "Apply the Nazar host configuration and restart the MicroVM fleet";
           };
           deploy-git = mkDeployApp "git";
           deploy-minecraft = mkDeployApp "minecraft";
@@ -192,20 +188,17 @@
                   exit 2
                 fi
 
-                for node in ${deployNodeList}; do
-                  echo "==> deploying $node"
-                  ${deployBin} "$@" "${self.outPath}#$node"
-                done
+                exec ${mkDeployProgram "fleet" deployNodeNames}/bin/nazar-deploy-fleet "$@"
               ''
             );
-            meta.description = "Deploy all current NixOS MicroVMs from nazar with deploy-rs";
+            meta.description = "Apply the Nazar host configuration and restart all current MicroVMs: ${deployNodeList}";
           };
         };
 
-      checks.${system} = deploy-rs.lib.${system}.deployChecks self.deploy;
+      checks.${system} = { };
 
       devShells.${system}.default = pkgs.mkShell {
-        packages = [ deploy-rs.packages.${system}.deploy-rs ];
+        packages = [ pkgs.nixos-rebuild ];
       };
 
       formatter.${system} = pkgs.writeShellApplication {
