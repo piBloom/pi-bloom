@@ -8,7 +8,7 @@ sshuttle over OpenSSH is the canonical private access path for Nazar.
 - SSH policy: key-only, `alex` only, root login disabled
 - Private service address: `10.44.0.1/32` on host-local dummy interface `nazar-private`
 - Private HTTP entrypoint: host nginx on `10.44.0.1:80`
-- Private Git SSH entrypoint: host socat proxy on `10.44.0.1:10022`
+- Private Git SSH entrypoint: host sshd on `10.44.0.1:22` (standard SSH as `alex`)
 
 The private address is not assigned to the public NIC. Clients reach it by running sshuttle, which creates local routing/firewall rules and forwards matching TCP connections through SSH.
 
@@ -85,7 +85,7 @@ curl -I http://nazar.studio/nixpi/
 curl -I http://mc.nazar.studio/nixpi/
 curl -I http://dav.nazar.studio/
 curl -I http://dav.nazar.studio/nixpi/
-git ls-remote ssh://git@git.nazar.studio:10022/nazar/nazar.git
+git ls-remote ssh://alex@git.nazar.studio/nazar/nazar.git
 ```
 
 ## Troubleshooting
@@ -106,6 +106,6 @@ Check host private address and services:
 
 ```bash
 ip addr show nazar-private
-systemctl is-active sshd systemd-networkd nginx git-ssh-proxy nixpi
-git ls-remote ssh://git@git.nazar.studio:10022/nazar/nazar.git
+systemctl is-active sshd systemd-networkd nginx nixpi
+git ls-remote ssh://alex@git.nazar.studio/nazar/nazar.git
 ```

@@ -24,12 +24,12 @@
     };
 
     minecraft = {
-      url = "git+ssh://git@git.nazar.studio:10022/nazar/minecraft.git";
+      url = "git+ssh://alex@git.nazar.studio/nazar/minecraft.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     nixpi = {
-      url = "git+ssh://git@git.nazar.studio:10022/nazar/nixpi.git";
+      url = "git+ssh://alex@git.nazar.studio/nazar/nixpi.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

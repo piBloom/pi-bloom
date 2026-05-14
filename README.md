@@ -39,7 +39,7 @@ Publicly reachable services are limited to:
 Private sshuttle services:
 
 - `nazar.studio/nixpi/` -> `10.44.0.1`, HTTP via host nginx to the host-local NixPi service.
-- `git.nazar.studio` -> `10.44.0.1`, SSH-only Git via host sshd on `10022/tcp`.
+- `git.nazar.studio` -> `10.44.0.1`, SSH-only Git via host sshd on port `22/tcp`.
 - `mc.nazar.studio/nixpi/` -> `10.44.0.1`, HTTP via host nginx to the Minecraft VM-local NixPi service.
 - `dav.nazar.studio` -> `10.44.0.1`, HTTP via host nginx to the DAV Server MicroVM when it is running.
 - `dav.nazar.studio/nixpi/` -> `10.44.0.1`, HTTP via host nginx to the DAV Server VM-local NixPi service.
@@ -61,12 +61,12 @@ runbooks/                 # operational runbooks
 
 ## Active/declarative services
 
-| Service    | VM                           | Private/Public endpoint                                                             | Notes                                                                                            |
-| ---------- | ---------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Git        | host `nazar`                 | `git.nazar.studio:10022` on sshuttle-routed `10.44.0.1` and NAT bridge `10.10.10.1` | SSH-only bare Git on host; no web UI; no separate VM                                             |
-| Minecraft  | `minecraft` / `10.10.10.30`  | `mc.nazar.studio`; public game `25565/tcp`, voice `24454/udp`; private `/nixpi/`    | no public webapp                                                                                 |
-| DAV Server | `dav-server` / `10.10.10.41` | `dav.nazar.studio` on sshuttle-routed `10.44.0.1`                                   | WebDAV `/files/`, CalDAV/CardDAV `/radicale/`; autostarted                                       |
-| NixPi      | host + every MicroVM         | `/nixpi/` on the host and per-service domains                                       | private web interface for Pi RPC sessions; route exposure controlled by `nix/fleet/exposure.nix` |
+| Service    | VM                           | Private/Public endpoint                                                          | Notes                                                                                            |
+| ---------- | ---------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Git        | host `nazar`                 | `git.nazar.studio` on sshuttle-routed `10.44.0.1`                                | SSH-only bare Git on host; no web UI; no separate VM                                             |
+| Minecraft  | `minecraft` / `10.10.10.30`  | `mc.nazar.studio`; public game `25565/tcp`, voice `24454/udp`; private `/nixpi/` | no public webapp                                                                                 |
+| DAV Server | `dav-server` / `10.10.10.41` | `dav.nazar.studio` on sshuttle-routed `10.44.0.1`                                | WebDAV `/files/`, CalDAV/CardDAV `/radicale/`; autostarted                                       |
+| NixPi      | host + every MicroVM         | `/nixpi/` on the host and per-service domains                                    | private web interface for Pi RPC sessions; route exposure controlled by `nix/fleet/exposure.nix` |
 
 ## DNS intent
 
@@ -81,7 +81,6 @@ ssh alex@10.44.0.1  # canonical, through sshuttle from a configured laptop
 # or direct control endpoint when needed: ssh alex@167.235.12.22
 cd /root/nazar
 nix flake check --no-build
-nix run .#switch-git
 nix run .#switch-minecraft
 nix run .#switch-dav-server
 nix run .#switch-fleet
@@ -109,7 +108,7 @@ curl -I http://nazar.studio/
 curl -I http://nazar.studio/nixpi/
 curl -I http://mc.nazar.studio/nixpi/
 curl -I http://dav.nazar.studio/nixpi/
-git ls-remote ssh://git@git.nazar.studio:10022/nazar/nazar.git
+git ls-remote ssh://alex@git.nazar.studio/nazar/nazar.git
 ```
 
 ## Constraints

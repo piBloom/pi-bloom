@@ -12,7 +12,7 @@
       PasswordAuthentication = false;
       KbdInteractiveAuthentication = false;
       PermitRootLogin = "no";
-      AllowUsers = [ "alex" "git" ];
+      AllowUsers = [ "alex" ];
       X11Forwarding = false;
     };
   };

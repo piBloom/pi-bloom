@@ -53,7 +53,7 @@ This keeps Pi config and NixPi session history across VM recreation. The host se
 The Nazar flake uses the private SSH-only Git repository:
 
 ```nix
-git+ssh://git@git.nazar.studio:10022/nazar/nixpi.git
+git+ssh://alex@git.nazar.studio/nazar/nixpi.git
 ```
 
 Update it from `/root/nazar` with:
@@ -75,7 +75,6 @@ sudo nixos-rebuild switch --flake .#nazar
 Then switch/restart MicroVMs as usual if needed:
 
 ```bash
-nix run .#switch-git
 nix run .#switch-minecraft
 nix run .#switch-dav-server
 ```
@@ -85,7 +84,7 @@ nix run .#switch-dav-server
 On the host:
 
 ```bash
-systemctl is-active nixpi nginx git-ssh-proxy
+systemctl is-active nixpi nginx
 curl -I http://127.0.0.1:4815/
 curl -I --resolve nazar.studio:80:10.44.0.1 http://nazar.studio/nixpi/
 ```
@@ -122,7 +121,7 @@ systemctl status nixpi
 curl -I http://127.0.0.1:4815/
 ```
 
-If the host was rebuilt but the VM was not switched/restarted, run the relevant switch app (`nix run .#switch-git`, `.#switch-minecraft`, or `.#switch-dav-server`) so the VM-local `nixpi` systemd service exists and is running.
+If the host was rebuilt but the VM was not switched/restarted, run the relevant switch app (`nix run .#switch-minecraft` or `.#switch-dav-server`) so the VM-local `nixpi` systemd service exists and is running.
 
 ## Rollback
 

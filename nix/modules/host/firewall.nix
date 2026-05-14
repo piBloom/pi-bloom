@@ -9,7 +9,6 @@ let
   minecraft = fleet.vms.minecraft;
   mcPort = minecraft.minecraft.port or 25565;
   mcVoicePort = minecraft.minecraft.voiceChatPort or 24454;
-  gitPort = 10022;
   microvmTapNames = map (vm: vm.microvm.tap) (lib.attrValues fleet.vms);
   microvmTapSet = "{ ${lib.concatStringsSep ", " (map (tap: "\"${tap}\"") microvmTapNames)} }";
 in
@@ -25,12 +24,7 @@ in
           # Enforce one-way host management: Nazar may open connections to
           # MicroVMs, but MicroVMs may not open new connections to Nazar.
           # Replies to host-initiated SSH/deploy sessions remain allowed.
-          #
-          # Narrow exception: VMs may reach the host Git SSH endpoint on
-          # port 10022 (git-shell only, no PTY, no port forwarding). This
-          # replaces the old socat proxy to the git MicroVM.
           ct state established,related accept
-          iifname ${microvmTapSet} ip saddr 10.10.10.0/24 tcp dport 10022 accept
           iifname ${microvmTapSet} ip saddr 10.10.10.0/24 reject with icmp type admin-prohibited
           iifname ${microvmTapSet} meta nfproto ipv6 reject with icmpv6 type admin-prohibited
         }
@@ -50,17 +44,9 @@ in
     allowedTCPPorts = [ ];
     allowedUDPPorts = [ ];
 
-    # Allow VMs to reach the host Git SSH endpoint.
-    # The nazar-microvm-host-guard nft chain (priority -10) also accepts this
-    # traffic, but the nixos-fw chain (priority 0) with policy drop will still
-    # evaluate it. Both chains must accept.
-    interfaces =
-    let
-      mkTapRule = tap: { allowedTCPPorts = [ gitPort ]; };
-    in
-    lib.mapAttrs (_: mkTapRule) (lib.listToAttrs
-      (map (vm: lib.nameValuePair vm.microvm.tap vm)
-        (lib.attrValues fleet.vms)));
+    # No VM-to-host firewall exceptions. VMs cannot reach host SSH;
+    # host-initiated SSH to VMs relies on established/related reply traffic.
+    interfaces = { };
 
     extraForwardRules = ''
       # Let MicroVMs initiate egress and reply traffic through the host.
