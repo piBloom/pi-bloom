@@ -12,7 +12,6 @@ let
     ../guest/users.nix
     ../guest/security.nix
     ../guest/development.nix
-    ../guest/nazar-context.nix
     ./microvm-guest.nix
   ];
 

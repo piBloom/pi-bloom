@@ -30,8 +30,30 @@ let
 
     echo "VM repo ready: $repo_root"
     echo "Pi is available as: pi"
-    echo "You may edit, test, commit here; production switches are handed off with: nazar-switch-request"
+    echo "You may edit, test, and commit here. To deploy, push and request a rebuild from the Nazar host."
     echo "Next: cd $repo_root && pi"
+  '';
+  agentsMarkdown = pkgs.writeText "nazar-vm-agents.md" ''
+    # Nazar VM Agent Instructions
+
+    You are running inside a Nazar NixOS VM, not on the host.
+
+    VM identity:
+
+    - Hostname: `${vm.hostname}`
+    - Service repo: `${repoRoot}` (virtiofs mount from host, no SSH needed)
+    - NAT IP: `${vm.ip}`
+
+    Critical rules:
+
+    - The VM-owned repo at `${repoRoot}` is editable from this VM.
+    - Commit and push durable service changes from `${repoRoot}`.
+    - To deploy changes, push to the remote and request a rebuild from the Nazar host:
+      `nix run github:nazar/nazar#switch-${vm.hostname}` (run on the host).
+    - Nazar owns infrastructure and networking: host VM lifecycle, VMID/IP/MAC,
+      sizing, NAT/forwarding, public exposure, and shared network policy.
+    - Do not create public exposure, firewall, VMID/IP/MAC, or host
+      lifecycle changes from a VM repo. Those belong to `/root/nazar`.
   '';
   pi = pkgs.callPackage ../../packages/pi { };
 
@@ -58,6 +80,12 @@ in
 {
   imports = [ ./pi-default-packages.nix ];
 
+  # Allow Git operations in the VM service repo without ownership warnings.
+  programs.git = {
+    enable = true;
+    config.safe.directory = repoRoot;
+  };
+
   environment.systemPackages = [
     pi
     pkgs.nodejs
@@ -73,4 +101,9 @@ in
   systemd.tmpfiles.rules = [
     "d ${repoRoot} 0755 alex users - -"
   ];
+
+  system.activationScripts.nazar-vm-agent-context = lib.stringAfter [ "users" ] ''
+    install -d -m 0755 -o alex -g users /home/alex/.pi/agent
+    install -m 0644 -o alex -g users ${lib.escapeShellArg agentsMarkdown} /home/alex/.pi/agent/AGENTS.md
+  '';
 }
