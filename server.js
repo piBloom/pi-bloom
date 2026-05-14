@@ -35,6 +35,7 @@ const HOST = process.env.NIXPI_HOST || "0.0.0.0";
 const CWD = process.env.NIXPI_CWD || process.env.HOME;
 const PI_BIN = process.env.NIXPI_PI_BIN || "pi";
 const SSH_BIN = process.env.NIXPI_SSH_BIN || "ssh";
+console.log(`[DEBUG] SSH_BIN=${SSH_BIN} NIXPI_SSH_BIN=${process.env.NIXPI_SSH_BIN} PATH=${process.env.PATH?.split(':').length} entries`);
 const WORKSPACES_CONFIG = process.env.NIXPI_WORKSPACES_CONFIG || "";
 const IDLE_TIMEOUT_MS = parseInt(
 	process.env.NIXPI_IDLE_TIMEOUT_MS || "300000",
@@ -993,6 +994,13 @@ function ensurePi(ws) {
 	// Capture ws in closure for the event handlers
 	const procWs = ws;
 
+	procWs.piProc.on("error", (err) => {
+		console.log(`  pi spawn error [${ws.name}]: ${err.message} code=${err.code} path=${err.path} spawnBin=${spawnBin}`);
+		console.log(`  [DEBUG] existsSync(spawnBin)=${existsSync(spawnBin)} spawnCwd=${spawnCwd}`);
+		setPiHealth(procWs, false);
+		procWs.piConnected = false;
+	});
+
 	procWs.piProc.stdout.on("data", (chunk) => {
 		procWs.lineBuffer += chunk.toString();
 		const lines = procWs.lineBuffer.split("\n");
@@ -1016,7 +1024,6 @@ function ensurePi(ws) {
 
 	procWs.piProc.on("error", (err) => {
 		console.error(`  pi spawn error [${procWs.name}]:`, err.message);
-		setPiHealth(procWs, false);
 		broadcast({
 			type: "error",
 			message: `Pi failed to start: ${err.message}. Click ↻ to retry.`,
