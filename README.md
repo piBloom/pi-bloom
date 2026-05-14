@@ -54,7 +54,7 @@ flake.lock                # pinned inputs
 nix/fleet/vms.nix         # VM inventory: IDs, IPs, DNS, sizing, service contracts
 nix/fleet/exposure.nix    # private/public HTTP exposure policy
 nix/modules/host/         # host NixOS modules, including private access/firewall/proxies
-nix/modules/common/       # reusable MicroVM guest baseline
+nix/modules/guest/        # reusable MicroVM guest baseline
 nix/modules/services/     # thin integration wrappers for external VM services
 runbooks/                 # operational runbooks
 ```

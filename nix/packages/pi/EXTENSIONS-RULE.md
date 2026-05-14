@@ -202,7 +202,7 @@ ls -la ~/.pi/agent/
 The canonical list of default pi extensions is in one place:
 
 ```nix
-# nix/modules/common/pi-default-packages.nix
+# nix/modules/guest/pi-default-packages.nix
 defaultPiPackages = [
   "npm:pi-subagents"
   "npm:context-mode"
