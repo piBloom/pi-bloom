@@ -22,7 +22,7 @@ nazar-vm-repo-bootstrap
 cd ~/minecraft
 pi
 nix flake check --no-build
-# commit and push to Forgejo
+# commit and push to the Git server
 nazar-vm-switch
 ```
 
