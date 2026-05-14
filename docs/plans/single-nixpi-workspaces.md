@@ -337,6 +337,6 @@ execution. This is simpler and gives nixpi local file access for the UI.
 8. ~~**Remove VM virtiofs pi shares**~~ — ✅ done (removed git-pi, minecraft-pi, dav-server-pi from vms.nix)
 9. ~~**Make VM pi-agent opt-in**~~ — ✅ done (vm.piAgent.enable, conditional import in microvm-host.nix)
 10. ~~**Ensure SSH host→VM connectivity**~~ — ✅ done (SSH with `-T` verified, admin-keys.nix updated, openssh in PATH)
-11. **Test each workspace** — 🔲 pending deploy
+11. ~~**Test each workspace**~~ — ✅ done (nixpi running, 4 workspaces visible, nazar active+connected, SSH RPC to all 3 VMs verified)
 12. ~~**Update nazar-context**~~ — ✅ done (removed nixpi from self-flake, removed from commonVmModules)
-13. **Clean up** — 🔲 remove deprecated nixpi.nix guest module after migration
+13. **Clean up** — 🔲 remove deprecated nixpi.nix guest module after migration, remove context-mode plugin

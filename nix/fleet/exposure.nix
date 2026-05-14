@@ -7,9 +7,8 @@
   # and opens TCP/80. Only use after an explicit hardening review.
 
   # Domains listed here stay out of generated private /etc/hosts entries.
-  # nixpi.nazar.studio is excluded so operator laptops resolve it through
-  # public DNS instead of the sshuttle private /etc/hosts override.
-  privateDomainExclusions = [ "nixpi.nazar.studio" ];
+  # Keep this empty so all private domains are routed through sshuttle.
+  privateDomainExclusions = [ ];
 
   host = {
     site = {
