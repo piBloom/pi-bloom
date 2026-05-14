@@ -157,11 +157,11 @@
         "rev": "e48f2866d53380bfd7444be83296750c0c29ca97",
         "revCount": 2,
         "type": "git",
-        "url": "ssh://git@git.nazar.studio:10022/nazar/minecraft.git"
+        "url": "ssh://alex@git.nazar.studio/nazar/minecraft.git"
       },
       "original": {
         "type": "git",
-        "url": "ssh://git@git.nazar.studio:10022/nazar/minecraft.git"
+        "url": "ssh://alex@git.nazar.studio/nazar/minecraft.git"
       }
     },
     "nixpi": {
@@ -177,11 +177,11 @@
         "rev": "4cb92636ccd79839303499f3fd9ae0d435ed8632",
         "revCount": 42,
         "type": "git",
-        "url": "ssh://git@git.nazar.studio:10022/nazar/nixpi.git"
+        "url": "ssh://alex@git.nazar.studio/nazar/nixpi.git"
       },
       "original": {
         "type": "git",
-        "url": "ssh://git@git.nazar.studio:10022/nazar/nixpi.git"
+        "url": "ssh://alex@git.nazar.studio/nazar/nixpi.git"
       }
     },
     "nixpkgs": {

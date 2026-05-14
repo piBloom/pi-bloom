@@ -18,4 +18,5 @@
   };
 
   networking.firewall.interfaces.enp0s31f6.allowedTCPPorts = [ 22 ];
+  networking.firewall.interfaces.nazar-private.allowedTCPPorts = [ 22 ];
 }
