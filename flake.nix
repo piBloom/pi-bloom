@@ -144,14 +144,14 @@
       };
 
       deploy.nodes = nixpkgs.lib.mapAttrs (name: vm: {
-        # Deploy over private MicroVM aliases.
-        # `alex` is the canonical VM admin user; deploy-rs escalates to the
-        # root system profile through passwordless sudo declared in common users.
+        # Deploy over private MicroVM aliases from the Nazar orchestrator.
+        # Use root for deploy-rs store copies/activation; root SSH is key-only
+        # and trusted only from the declarative Nazar host/admin key set.
         hostname = vm.hostname;
         fastConnection = true;
         remoteBuild = false;
         profiles.system = {
-          sshUser = "alex";
+          sshUser = "root";
           user = "root";
           path = deploy-rs.lib.${system}.activate.nixos self.nixosConfigurations.${name};
         };
