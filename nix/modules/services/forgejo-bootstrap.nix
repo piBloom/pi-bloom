@@ -95,8 +95,8 @@ in
 
     serviceConfig = {
       Type = "oneshot";
-      User = cfg.user;
-      Group = cfg.group;
+      User = "root";
+      Group = "root";
       WorkingDirectory = cfg.stateDir;
       ProtectProc = "invisible";
       ProcSubset = "pid";
