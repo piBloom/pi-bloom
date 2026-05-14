@@ -16,7 +16,7 @@ buildNpmPackage' {
   src = lib.cleanSource ../../..;
 
   npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-Kfmq6Gji3wnqDKvqG7nq7bW6JfuQEPAZqzXKCNGqZZ4=";
+  npmDepsHash = "sha256-AKUWEkJgdaGfAQZJtjTc3E3lbcahvM5uXnpQ25BhqdQ=";
 
   nativeBuildInputs = [ makeWrapper ];
 
@@ -31,13 +31,11 @@ buildNpmPackage' {
       package-lock.json \
       server.js \
       public \
-      bin \
       node_modules \
       $out/lib/nixpi/
 
-    chmod +x $out/lib/nixpi/bin/nixpi.js
     makeWrapper ${nodejs_22}/bin/node $out/bin/nixpi \
-      --add-flags $out/lib/nixpi/bin/nixpi.js
+      --add-flags $out/lib/nixpi/server.js
 
     runHook postInstall
   '';

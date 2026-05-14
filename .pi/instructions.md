@@ -14,7 +14,6 @@ NixPi is Nazar's private web interface for Pi Coding Agent.
 - [ ] No secrets, API keys, WireGuard private keys, or private DAV credentials.
 - [ ] UI, package metadata, CLI, and docs use NixPi/Nazar names.
 - [ ] `node --check server.js` passes.
-- [ ] `node --check bin/nixpi.js` passes.
 - [ ] If Nix packaging changed, `nix build .#nixpi` or `nix flake check --no-build` has been run.
 
 ## Nazar integration boundary

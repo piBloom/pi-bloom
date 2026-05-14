@@ -34,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "ssh://git@git.nazar.studio:10022/nazar/nixpi.git"
+    "url": "ssh://alex@git.nazar.studio/nazar/nixpi.git"
   },
   "homepage": "https://git.nazar.studio/nazar/nixpi"
 }
