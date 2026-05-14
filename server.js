@@ -4,9 +4,14 @@
  * Spawns `pi --mode rpc` as a subprocess and bridges JSON-RPC
  * to browser clients over WebSocket.
  *
+ * Supports multiple named workspaces, each with its own CWD and pi
+ * subprocess. Only the active workspace's pi runs; others are lazily
+ * killed after an idle timeout.
+ *
  * Usage:
  *   node server.js                          # defaults
  *   NIXPI_PORT=8080 NIXPI_CWD=/path node server.js
+ *   NIXPI_WORKSPACES_CONFIG=/path/to/workspaces.json node server.js
  */
 
 import { spawn } from "node:child_process";
@@ -29,6 +34,11 @@ const PORT = parseInt(process.env.NIXPI_PORT || "4815", 10);
 const HOST = process.env.NIXPI_HOST || "0.0.0.0";
 const CWD = process.env.NIXPI_CWD || process.env.HOME;
 const PI_BIN = process.env.NIXPI_PI_BIN || "pi";
+const WORKSPACES_CONFIG = process.env.NIXPI_WORKSPACES_CONFIG || "";
+const IDLE_TIMEOUT_MS = parseInt(
+	process.env.NIXPI_IDLE_TIMEOUT_MS || "300000",
+	10,
+); // 5 min default
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── Module path resolution (handles hoisted node_modules via npx) ──────────
@@ -53,29 +63,178 @@ function resolveModuleFile(pkgName, subpath) {
 const MARKED_UMD_PATH = resolveModuleFile("marked", "lib/marked.umd.js");
 const DOMPURIFY_PATH = resolveModuleFile("dompurify", "dist/purify.js");
 
+// ── Workspaces ──────────────────────────────────────────────────────────
+// Workspace config is loaded from workspaces.json (Nix-managed).
+// Each workspace has: name, cwd, mode ("local"|"ssh"), context, and
+// optional sshHost/sshUser for remote workspaces.
+
+const workspaceConfig = (() => {
+	if (!WORKSPACES_CONFIG) return null;
+	try {
+		const raw = readFileSync(WORKSPACES_CONFIG, "utf8");
+		return JSON.parse(raw);
+	} catch (e) {
+		console.error(
+			`  workspaces config: failed to load ${WORKSPACES_CONFIG}:`,
+			e.message,
+		);
+		return null;
+	}
+})();
+
+const workspaces = new Map(); // name → workspace state
+let activeWorkspaceName = null;
+
+function initWorkspaces() {
+	if (!workspaceConfig?.workspaces) {
+		// Legacy single-workspace mode (no workspaces.json)
+		workspaces.set("default", {
+			name: "default",
+			cwd: CWD,
+			mode: "local",
+			context: "",
+			sshHost: null,
+			sshUser: "alex",
+			// Runtime state
+			piProc: null,
+			busy: false,
+			piConnected: false,
+			piHealthInterval: null,
+			idleTimer: null,
+			lineBuffer: "",
+			requestId: 0,
+			pendingRequests: new Map(),
+			restarting: false,
+			cachedCommands: [],
+			currentSessionFile: null,
+			currentSessionId: null,
+			historyLoadPending: false,
+			currentModel: null,
+			currentThinkingLevel: "medium",
+		});
+		activeWorkspaceName = "default";
+		return;
+	}
+
+	const defaultName =
+		workspaceConfig.default || Object.keys(workspaceConfig.workspaces)[0];
+	for (const [name, ws] of Object.entries(workspaceConfig.workspaces)) {
+		workspaces.set(name, {
+			name,
+			cwd: ws.cwd || CWD,
+			mode: ws.mode || "local",
+			sshHost: ws.sshHost || null,
+			sshUser: ws.sshUser || "alex",
+			context: ws.context || "",
+			// Runtime state
+			piProc: null,
+			busy: false,
+			piConnected: false,
+			piHealthInterval: null,
+			idleTimer: null,
+			lineBuffer: "",
+			requestId: 0,
+			pendingRequests: new Map(),
+			restarting: false,
+			cachedCommands: [],
+			currentSessionFile: null,
+			currentSessionId: null,
+			historyLoadPending: false,
+			currentModel: null,
+			currentThinkingLevel: "medium",
+		});
+	}
+	activeWorkspaceName = defaultName;
+}
+
+function getActive() {
+	return workspaces.get(activeWorkspaceName);
+}
+
+// Kill a workspace's pi subprocess after idle timeout.
+function scheduleIdleKill(ws) {
+	clearIdleTimer(ws);
+	ws.idleTimer = setTimeout(() => {
+		if (ws.piProc && !ws.piProc.killed && !ws.busy) {
+			console.log(
+				`  [idle] killing pi for workspace '${ws.name}' after ${IDLE_TIMEOUT_MS / 1000}s idle`,
+			);
+			ws.piProc.kill("SIGTERM");
+			ws.piProc = null;
+			ws.piConnected = false;
+			broadcast({
+				type: "pi_health",
+				connected: false,
+				busy: false,
+				workspace: ws.name,
+			});
+		}
+		ws.idleTimer = null;
+	}, IDLE_TIMEOUT_MS);
+}
+
+function clearIdleTimer(ws) {
+	if (ws.idleTimer) {
+		clearTimeout(ws.idleTimer);
+		ws.idleTimer = null;
+	}
+}
+
+function switchWorkspace(name) {
+	if (!workspaces.has(name)) return;
+	if (name === activeWorkspaceName) return;
+
+	const oldWs = getActive();
+	const newWs = workspaces.get(name);
+
+	// Schedule idle kill for the old workspace's pi
+	if (oldWs.piProc && !oldWs.piProc.killed && !oldWs.busy) {
+		scheduleIdleKill(oldWs);
+	}
+
+	activeWorkspaceName = name;
+	console.log(`  switched to workspace '${name}'`);
+
+	// Notify all clients about the switch
+	broadcast({
+		type: "workspace_switched",
+		workspace: name,
+		workspaces: getWorkspacesInfo(),
+	});
+
+	// Ensure the new workspace has pi running
+	ensurePi(newWs);
+	clearIdleTimer(newWs);
+}
+
+function getWorkspacesInfo() {
+	const result = {};
+	for (const [name, ws] of workspaces) {
+		result[name] = {
+			name,
+			cwd: ws.cwd,
+			mode: ws.mode,
+			context: ws.context,
+			active: name === activeWorkspaceName,
+			piConnected: ws.piConnected,
+			busy: ws.busy,
+		};
+	}
+	return result;
+}
+
+initWorkspaces();
+
 // ── State ───────────────────────────────────────────────────────────────
-let piProc = null;
-let restarting = false;
-let requestId = 0;
-const pendingRequests = new Map();
-let lineBuffer = "";
 const clients = new Set();
-let busy = false;
-let piConnected = false;
-let piHealthInterval = null;
-let cachedCommands = [];
-let currentSessionFile = null;
-let currentSessionId = null;
-let historyLoadPending = false;
-let currentModel = null;
-let currentThinkingLevel = "medium";
 
 // ── Session utilities ────────────────────────────────────────────────────
-function parseSessions() {
+function parseSessions(ws) {
+	ws = ws || getActive();
 	const homeDir = process.env.HOME || "";
 	const sessionBaseDir = join(homeDir, ".pi", "agent", "sessions");
 	// /home/alex/repos/nixpi → --home-alex-repos-nixpi--
-	const cwdKey = "--" + CWD.replace(/^\//, "").replace(/\//g, "-") + "--";
+	const cwdKey = "--" + ws.cwd.replace(/^\//, "").replace(/\//g, "-") + "--";
 	const sessionDir = join(sessionBaseDir, cwdKey);
 
 	if (!existsSync(sessionDir)) return [];
@@ -130,7 +289,7 @@ function parseSessions() {
 			sessions.push({
 				id: header.id,
 				file,
-				cwd: header.cwd || CWD,
+				cwd: header.cwd || ws.cwd,
 				timestamp: header.timestamp,
 				lastTimestamp: lastTimestamp || header.timestamp,
 				name,
@@ -250,7 +409,11 @@ app.get("/manifest.json", (_req, res) => {
 // Session list REST endpoint
 app.get("/api/sessions", (_req, res) => {
 	try {
-		res.json({ sessions: parseSessions(), currentFile: currentSessionFile });
+		const ws = getActive();
+		res.json({
+			sessions: parseSessions(ws),
+			currentFile: ws.currentSessionFile,
+		});
 	} catch (e) {
 		res.status(500).json({ error: e.message });
 	}
@@ -259,13 +422,14 @@ app.get("/api/sessions", (_req, res) => {
 // List archived sessions
 app.get("/api/sessions/archived", (_req, res) => {
 	try {
+		const ws = getActive();
 		const sessionBaseDir = join(
 			process.env.HOME || "",
 			".pi",
 			"agent",
 			"sessions",
 		);
-		const cwdKey = "--" + CWD.replace(/^\//, "").replace(/\//g, "-") + "--";
+		const cwdKey = "--" + ws.cwd.replace(/^\//, "").replace(/\//g, "-") + "--";
 		const archiveDir = join(sessionBaseDir, cwdKey, "archived");
 		if (!existsSync(archiveDir)) return res.json({ sessions: [] });
 		const files = readdirSync(archiveDir)
@@ -393,28 +557,40 @@ app.delete("/api/sessions", (req, res) => {
 	}
 });
 
-// Restart Pi subprocess
+// Restart Pi subprocess (active workspace)
 app.post("/api/restart", (_req, res) => {
 	try {
-		restarting = true;
-		if (piProc && !piProc.killed) {
-			piProc.kill("SIGTERM");
-			piProc = null;
+		const ws = getActive();
+		ws.restarting = true;
+		if (ws.piProc && !ws.piProc.killed) {
+			ws.piProc.kill("SIGTERM");
+			ws.piProc = null;
 		}
-		busy = false;
-		setPiHealth(false);
-		broadcast({ type: "status", busy: false, piConnected: false });
+		ws.busy = false;
+		setPiHealth(ws, false);
+		broadcast({
+			type: "status",
+			busy: false,
+			piConnected: false,
+			workspace: ws.name,
+		});
 		setTimeout(() => {
-			ensurePi();
+			ensurePi(ws);
 			setTimeout(() => {
-				restarting = false;
+				ws.restarting = false;
 			}, 2000);
 		}, 500);
 		res.json({ ok: true });
 	} catch (e) {
-		restarting = false;
+		const ws = getActive();
+		ws.restarting = false;
 		res.status(500).json({ error: e.message });
 	}
+});
+
+// Workspace list REST endpoint
+app.get("/api/workspaces", (_req, res) => {
+	res.json(getWorkspacesInfo());
 });
 
 // ── Whisper Speech-to-Text ──────────────────────────────────────────────
@@ -484,20 +660,30 @@ const wss = new WebSocketServer({ server, path: "/ws" });
 
 wss.on("connection", (ws) => {
 	clients.add(ws);
+	const active = getActive();
 	ws.send(
-		JSON.stringify({ type: "status", busy, connected: true, piConnected }),
+		JSON.stringify({
+			type: "status",
+			busy: active.busy,
+			connected: true,
+			piConnected: active.piConnected,
+			workspace: active.name,
+			workspaces: getWorkspacesInfo(),
+		}),
 	);
-	if (cachedCommands.length > 0) {
-		ws.send(JSON.stringify({ type: "commands", commands: cachedCommands }));
+	if (active.cachedCommands.length > 0) {
+		ws.send(
+			JSON.stringify({ type: "commands", commands: active.cachedCommands }),
+		);
 	}
-	if (currentSessionFile || currentModel) {
+	if (active.currentSessionFile || active.currentModel) {
 		ws.send(
 			JSON.stringify({
 				type: "session_state",
-				sessionFile: currentSessionFile,
-				sessionId: currentSessionId,
-				model: currentModel,
-				thinkingLevel: currentThinkingLevel,
+				sessionFile: active.currentSessionFile,
+				sessionId: active.currentSessionId,
+				model: active.currentModel,
+				thinkingLevel: active.currentThinkingLevel,
 			}),
 		);
 	}
@@ -527,50 +713,110 @@ function broadcast(data) {
 }
 
 // ── Client message handler ─────────────────────────────────────────────
-async function handleClientMessage(ws, msg) {
+async function handleClientMessage(clientWs, msg) {
 	switch (msg.type) {
-		case "prompt":
+		case "switch_workspace": {
+			if (!msg.name) return;
+			switchWorkspace(msg.name);
+			// After switching, send the new active workspace's full state
+			const active = getActive();
+			clientWs.send(
+				JSON.stringify({
+					type: "status",
+					busy: active.busy,
+					connected: true,
+					piConnected: active.piConnected,
+					workspace: active.name,
+					workspaces: getWorkspacesInfo(),
+				}),
+			);
+			if (active.cachedCommands.length > 0) {
+				clientWs.send(
+					JSON.stringify({ type: "commands", commands: active.cachedCommands }),
+				);
+			}
+			if (active.currentSessionFile || active.currentModel) {
+				clientWs.send(
+					JSON.stringify({
+						type: "session_state",
+						sessionFile: active.currentSessionFile,
+						sessionId: active.currentSessionId,
+						model: active.currentModel,
+						thinkingLevel: active.currentThinkingLevel,
+					}),
+				);
+			}
+			break;
+		}
+
+		case "list_workspaces": {
+			clientWs.send(
+				JSON.stringify({
+					type: "workspaces",
+					workspaces: getWorkspacesInfo(),
+					active: activeWorkspaceName,
+				}),
+			);
+			break;
+		}
+
+		case "prompt": {
 			if (!msg.text?.trim()) return;
-			ensurePi();
-			if (busy) {
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			if (ws.busy) {
 				// Pi supports queuing via streamingBehavior
 				const qParams = { message: msg.text, streamingBehavior: "followUp" };
 				if (msg.images?.length) qParams.images = msg.images;
-				sendRpc("prompt", qParams);
+				sendRpc(ws, "prompt", qParams);
 			} else {
-				busy = true;
-				broadcast({ type: "status", busy: true });
+				ws.busy = true;
+				broadcast({ type: "status", busy: true, workspace: ws.name });
 				broadcast({ type: "agent_start" });
 				const promptParams = { message: msg.text };
 				if (msg.images?.length) promptParams.images = msg.images;
-				sendRpc("prompt", promptParams);
+				sendRpc(ws, "prompt", promptParams);
 			}
 			break;
+		}
 
-		case "abort":
-			ensurePi();
-			sendRpc("abort", {});
-			busy = false;
-			broadcast({ type: "status", busy: false, aborted: true });
+		case "abort": {
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			sendRpc(ws, "abort", {});
+			ws.busy = false;
+			broadcast({
+				type: "status",
+				busy: false,
+				aborted: true,
+				workspace: ws.name,
+			});
 			broadcast({ type: "agent_end" });
 			break;
+		}
 
-		case "new_session":
-			ensurePi();
-			sendRpc("new_session", {});
-			busy = false;
-			broadcast({ type: "status", busy: false });
+		case "new_session": {
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			sendRpc(ws, "new_session", {});
+			ws.busy = false;
+			broadcast({ type: "status", busy: false, workspace: ws.name });
 			broadcast({ type: "session_reset" });
 			setTimeout(() => {
-				sendRpc("get_commands", {});
-				sendRpc("get_state", {});
+				sendRpc(ws, "get_commands", {});
+				sendRpc(ws, "get_state", {});
 			}, 500);
 			break;
+		}
 
-		case "switch_session":
+		case "switch_session": {
 			if (!msg.sessionPath) return;
-			if (busy) {
-				ws.send(
+			const ws = getActive();
+			if (ws.busy) {
+				clientWs.send(
 					JSON.stringify({
 						type: "error",
 						message: "Agent is busy. Stop before switching sessions.",
@@ -578,186 +824,270 @@ async function handleClientMessage(ws, msg) {
 				);
 				return;
 			}
-			ensurePi();
-			pendingRequests.set("switch_session_path", msg.sessionPath);
-			sendRpc("switch_session", { sessionPath: msg.sessionPath });
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			ws.pendingRequests.set("switch_session_path", msg.sessionPath);
+			sendRpc(ws, "switch_session", { sessionPath: msg.sessionPath });
 			break;
+		}
 
-		case "load_history":
-			if (busy) return;
-			ensurePi();
-			historyLoadPending = true;
-			sendRpc("get_messages", {});
+		case "load_history": {
+			const ws = getActive();
+			if (ws.busy) return;
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			ws.historyLoadPending = true;
+			sendRpc(ws, "get_messages", {});
 			break;
+		}
 
-		case "set_session_name":
+		case "set_session_name": {
 			if (typeof msg.name !== "string") return;
-			ensurePi();
-			sendRpc("set_session_name", { name: msg.name });
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			sendRpc(ws, "set_session_name", { name: msg.name });
 			break;
+		}
 
-		case "set_model":
+		case "set_model": {
 			if (!msg.provider || !msg.modelId) return;
-			ensurePi();
-			sendRpc("set_model", { provider: msg.provider, modelId: msg.modelId });
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			sendRpc(ws, "set_model", {
+				provider: msg.provider,
+				modelId: msg.modelId,
+			});
 			break;
-		case "cycle_model":
-			ensurePi();
-			sendRpc("cycle_model", {});
+		}
+		case "cycle_model": {
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			sendRpc(ws, "cycle_model", {});
 			break;
-		case "set_thinking_level":
+		}
+		case "set_thinking_level": {
 			if (!msg.level) return;
-			ensurePi();
-			sendRpc("set_thinking_level", { level: msg.level });
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			sendRpc(ws, "set_thinking_level", { level: msg.level });
 			break;
-		case "cycle_thinking_level":
-			ensurePi();
-			sendRpc("cycle_thinking_level", {});
+		}
+		case "cycle_thinking_level": {
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			sendRpc(ws, "cycle_thinking_level", {});
 			break;
-		case "get_stats":
-			ensurePi();
-			sendRpc("get_session_stats", {});
+		}
+		case "get_stats": {
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			sendRpc(ws, "get_session_stats", {});
 			break;
-		case "get_models":
-			ensurePi();
-			sendRpc("get_available_models", {});
+		}
+		case "get_models": {
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			sendRpc(ws, "get_available_models", {});
 			break;
-		case "export_request":
-			ensurePi();
-			sendRpc("get_messages", {});
-			pendingRequests.set("export", {
+		}
+		case "export_request": {
+			const ws = getActive();
+			clearIdleTimer(ws);
+			ensurePi(ws);
+			sendRpc(ws, "get_messages", {});
+			ws.pendingRequests.set("export", {
 				resolve: (messages) => {
 					broadcast({
 						type: "export_response",
 						session: {
 							messages,
 							exportedAt: new Date().toISOString(),
-							cwd: CWD,
+							cwd: ws.cwd,
 						},
 					});
 				},
 			});
 			break;
+		}
 	}
 }
 
 // ── Pi RPC subprocess ──────────────────────────────────────────────────
-function setPiHealth(connected) {
-	const changed = piConnected !== connected;
-	piConnected = connected;
+function setPiHealth(ws, connected) {
+	const changed = ws.piConnected !== connected;
+	ws.piConnected = connected;
 	if (changed) {
-		broadcast({ type: "pi_health", connected, busy });
-		console.log(`  pi health: ${connected ? "CONNECTED" : "DISCONNECTED"}`);
+		broadcast({
+			type: "pi_health",
+			connected,
+			busy: ws.busy,
+			workspace: ws.name,
+		});
+		console.log(
+			`  pi health [${ws.name}]: ${connected ? "CONNECTED" : "DISCONNECTED"}`,
+		);
 	}
 }
 
-function startPiHeartbeat() {
-	if (piHealthInterval) clearInterval(piHealthInterval);
-	piHealthInterval = setInterval(() => {
-		if (!piProc || piProc.killed) {
-			setPiHealth(false);
+function startPiHeartbeat(ws) {
+	if (ws.piHealthInterval) clearInterval(ws.piHealthInterval);
+	ws.piHealthInterval = setInterval(() => {
+		if (!ws.piProc || ws.piProc.killed) {
+			setPiHealth(ws, false);
 		}
 	}, 10000);
 }
 
-function ensurePi() {
-	if (piProc && !piProc.killed) return;
+function ensurePi(ws) {
+	ws = ws || getActive();
+	if (ws.piProc && !ws.piProc.killed) return;
 
-	console.log("→ spawning pi --mode rpc");
-	setPiHealth(false);
-	piProc = spawn(PI_BIN, ["--mode", "rpc"], {
-		cwd: CWD,
+	// Build spawn command: for SSH-mode workspaces, tunnel pi over SSH.
+	// Local:  spawn("pi", ["--mode", "rpc"])
+	// SSH:    spawn("ssh", ["alex@10.10.10.30", "pi", "--mode", "rpc"])
+	let spawnBin, spawnArgs, spawnCwd;
+	if (ws.mode === "ssh" && ws.sshHost) {
+		spawnBin = "ssh";
+		spawnArgs = [
+			"-T", // no PTY — raw pipe for JSON-RPC
+			"-o",
+			"StrictHostKeyChecking=accept-new",
+			"-o",
+			"ServerAliveInterval=30",
+			"-o",
+			"ServerAliveCountMax=3",
+			`${ws.sshUser}@${ws.sshHost}`,
+			"pi",
+			"--mode",
+			"rpc",
+		];
+		// CWD doesn't apply locally for SSH — pi runs in the VM's $HOME.
+		// But we set a reasonable local cwd for the ssh process itself.
+		spawnCwd = ws.cwd;
+	} else {
+		spawnBin = PI_BIN;
+		spawnArgs = ["--mode", "rpc"];
+		spawnCwd = ws.cwd;
+	}
+
+	console.log(
+		`→ spawning ${spawnBin} ${spawnArgs.join(" ")} [workspace: ${ws.name}]`,
+	);
+	setPiHealth(ws, false);
+	ws.piProc = spawn(spawnBin, spawnArgs, {
+		cwd: spawnCwd,
 		stdio: ["pipe", "pipe", "pipe"],
 		env: { ...process.env },
 		shell: process.platform === "win32",
 	});
 
-	console.log(`  pi PID: ${piProc.pid}`);
+	console.log(`  pi PID: ${ws.piProc.pid}`);
 
-	piProc.stdout.on("data", (chunk) => {
-		lineBuffer += chunk.toString();
-		const lines = lineBuffer.split("\n");
-		lineBuffer = lines.pop();
+	// Capture ws in closure for the event handlers
+	const procWs = ws;
+
+	procWs.piProc.stdout.on("data", (chunk) => {
+		procWs.lineBuffer += chunk.toString();
+		const lines = procWs.lineBuffer.split("\n");
+		procWs.lineBuffer = lines.pop();
 		for (const line of lines) {
 			if (!line.trim()) continue;
 			try {
 				const data = JSON.parse(line);
-				handleRpcEvent(data);
+				handleRpcEvent(procWs, data);
 			} catch (e) {
 				console.log("  pi stdout:", line.substring(0, 120));
 			}
 		}
 	});
 
-	piProc.stderr.on("data", (chunk) => {
+	procWs.piProc.stderr.on("data", (chunk) => {
 		const text = chunk.toString().trim();
-		if (text) console.log("  pi stderr:", text.substring(0, 200));
+		if (text)
+			console.log(`  pi stderr [${procWs.name}]:`, text.substring(0, 200));
 	});
 
-	piProc.on("error", (err) => {
-		console.error("  pi spawn error:", err.message);
-		setPiHealth(false);
+	procWs.piProc.on("error", (err) => {
+		console.error(`  pi spawn error [${procWs.name}]:`, err.message);
+		setPiHealth(procWs, false);
 		broadcast({
 			type: "error",
 			message: `Pi failed to start: ${err.message}. Click ↻ to retry.`,
+			workspace: procWs.name,
 		});
 	});
 
 	// Debug: log when stdout closes
-	piProc.stdout.on("end", () => {
-		console.log("  [DEBUG] pi stdout ended");
+	procWs.piProc.stdout.on("end", () => {
+		console.log(`  [DEBUG] pi stdout ended [${procWs.name}]`);
 	});
 
-	piProc.stdin.on("error", (err) => {
-		console.error("  [DEBUG] pi stdin error:", err.message);
+	procWs.piProc.stdin.on("error", (err) => {
+		console.error(`  [DEBUG] pi stdin error [${procWs.name}]:`, err.message);
 	});
 
 	// Request initial state once pi is ready
 	setTimeout(() => {
-		if (piProc && !piProc.killed) {
-			console.log("  requesting initial state from pi...");
-			setPiHealth(true);
-			startPiHeartbeat();
-			sendRpc("get_commands", {});
-			sendRpc("get_state", {});
-			sendRpc("get_available_models", {});
+		if (procWs.piProc && !procWs.piProc.killed) {
+			console.log(`  requesting initial state from pi [${procWs.name}]...`);
+			setPiHealth(procWs, true);
+			startPiHeartbeat(procWs);
+			sendRpc(procWs, "get_commands", {});
+			sendRpc(procWs, "get_state", {});
+			sendRpc(procWs, "get_available_models", {});
 		} else {
-			setPiHealth(false);
-			if (!restarting)
+			setPiHealth(procWs, false);
+			if (!procWs.restarting)
 				broadcast({
 					type: "error",
 					message: "Pi exited immediately. Click Restart to retry.",
+					workspace: procWs.name,
 				});
 		}
 	}, 1500);
 
-	piProc.on("close", (code, signal) => {
-		console.log(`→ pi exited (code ${code}, signal ${signal})`);
-		piProc = null;
-		busy = false;
-		setPiHealth(false);
-		broadcast({ type: "status", busy: false, connected: false });
+	procWs.piProc.on("close", (code, signal) => {
+		console.log(
+			`→ pi exited [${procWs.name}] (code ${code}, signal ${signal})`,
+		);
+		procWs.piProc = null;
+		procWs.busy = false;
+		setPiHealth(procWs, false);
+		broadcast({
+			type: "status",
+			busy: false,
+			connected: false,
+			workspace: procWs.name,
+		});
 		setTimeout(() => {
-			if (!piProc) ensurePi();
+			// Only auto-restart if this is still the active workspace
+			if (!procWs.piProc && procWs === getActive()) ensurePi(procWs);
 		}, 3000);
 	});
 }
 
-function sendRpc(command, params) {
-	if (!piProc || piProc.killed) return;
-	const id = `${++requestId}`;
+function sendRpc(ws, command, params) {
+	if (!ws.piProc || ws.piProc.killed) return;
+	const id = `${++ws.requestId}`;
 	const msg = JSON.stringify({ id, type: command, ...params }) + "\n";
-	piProc.stdin.write(msg);
+	ws.piProc.stdin.write(msg);
 }
 
-function handleRpcEvent(data) {
+function handleRpcEvent(ws, data) {
 	// RPC responses (have id)
 	if (data.id) {
 		if (data.type === "response") {
 			if (data.command === "prompt" && !data.success) {
 				broadcast({ type: "error", message: data.error || "Prompt failed" });
-				busy = false;
-				broadcast({ type: "status", busy: false });
+				ws.busy = false;
+				broadcast({ type: "status", busy: false, workspace: ws.name });
 			}
 
 			if (
@@ -765,14 +1095,14 @@ function handleRpcEvent(data) {
 				data.success &&
 				data.data?.messages
 			) {
-				if (historyLoadPending) {
-					historyLoadPending = false;
+				if (ws.historyLoadPending) {
+					ws.historyLoadPending = false;
 					broadcast({ type: "history", messages: data.data.messages });
 				}
-				const pending = pendingRequests.get("export");
+				const pending = ws.pendingRequests.get("export");
 				if (pending) {
 					pending.resolve(data.data.messages);
-					pendingRequests.delete("export");
+					ws.pendingRequests.delete("export");
 				}
 			}
 
@@ -781,49 +1111,50 @@ function handleRpcEvent(data) {
 				data.success &&
 				data.data?.commands
 			) {
-				cachedCommands = data.data.commands;
-				broadcast({ type: "commands", commands: cachedCommands });
+				ws.cachedCommands = data.data.commands;
+				broadcast({ type: "commands", commands: ws.cachedCommands });
 			}
 
 			if (data.command === "get_state" && data.success && data.data) {
-				currentSessionFile = data.data.sessionFile || null;
-				currentSessionId = data.data.sessionId || null;
-				currentModel = data.data.model || currentModel;
-				currentThinkingLevel = data.data.thinkingLevel || currentThinkingLevel;
+				ws.currentSessionFile = data.data.sessionFile || null;
+				ws.currentSessionId = data.data.sessionId || null;
+				ws.currentModel = data.data.model || ws.currentModel;
+				ws.currentThinkingLevel =
+					data.data.thinkingLevel || ws.currentThinkingLevel;
 				broadcast({
 					type: "session_state",
-					sessionFile: currentSessionFile,
-					sessionId: currentSessionId,
+					sessionFile: ws.currentSessionFile,
+					sessionId: ws.currentSessionId,
 					sessionName: data.data.sessionName,
-					model: currentModel,
-					thinkingLevel: currentThinkingLevel,
+					model: ws.currentModel,
+					thinkingLevel: ws.currentThinkingLevel,
 				});
 			}
 
 			if (data.command === "set_model" && data.success) {
-				sendRpc("get_state", {});
+				sendRpc(ws, "get_state", {});
 			}
 			if (data.command === "cycle_model" && data.success && data.data?.model) {
-				currentModel = data.data.model;
+				ws.currentModel = data.data.model;
 				broadcast({
 					type: "model_state",
-					model: currentModel,
-					thinkingLevel: currentThinkingLevel,
+					model: ws.currentModel,
+					thinkingLevel: ws.currentThinkingLevel,
 				});
 			}
 			if (data.command === "set_thinking_level" && data.success) {
-				sendRpc("get_state", {});
+				sendRpc(ws, "get_state", {});
 			}
 			if (
 				data.command === "cycle_thinking_level" &&
 				data.success &&
 				data.data?.level
 			) {
-				currentThinkingLevel = data.data.level;
+				ws.currentThinkingLevel = data.data.level;
 				broadcast({
 					type: "model_state",
-					model: currentModel,
-					thinkingLevel: currentThinkingLevel,
+					model: ws.currentModel,
+					thinkingLevel: ws.currentThinkingLevel,
 				});
 			}
 			if (data.command === "get_session_stats" && data.success && data.data) {
@@ -840,11 +1171,11 @@ function handleRpcEvent(data) {
 			if (data.command === "switch_session" && data.success) {
 				const cancelled = data.data?.cancelled;
 				// Load messages for the newly switched session (or re-load if same session)
-				historyLoadPending = true;
-				sendRpc("get_messages", {});
-				sendRpc("get_state", {});
+				ws.historyLoadPending = true;
+				sendRpc(ws, "get_messages", {});
+				sendRpc(ws, "get_state", {});
 				if (!cancelled) broadcast({ type: "session_switched" });
-				pendingRequests.delete("switch_session_path");
+				ws.pendingRequests.delete("switch_session_path");
 			}
 
 			if (
@@ -865,11 +1196,11 @@ function handleRpcEvent(data) {
 			break;
 
 		case "agent_end":
-			busy = false;
-			broadcast({ type: "status", busy: false });
+			ws.busy = false;
+			broadcast({ type: "status", busy: false, workspace: ws.name });
 			broadcast(data);
-			sendRpc("get_state", {});
-			sendRpc("get_session_stats", {});
+			sendRpc(ws, "get_state", {});
+			sendRpc(ws, "get_session_stats", {});
 			break;
 
 		case "message_start":
@@ -902,7 +1233,11 @@ function handleRpcEvent(data) {
 // ── Graceful shutdown ───────────────────────────────────────────────────
 function shutdown() {
 	console.log("→ shutting down");
-	if (piProc && !piProc.killed) piProc.kill("SIGTERM");
+	for (const ws of workspaces.values()) {
+		clearIdleTimer(ws);
+		if (ws.piHealthInterval) clearInterval(ws.piHealthInterval);
+		if (ws.piProc && !ws.piProc.killed) ws.piProc.kill("SIGTERM");
+	}
 	wss.close();
 	server.close();
 	process.exit(0);
@@ -912,6 +1247,19 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 // ── Boot ────────────────────────────────────────────────────────────────
-console.log(`  CWD:   ${CWD}`);
+if (workspaces.size === 1 && activeWorkspaceName === "default") {
+	// Legacy single-workspace mode
+	console.log(`  CWD:   ${CWD}`);
+} else {
+	console.log(`  Workspaces:`);
+	for (const [name, ws] of workspaces) {
+		const marker = name === activeWorkspaceName ? "→" : " ";
+		const mode =
+			ws.mode === "ssh" ? `ssh ${ws.sshUser}@${ws.sshHost}` : "local";
+		console.log(
+			`  ${marker} ${name}: ${ws.cwd} (${mode})${ws.context ? ` — ${ws.context}` : ""}`,
+		);
+	}
+}
 console.log(`  Port:  ${PORT}`);
-ensurePi();
+ensurePi(getActive());

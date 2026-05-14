@@ -472,6 +472,13 @@
         >
           Ownloom
         </h1>
+        <div id="workspace-switcher" class="hidden ml-3">
+          <select
+            id="workspace-select"
+            onchange="switchWorkspace(this.value)"
+            class="bg-surface-container border border-outline-variant rounded-sm px-3 py-1 text-on-surface font-label-md outline-none focus:border-primary cursor-pointer"
+          ></select>
+        </div>
       </div>
 
       <div class="flex-1 max-w-lg mx-gutter hidden md:block">
@@ -1210,6 +1217,43 @@
       }
 
       // ── Session management ────────────────────────────────────────────────────
+      // ── Workspace management ──────────────────────────────────
+      let activeWorkspace = "default";
+      let workspacesInfo = {};
+
+      function switchWorkspace(name) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        if (name === activeWorkspace) return;
+        ws.send(JSON.stringify({ type: "switch_workspace", name }));
+      }
+
+      function updateWorkspaceUI(data) {
+        const switcher = document.getElementById("workspace-switcher");
+        const select = document.getElementById("workspace-select");
+        if (!switcher || !select) return;
+
+        const entries = Object.values(data);
+        if (entries.length <= 1) {
+          switcher.classList.add("hidden");
+          return;
+        }
+
+        switcher.classList.remove("hidden");
+        const currentVal = select.value;
+        select.innerHTML = "";
+        for (const ws of entries) {
+          const opt = document.createElement("option");
+          opt.value = ws.name;
+          opt.textContent = ws.context ? `${ws.name} — ${ws.context}` : ws.name;
+          if (ws.active) opt.selected = true;
+          select.appendChild(opt);
+        }
+        // Update the active indicator
+        const active = entries.find((w) => w.active);
+        if (active) activeWorkspace = active.name;
+      }
+      // ── End workspace ──────────────────────────────────────────
+
       async function loadSessions() {
         try {
           const res = await fetch(appUrl("/api/sessions"));
@@ -1472,9 +1516,35 @@
 
       function handleEvent(data) {
         switch (data.type) {
+          case "workspace_switched":
+            activeWorkspace = data.workspace;
+            if (data.workspaces) {
+              workspacesInfo = data.workspaces;
+              updateWorkspaceUI(data.workspaces);
+            }
+            // Reload sessions for the new workspace
+            loadSessions();
+            // Clear the chat area for the new workspace
+            document.getElementById("messages").innerHTML = "";
+            currentAssistantEl = null;
+            currentThinkingEl = null;
+            break;
+
+          case "workspaces":
+            workspacesInfo = data.workspaces;
+            if (data.active) activeWorkspace = data.active;
+            updateWorkspaceUI(data.workspaces);
+            break;
+
           case "status":
             streaming = data.busy;
             setStatus(data.busy ? "Busy" : "Connected", data.busy);
+            // Handle workspace info in status messages (e.g. on connect)
+            if (data.workspaces) {
+              workspacesInfo = data.workspaces;
+              updateWorkspaceUI(data.workspaces);
+            }
+            if (data.workspace) activeWorkspace = data.workspace;
             if (data.piConnected === false) {
               setStatus("Disconnected");
               const banner = document.getElementById("pi-health-banner");

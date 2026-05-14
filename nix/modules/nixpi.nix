@@ -22,6 +22,19 @@ let
   sourceFirewallStopRules = concatMapStringsSep "\n" (source: ''
     iptables -D nixos-fw -p tcp -s ${source} --dport ${toString cfg.port} -j nixos-fw-accept 2>/dev/null || true
   '') cfg.firewallAllowedSources;
+  workspacesJson = if cfg.workspaces == { }
+    then null
+    else pkgs.writeText "nixpi-workspaces.json" (builtins.toJSON {
+      default = if cfg.defaultWorkspace != null
+        then cfg.defaultWorkspace
+        else lib.optionalString (cfg.workspaces != { })
+          (lib.head (lib.attrNames cfg.workspaces));
+      workspaces = lib.mapAttrs (_: ws: {
+        inherit (ws) cwd mode context;
+        sshHost = ws.sshHost;
+        sshUser = ws.sshUser;
+      }) cfg.workspaces;
+    });
 in
 {
   options.services.nixpi = {
@@ -107,6 +120,80 @@ in
       '';
     };
 
+    idleTimeoutMs = mkOption {
+      type = types.ints.positive;
+      default = 300000;
+      description = ''
+        Idle timeout in milliseconds before killing an inactive workspace's
+        Pi subprocess. Only the active workspace's Pi runs; others are
+        lazily killed after this timeout.
+      '';
+    };
+
+    workspaces = mkOption {
+      type = types.attrsOf (types.submodule {
+        options = {
+          cwd = mkOption {
+            type = types.str;
+            description = "Working directory for this workspace.";
+          };
+          mode = mkOption {
+            type = types.enum [ "local" "ssh" ];
+            default = "local";
+            description = ''
+              Connection mode. "local" runs Pi directly on the host.
+              "ssh" connects to a remote VM via Pi's --host flag.
+            '';
+          };
+          sshHost = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+            description = "Remote host for SSH-mode workspaces.";
+          };
+          sshUser = mkOption {
+            type = types.str;
+            default = cfg.user;
+            description = "SSH user for remote workspaces.";
+          };
+          context = mkOption {
+            type = types.str;
+            default = "";
+            description = "Human-readable context shown in the workspace switcher UI.";
+          };
+        };
+      });
+      default = { };
+      example = literalExpression ''
+        {
+          nazar = {
+            cwd = "/home/alex/nazar";
+            mode = "local";
+            context = "Nazar infrastructure (host)";
+          };
+          minecraft = {
+            cwd = "/home/alex/minecraft";
+            mode = "ssh";
+            sshHost = "10.10.10.30";
+            context = "Minecraft PaperMC server VM";
+          };
+        }
+      '';
+      description = ''
+        Declarative workspace definitions. When non-empty, NixPi runs in
+        multi-workspace mode with a workspace switcher. When empty,
+        NixPi falls back to single-workspace mode using workingDirectory.
+      '';
+    };
+
+    defaultWorkspace = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        Name of the workspace to activate on boot. When null, the first
+        workspace in the attrset is used.
+      '';
+    };
+
     environment = mkOption {
       type = types.attrsOf types.str;
       default = { };
@@ -138,6 +225,10 @@ in
         NIXPI_PORT = toString cfg.port;
         NIXPI_CWD = toString cfg.workingDirectory;
         NIXPI_PI_BIN = cfg.piBinary;
+        NIXPI_IDLE_TIMEOUT_MS = toString cfg.idleTimeoutMs;
+        NIXPI_WORKSPACES_CONFIG = if workspacesJson != null
+          then "${workspacesJson}"
+          else "";
         PI_SKIP_VERSION_CHECK = "1";
         PI_TELEMETRY = "0";
       }
@@ -154,6 +245,7 @@ in
         RestartSec = 3;
         UMask = "0027";
       };
+      path = [ pkgs.openssh ];
     };
 
     networking.firewall.allowedTCPPorts = mkIf (cfg.openFirewall && cfg.firewallAllowedSources == [ ]) [
