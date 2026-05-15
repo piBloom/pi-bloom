@@ -262,30 +262,6 @@
 	border-radius: 4px;
 }
 
-/* Session list items */
-.session-item {
-	padding: 8px 12px;
-	border-radius: 4px;
-	cursor: pointer;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	transition: all 0.15s;
-}
-.session-item:hover {
-	background: var(--color-surface-container);
-}
-.session-item.active {
-	border-left: 2px solid var(--color-primary);
-	padding-left: 10px;
-	background: var(--color-surface-container);
-}
-.session-meta {
-	color: var(--color-on-surface-variant);
-	font-size: 11px;
-	font-family: "JetBrains Mono", monospace;
-}
-
 /* Thinking block */
 .msg-thinking {
 	border-left: 2px solid var(--color-secondary-container);

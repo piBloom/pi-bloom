@@ -9,7 +9,7 @@ All notable changes to this project will be documented here.
 - Removed the macOS-only `nixpi.sh` helper; use the NixOS module or `make dev` / `make start`.
 - Split session and workspace handling out of `server.js` into focused modules.
 - Split the browser UI into `public/index.html`, `public/style.css`, and `public/app.js`.
-- Started the design-system migration with production `ds-button` and `ds-avatar` web components plus DOM-based rendering for static/dynamic controls, message scaffolding, model picker, image previews, session list, tool calls, and telemetry tabs.
+- Started the design-system migration with production `ds-button`, `ds-avatar`, and `ds-session-item` web components plus DOM-based rendering for static/dynamic controls, message scaffolding, model picker, image previews, session list, tool calls, and telemetry tabs.
 - Switched Whisper uploads to Node 22 built-in `fetch`, `FormData`, and `Blob`.
 
 ### Removed

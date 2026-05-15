@@ -181,6 +181,67 @@ const avatarStyles = `
   .size-lg { width: 40px; height: 40px; font-size: 14px; }
 `;
 
+const sessionItemStyles = `
+  :host {
+    display: block;
+  }
+
+  button {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-sm, 12px);
+    padding: 8px 12px;
+    border: 0;
+    border-left: 2px solid transparent;
+    border-radius: var(--radius-default, 4px);
+    background: transparent;
+    color: var(--color-on-surface, #f1dfd9);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+  }
+
+  button:hover,
+  button:focus-visible,
+  :host([active]) button {
+    background: var(--color-surface-container, #271d1a);
+  }
+
+  button:hover,
+  button:focus-visible {
+    color: var(--color-primary, #ffb59d);
+    outline: none;
+  }
+
+  :host([active]) button {
+    border-left-color: var(--color-primary, #ffb59d);
+    padding-left: 10px;
+  }
+
+  .content {
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .title {
+    font-family: var(--font-body, "Work Sans", sans-serif);
+    font-size: 14px;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .subtitle {
+    margin-top: 2px;
+    color: var(--color-on-surface-variant, #dcc1b8);
+    font-family: var(--font-label, "JetBrains Mono", monospace);
+    font-size: 11px;
+  }
+`;
+
 class DsButton extends HTMLElement {
 	static observedAttributes = [
 		"disabled",
@@ -234,6 +295,51 @@ class DsButton extends HTMLElement {
 	}
 }
 
+class DsSessionItem extends HTMLElement {
+	static observedAttributes = ["active", "subtitle", "title"];
+
+	constructor() {
+		super();
+		this.attachShadow({ mode: "open" });
+	}
+
+	connectedCallback() {
+		this.render();
+	}
+
+	attributeChangedCallback() {
+		if (this.isConnected) this.render();
+	}
+
+	render() {
+		const title = this.getAttribute("title") || "";
+		const subtitle = this.getAttribute("subtitle") || "";
+		const active = this.hasAttribute("active");
+
+		const style = document.createElement("style");
+		style.textContent = sessionItemStyles;
+
+		const button = document.createElement("button");
+		button.type = "button";
+		button.ariaCurrent = active ? "true" : "false";
+
+		const content = document.createElement("span");
+		content.className = "content";
+
+		const titleEl = document.createElement("span");
+		titleEl.className = "title";
+		titleEl.textContent = title;
+
+		const subtitleEl = document.createElement("span");
+		subtitleEl.className = "subtitle";
+		subtitleEl.textContent = subtitle;
+
+		content.append(titleEl, subtitleEl);
+		button.appendChild(content);
+		this.shadowRoot.replaceChildren(style, button);
+	}
+}
+
 class DsAvatar extends HTMLElement {
 	static observedAttributes = ["fallback", "size"];
 
@@ -269,4 +375,5 @@ class DsAvatar extends HTMLElement {
 }
 
 customElements.define("ds-button", DsButton);
+customElements.define("ds-session-item", DsSessionItem);
 customElements.define("ds-avatar", DsAvatar);

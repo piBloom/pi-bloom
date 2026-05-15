@@ -220,14 +220,18 @@ function avatar(kind) {
 		const el = divWithClass(
 			"w-8 h-8 rounded-full bg-error-container flex items-center justify-center border border-error flex-shrink-0",
 		);
-		el.appendChild(iconSpan("error", "material-symbols-outlined text-error text-sm"));
+		el.appendChild(
+			iconSpan("error", "material-symbols-outlined text-error text-sm"),
+		);
 		return el;
 	}
 	if (kind === "user") {
 		const el = divWithClass(
 			"w-8 h-8 rounded-full bg-primary-container flex items-center justify-center border border-primary flex-shrink-0",
 		);
-		el.appendChild(iconSpan("OP", "font-label-md text-on-primary-container text-xs"));
+		el.appendChild(
+			iconSpan("OP", "font-label-md text-on-primary-container text-xs"),
+		);
 		return el;
 	}
 	const el = divWithClass(
@@ -329,7 +333,9 @@ function ensureThinking() {
 	if (!currentThinkingEl) {
 		const body = ensureAssistantMsg();
 		const thinking = divWithClass("msg-thinking");
-		const label = divWithClass("font-label-md text-label-md text-secondary mb-1");
+		const label = divWithClass(
+			"font-label-md text-label-md text-secondary mb-1",
+		);
 		label.textContent = "Thinking…";
 		const pre = document.createElement("pre");
 		pre.className = "font-label-sm text-tertiary-fixed";
@@ -457,24 +463,12 @@ function renderSessionList(sessions, activeFile) {
 		for (const s of g.items) {
 			const isActive = s.file === activeFile;
 			const time = formatRelTime(s.lastTimestamp);
-			const item = document.createElement("div");
-			item.className = `session-item${isActive ? " active" : ""}`;
+			const item = document.createElement("ds-session-item");
 			item.dataset.file = s.file;
+			item.setAttribute("title", s.preview || "");
+			item.setAttribute("subtitle", `${time} · ${s.messageCount || 0} msgs`);
+			if (isActive) item.setAttribute("active", "");
 			item.addEventListener("click", () => switchSession(s.file));
-
-			const content = document.createElement("div");
-			content.className = "overflow-hidden";
-
-			const preview = document.createElement("div");
-			preview.className = "font-body-md text-sm truncate";
-			preview.textContent = s.preview;
-
-			const meta = document.createElement("div");
-			meta.className = "session-meta";
-			meta.textContent = `${time} · ${s.messageCount || 0} msgs`;
-
-			content.append(preview, meta);
-			item.appendChild(content);
 			nodes.push(item);
 		}
 	}
@@ -1115,9 +1109,9 @@ document.addEventListener("keydown", (e) => {
 // Search sessions
 $("#global-search").addEventListener("input", (e) => {
 	const q = e.target.value.toLowerCase();
-	document.querySelectorAll(".session-item").forEach((item) => {
-		const text = item.textContent.toLowerCase();
-		item.style.display = text.includes(q) ? "flex" : "none";
+	document.querySelectorAll("ds-session-item").forEach((item) => {
+		const text = `${item.getAttribute("title") || ""} ${item.getAttribute("subtitle") || ""}`.toLowerCase();
+		item.style.display = text.includes(q) ? "block" : "none";
 	});
 });
 
