@@ -197,7 +197,22 @@ const inputStyles = `
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
     color: var(--color-on-surface-variant, #dcc1b8);
+    font-family: "Material Symbols Outlined";
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 400;
+    font-feature-settings: "liga";
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    letter-spacing: normal;
+    line-height: 1;
+    text-transform: none;
+    -webkit-font-smoothing: antialiased;
     pointer-events: none;
     transition: color 0.15s ease;
   }
@@ -427,6 +442,7 @@ class DsInput extends HTMLElement {
 		if (icon) {
 			const iconEl = document.createElement("span");
 			iconEl.className = "icon material-symbols-outlined";
+			iconEl.setAttribute("aria-hidden", "true");
 			iconEl.textContent = icon;
 			field.appendChild(iconEl);
 		}
