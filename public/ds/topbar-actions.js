@@ -54,6 +54,16 @@ const buttonStyles = `
     background: color-mix(in srgb, var(--color-secondary, #e9c267) 8%, transparent);
   }
 
+  .variant-surface {
+    background: var(--color-surface-container, #271d1a);
+    border-color: var(--color-outline-variant, #56423c);
+    color: var(--color-on-surface-variant, #dcc1b8);
+  }
+
+  .variant-surface:hover:not(:disabled) {
+    background: var(--color-surface-container-high, #322824);
+  }
+
   .variant-text {
     border: 0;
     border-radius: var(--radius-full, 9999px);
