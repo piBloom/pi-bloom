@@ -202,91 +202,138 @@ function replaceToolCall(details, summaryText, previewText) {
 }
 
 // ── Message helpers ────────────────────────────────────────────────────────
-function addMsg(type, content, isHtml = false) {
-	const wrapper = document.createElement("div");
-	wrapper.className = "flex gap-4";
+function divWithClass(className) {
+	const div = document.createElement("div");
+	div.className = className;
+	return div;
+}
+
+function iconSpan(name, className) {
+	const span = document.createElement("span");
+	span.className = className;
+	span.textContent = name;
+	return span;
+}
+
+function avatar(kind) {
+	if (kind === "error") {
+		const el = divWithClass(
+			"w-8 h-8 rounded-full bg-error-container flex items-center justify-center border border-error flex-shrink-0",
+		);
+		el.appendChild(iconSpan("error", "material-symbols-outlined text-error text-sm"));
+		return el;
+	}
+	if (kind === "user") {
+		const el = divWithClass(
+			"w-8 h-8 rounded-full bg-primary-container flex items-center justify-center border border-primary flex-shrink-0",
+		);
+		el.appendChild(iconSpan("OP", "font-label-md text-on-primary-container text-xs"));
+		return el;
+	}
+	const el = divWithClass(
+		"w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant flex-shrink-0",
+	);
+	el.appendChild(
+		iconSpan(
+			kind === "assistant" ? "auto_awesome" : "info",
+			`material-symbols-outlined ${kind === "assistant" ? "text-primary" : "text-on-surface-variant"} text-sm`,
+		),
+	);
+	return el;
+}
+
+function setMarkdown(el, text) {
+	// Sanitizer boundary: markdown is intentionally rendered as HTML here.
+	// md() uses marked + DOMPurify when available; keep all chat markdown on this path.
+	el.innerHTML = md(text);
+}
+
+function addMsg(type, content, options = {}) {
+	const wrapper = divWithClass("flex gap-4");
 	wrapper.dataset.type = type;
 
-	if (type === "error") {
-		wrapper.innerHTML = `
-<div class="w-8 h-8 rounded-full bg-error-container flex items-center justify-center border border-error flex-shrink-0">
-  <span class="material-symbols-outlined text-error text-sm">error</span>
-</div>
-<div class="flex-1">
-  <div class="text-error font-label-sm">${isHtml ? content : esc(content)}</div>
-</div>`;
-	} else if (type === "system") {
-		wrapper.innerHTML = `
-<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant flex-shrink-0">
-  <span class="material-symbols-outlined text-on-surface-variant text-sm">info</span>
-</div>
-<div class="flex-1">
-  <div class="text-on-surface-variant font-label-sm">${isHtml ? content : esc(content)}</div>
-</div>`;
+	if (type === "error" || type === "system") {
+		const text = divWithClass(
+			type === "error"
+				? "text-error font-label-sm"
+				: "text-on-surface-variant font-label-sm",
+		);
+		text.textContent = content;
+		const body = divWithClass("flex-1");
+		body.appendChild(text);
+		wrapper.append(avatar(type), body);
 	} else if (type === "user") {
 		wrapper.classList.add("flex-row-reverse");
-		let imgs = "";
-		if (pendingImages.length) {
-			imgs =
-				'<div class="flex gap-1 mt-2">' +
-				pendingImages
-					.map(
-						(img) =>
-							`<img src="${esc(img.dataUrl)}" class="w-16 h-16 object-cover rounded border border-outline-variant">`,
-					)
-					.join("") +
-				"</div>";
+		const body = divWithClass("flex-1 flex justify-end");
+		const bubble = divWithClass(
+			"font-body-md text-on-surface bg-surface-container-high border border-outline-variant rounded-lg rounded-tr-none px-4 py-2 max-w-[80%]",
+		);
+		setMarkdown(bubble, content);
+		const messageImages = options.images || pendingImages;
+		if (messageImages.length) {
+			const images = divWithClass("flex gap-1 mt-2");
+			for (const pending of messageImages) {
+				const img = document.createElement("img");
+				img.src = pending.dataUrl;
+				img.className =
+					"w-16 h-16 object-cover rounded border border-outline-variant";
+				images.appendChild(img);
+			}
+			bubble.appendChild(images);
 		}
-		wrapper.innerHTML = `
-<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center border border-primary flex-shrink-0">
-  <span class="font-label-md text-on-primary-container text-xs">OP</span>
-</div>
-<div class="flex-1 flex justify-end">
-  <div class="font-body-md text-on-surface bg-surface-container-high border border-outline-variant rounded-lg rounded-tr-none px-4 py-2 max-w-[80%]">
-    ${md(content)}${imgs}
-  </div>
-</div>`;
+		body.appendChild(bubble);
+		wrapper.append(avatar("user"), body);
 	} else if (type === "assistant") {
-		wrapper.innerHTML = `
-<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant flex-shrink-0">
-  <span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
-</div>
-<div class="flex-1 space-y-2">
-  <div class="msg-body font-body-md text-on-surface">${isHtml ? content : md(content)}</div>
-</div>`;
+		const body = divWithClass("flex-1 space-y-2");
+		const message = divWithClass("msg-body font-body-md text-on-surface");
+		const markdown = divWithClass("msg-markdown");
+		setMarkdown(markdown, content);
+		message.appendChild(markdown);
+		body.appendChild(message);
+		wrapper.append(avatar("assistant"), body);
 	}
 	msgs.appendChild(wrapper);
 	scrollBottom();
 	return wrapper;
 }
 
-function addUserMsg(text) {
-	addMsg("user", text);
+function addUserMsg(text, images = pendingImages) {
+	addMsg("user", text, { images });
 }
 
 function ensureAssistantMsg() {
 	if (!currentAssistantEl) {
-		const wrapper = document.createElement("div");
-		wrapper.className = "flex gap-4";
-		wrapper.innerHTML = `
-<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant flex-shrink-0">
-  <span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
-</div>
-<div class="flex-1 space-y-2">
-  <div class="msg-body font-body-md text-on-surface"></div>
-</div>`;
+		const wrapper = divWithClass("flex gap-4");
+		const body = divWithClass("flex-1 space-y-2");
+		const message = divWithClass("msg-body font-body-md text-on-surface");
+		message.appendChild(divWithClass("msg-markdown"));
+		body.appendChild(message);
+		wrapper.append(avatar("assistant"), body);
 		msgs.appendChild(wrapper);
 		currentAssistantEl = wrapper;
 	}
 	return currentAssistantEl.querySelector(".msg-body");
 }
 
+function ensureAssistantMarkdown() {
+	const body = ensureAssistantMsg();
+	let markdown = body.querySelector(":scope > .msg-markdown");
+	if (!markdown) {
+		markdown = divWithClass("msg-markdown");
+		body.prepend(markdown);
+	}
+	return markdown;
+}
+
 function ensureThinking() {
 	if (!currentThinkingEl) {
 		const body = ensureAssistantMsg();
-		const thinking = document.createElement("div");
-		thinking.className = "msg-thinking";
-		thinking.innerHTML = `<div class="font-label-md text-label-md text-secondary mb-1">Thinking…</div><pre class="font-label-sm text-tertiary-fixed"></pre>`;
+		const thinking = divWithClass("msg-thinking");
+		const label = divWithClass("font-label-md text-label-md text-secondary mb-1");
+		label.textContent = "Thinking…";
+		const pre = document.createElement("pre");
+		pre.className = "font-label-sm text-tertiary-fixed";
+		thinking.append(label, pre);
 		body.appendChild(thinking);
 		currentThinkingEl = thinking;
 		scrollBottom();
@@ -317,8 +364,7 @@ function updateWorkspaceUI(data) {
 	}
 
 	switcher.classList.remove("hidden");
-	const currentVal = select.value;
-	select.innerHTML = "";
+	select.replaceChildren();
 	for (const ws of entries) {
 		const opt = document.createElement("option");
 		opt.value = ws.name;
@@ -698,7 +744,7 @@ function handleEvent(data) {
 			if (data.aborted) {
 				currentAssistantEl = null;
 				currentThinkingEl = null;
-				addMsg("system", "Aborted.", true);
+				addMsg("system", "Aborted.");
 			}
 			break;
 
@@ -822,7 +868,7 @@ function handleEvent(data) {
 							.filter((b) => b.type === "text")
 							.map((b) => b.text)
 							.join("");
-						if (text) addMsg("assistant", text, true);
+						if (text) addMsg("assistant", text);
 					}
 				}
 				scrollBottom();
@@ -857,12 +903,12 @@ function handleEvent(data) {
 			const evt = data.assistantMessageEvent;
 			if (!evt) break;
 			if (evt.type === "text_delta") {
-				const body = ensureAssistantMsg();
+				const markdown = ensureAssistantMarkdown();
 				const text = (data.message?.content || [])
 					.filter((c) => c.type === "text")
 					.map((c) => c.text)
 					.join("");
-				body.innerHTML = md(text);
+				setMarkdown(markdown, text);
 				scrollBottom();
 			} else if (evt.type === "thinking_delta") {
 				const body = ensureThinking();
@@ -948,7 +994,7 @@ function handleEvent(data) {
 				a.download = `nixpi-session-${ts}.json`;
 				a.click();
 				URL.revokeObjectURL(url);
-				addMsg("system", "Session exported.", true);
+				addMsg("system", "Session exported.");
 				logEvent("Session exported");
 			}
 			break;
@@ -967,7 +1013,7 @@ function sendPrompt() {
 	if (pendingImages.length && !currentModelSupportsImages) {
 		addMsg(
 			"error",
-			`${esc(currentModel?.name || "This model")} doesn't support images — sending text only.`,
+			`${currentModel?.name || "This model"} doesn't support images — sending text only.`,
 		);
 		pendingImages = [];
 		imagePreviews.replaceChildren();
@@ -982,11 +1028,12 @@ function sendPrompt() {
 		}));
 	}
 
+	const sentImages = pendingImages.slice();
 	input.value = "";
 	pendingImages = [];
 	imagePreviews.replaceChildren();
 
-	addUserMsg(text);
+	addUserMsg(text, sentImages);
 	if (streaming) {
 		logEvent("Queued follow-up");
 	}
@@ -1052,7 +1099,7 @@ document.addEventListener("keydown", (e) => {
 	if (e.key === "l" && e.ctrlKey) {
 		e.preventDefault();
 		msgs.replaceChildren();
-		addMsg("system", "Chat cleared. Session history preserved.", true);
+		addMsg("system", "Chat cleared. Session history preserved.");
 	}
 	if (
 		e.key === "?" &&
