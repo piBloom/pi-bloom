@@ -221,21 +221,12 @@
       </div>
 
       <div class="flex-1 max-w-lg mx-gutter hidden md:block">
-        <div class="relative group">
-          <span
-            class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors"
-            >search</span
-          >
-          <input
-            id="global-search"
-            class="w-full bg-surface-container border-b border-outline-variant focus:border-primary border-t-0 border-l-0 border-r-0 py-2 pl-10 pr-4 text-on-surface font-label-md outline-none transition-colors"
-            placeholder="Search sessions…"
-            type="text"
-          />
-          <div
-            class="absolute bottom-[-1px] left-0 w-full h-[1px] pixel-divider-h opacity-0 group-focus-within:opacity-100 transition-opacity"
-          ></div>
-        </div>
+        <ds-input
+          id="global-search"
+          icon="search"
+          placeholder="Search sessions…"
+          type="text"
+        ></ds-input>
       </div>
 
       <div class="flex items-center gap-4">
@@ -725,12 +716,13 @@
             <span class="material-symbols-outlined">close</span>
           </ds-button>
         </header>
-        <input
+        <ds-input
           id="model-search"
-          class="w-full bg-surface-container border-b border-outline-variant focus:border-primary text-on-surface px-3 py-2 mb-4 outline-none font-label-md"
+          class="mb-4"
           placeholder="Search models…"
+          type="text"
           oninput="filterModels(this.value)"
-        />
+        ></ds-input>
         <div id="model-list" class="max-h-[400px] overflow-y-auto"></div>
       </article>
     </dialog>

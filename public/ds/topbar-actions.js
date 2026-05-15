@@ -181,6 +181,58 @@ const avatarStyles = `
   .size-lg { width: 40px; height: 40px; font-size: 14px; }
 `;
 
+const inputStyles = `
+  :host {
+    display: block;
+    width: 100%;
+  }
+
+  .field {
+    position: relative;
+    width: 100%;
+  }
+
+  .icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-on-surface-variant, #dcc1b8);
+    pointer-events: none;
+    transition: color 0.15s ease;
+  }
+
+  .field:focus-within .icon {
+    color: var(--color-primary, #ffb59d);
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 0;
+    border-bottom: 1px solid var(--color-outline-variant, #56423c);
+    background: var(--color-surface-container, #271d1a);
+    color: var(--color-on-surface, #f1dfd9);
+    font-family: var(--font-label, "JetBrains Mono", monospace);
+    font-size: var(--typo-label-md-size, 14px);
+    outline: none;
+    padding: 8px 12px;
+    transition: border-color 0.15s ease;
+  }
+
+  :host([icon]) input {
+    padding-left: 40px;
+  }
+
+  input:focus {
+    border-bottom-color: var(--color-primary, #ffb59d);
+  }
+
+  input::placeholder {
+    color: var(--color-on-surface-variant, #dcc1b8);
+  }
+`;
+
 const sessionItemStyles = `
   :host {
     display: block;
@@ -295,6 +347,76 @@ class DsButton extends HTMLElement {
 	}
 }
 
+class DsInput extends HTMLElement {
+	static observedAttributes = ["icon", "placeholder", "type", "value"];
+
+	get value() {
+		return this.shadowRoot.querySelector("input")?.value ?? this._value ?? "";
+	}
+
+	set value(value) {
+		this._value = String(value ?? "");
+		const input = this.shadowRoot.querySelector("input");
+		if (input) input.value = this._value;
+	}
+
+	constructor() {
+		super();
+		this._value = this.getAttribute("value") || "";
+		this.attachShadow({ mode: "open" });
+	}
+
+	connectedCallback() {
+		this.render();
+	}
+
+	attributeChangedCallback(_name, oldValue, newValue) {
+		if (!this.isConnected || oldValue === newValue) return;
+		this.render();
+	}
+
+	focus() {
+		this.shadowRoot.querySelector("input")?.focus();
+	}
+
+	render() {
+		const icon = this.getAttribute("icon") || "";
+		const placeholder = this.getAttribute("placeholder") || "";
+		const type = this.getAttribute("type") || "text";
+		const value = this._value || this.getAttribute("value") || "";
+
+		const style = document.createElement("style");
+		style.textContent = inputStyles;
+
+		const field = document.createElement("span");
+		field.className = "field";
+
+		if (icon) {
+			const iconEl = document.createElement("span");
+			iconEl.className = "icon material-symbols-outlined";
+			iconEl.textContent = icon;
+			field.appendChild(iconEl);
+		}
+
+		const input = document.createElement("input");
+		input.type = type;
+		input.placeholder = placeholder;
+		input.value = value;
+		input.addEventListener("input", (event) => {
+			event.stopPropagation();
+			this._value = input.value;
+			this.dispatchEvent(new Event("input", { bubbles: true }));
+		});
+		input.addEventListener("change", (event) => {
+			event.stopPropagation();
+			this.dispatchEvent(new Event("change", { bubbles: true }));
+		});
+
+		field.appendChild(input);
+		this.shadowRoot.replaceChildren(style, field);
+	}
+}
+
 class DsSessionItem extends HTMLElement {
 	static observedAttributes = ["active", "subtitle", "title"];
 
@@ -375,5 +497,6 @@ class DsAvatar extends HTMLElement {
 }
 
 customElements.define("ds-button", DsButton);
+customElements.define("ds-input", DsInput);
 customElements.define("ds-session-item", DsSessionItem);
 customElements.define("ds-avatar", DsAvatar);

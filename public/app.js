@@ -1088,6 +1088,15 @@ $("#attach-input").addEventListener("change", async (e) => {
 	e.target.value = "";
 });
 
+function isTextEntryActive() {
+	const active = document.activeElement;
+	if (!active) return false;
+	if (active === input) return true;
+	if (active.tagName === "TEXTAREA" || active.tagName === "INPUT") return true;
+	if (active.tagName === "DS-INPUT") return true;
+	return false;
+}
+
 document.addEventListener("keydown", (e) => {
 	if (e.key === "Escape") {
 		const openDialog = document.querySelector("dialog[open]");
@@ -1100,7 +1109,7 @@ document.addEventListener("keydown", (e) => {
 		}
 		return;
 	}
-	if (document.activeElement === input) return;
+	if (isTextEntryActive()) return;
 	if (e.key === "n" && e.ctrlKey) {
 		e.preventDefault();
 		newChat();
@@ -1114,8 +1123,7 @@ document.addEventListener("keydown", (e) => {
 		e.key === "?" &&
 		!e.ctrlKey &&
 		!e.altKey &&
-		document.activeElement.tagName !== "TEXTAREA" &&
-		document.activeElement.tagName !== "INPUT"
+		!isTextEntryActive()
 	) {
 		openModal("help-modal");
 	}
