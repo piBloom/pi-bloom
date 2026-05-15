@@ -188,6 +188,7 @@ let
   # When nixpi uses pathDomains (legacy), it's merged into the host site vhost.
   nixpiOwnDomain = hostNixpi.domain or null;
   nixpiPathDomains = hostNixpi.pathDomains or [ ];
+  nixpiTunnelAliases = hostNixpi.localTunnelAliases or [ ];
 
   # Legacy path-based route (used when pathDomains is set)
   hostNixpiPathRoute = {
@@ -220,6 +221,9 @@ let
   nixpiDomainVhosts = lib.optionals (nixpiOwnDomain != null && (hostNixpi.enable or false)) (
     mkDomainVhosts nixpiOwnDomain [ hostNixpiRoute ]
   );
+  nixpiTunnelAliasVhosts = lib.optionals ((hostNixpi.enable or false) && nixpiTunnelAliases != [ ]) (
+    lib.concatMap (domain: mkDomainVhosts domain [ (hostNixpiRoute // { access = "private"; }) ]) nixpiTunnelAliases
+  );
   allRouteLists = [
     [ hostSiteRoute hostNixpiRoute ]
   ]
@@ -235,7 +239,7 @@ in
     recommendedOptimisation = true;
     recommendedProxySettings = true;
 
-    virtualHosts = lib.listToAttrs (hostDomainVhosts ++ nixpiDomainVhosts ++ vmDomainVhosts);
+    virtualHosts = lib.listToAttrs (hostDomainVhosts ++ nixpiDomainVhosts ++ nixpiTunnelAliasVhosts ++ vmDomainVhosts);
   };
 
   systemd.services.nginx = {

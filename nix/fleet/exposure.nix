@@ -23,6 +23,12 @@
       domain = "nixpi.nazar.studio";
       port = 4815;
       access = "private";
+      # Support browser access through SSH local forwards, where the browser
+      # sends Host: 127.0.0.1:<local-port> or Host: localhost:<local-port>.
+      localTunnelAliases = [
+        "127.0.0.1"
+        "localhost"
+      ];
     };
   };
 
