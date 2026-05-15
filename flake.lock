@@ -66,11 +66,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778786479,
-        "narHash": "sha256-ZLnps+JSH3XZXAmCosuYPkwYLvd1bHrn/PLkysDktqw=",
+        "lastModified": 1778830818,
+        "narHash": "sha256-ny4Eul7Wt2GnewNCrk4d/eG36UFaUwFsr/nRP/46gOg=",
         "ref": "refs/heads/main",
-        "rev": "31f2a4a71dd8f5992adc3600995649735fc15294",
-        "revCount": 6,
+        "rev": "967702a022fc513730d42f3e8b944c14528a8d22",
+        "revCount": 7,
         "type": "git",
         "url": "ssh://alex@git.nazar.studio/nazar/dav-server.git"
       },
@@ -191,11 +191,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778830439,
-        "narHash": "sha256-otz62A8e4MdCOua3j2I6Cmywpw0cW5jbMOzLbbZCpjE=",
+        "lastModified": 1778830818,
+        "narHash": "sha256-lHz4pAqP5THtlf6bu6ITrkAg/GbSykeGlQr0pCAHjDY=",
         "ref": "refs/heads/main",
-        "rev": "1164009a9fdd10b7980ff20fde593a634213dc80",
-        "revCount": 49,
+        "rev": "5c9e4f49adef919c3d7a38c3a2771bc83cf8e687",
+        "revCount": 50,
         "type": "git",
         "url": "ssh://alex@git.nazar.studio/nazar/nixpi.git"
       },
