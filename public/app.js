@@ -328,8 +328,10 @@ async function loadSessions() {
 		if (data.currentFile) currentSessionFile = data.currentFile;
 		renderSessionList(data.sessions || [], active);
 	} catch {
-		sessionList.innerHTML =
-			'<p class="text-on-surface-variant font-label-sm text-xs">Could not load sessions</p>';
+		const error = document.createElement("p");
+		error.className = "text-on-surface-variant font-label-sm text-xs";
+		error.textContent = "Could not load sessions";
+		sessionList.replaceChildren(error);
 	}
 }
 
@@ -379,26 +381,46 @@ function groupByDate(sessions) {
 
 function renderSessionList(sessions, activeFile) {
 	if (!sessions.length) {
-		sessionList.innerHTML =
-			'<p class="text-on-surface-variant font-label-sm text-xs">No sessions yet</p>';
+		const empty = document.createElement("p");
+		empty.className = "text-on-surface-variant font-label-sm text-xs";
+		empty.textContent = "No sessions yet";
+		sessionList.replaceChildren(empty);
 		return;
 	}
-	const groups = groupByDate(sessions);
-	let html = "";
-	for (const g of groups) {
-		html += `<div class="font-label-sm text-on-surface-variant uppercase tracking-wider text-xs mb-1 mt-2">${esc(g.label)}</div>`;
+
+	const nodes = [];
+	for (const g of groupByDate(sessions)) {
+		const label = document.createElement("div");
+		label.className =
+			"font-label-sm text-on-surface-variant uppercase tracking-wider text-xs mb-1 mt-2";
+		label.textContent = g.label;
+		nodes.push(label);
+
 		for (const s of g.items) {
 			const isActive = s.file === activeFile;
 			const time = formatRelTime(s.lastTimestamp);
-			html += `<div class="session-item${isActive ? " active" : ""}" data-file="${esc(s.file)}" onclick="switchSession('${esc(s.file)}')">
-  <div class="overflow-hidden">
-    <div class="font-body-md text-sm truncate">${esc(s.preview)}</div>
-    <div class="session-meta">${esc(time)} · ${s.messageCount || 0} msgs</div>
-  </div>
-</div>`;
+			const item = document.createElement("div");
+			item.className = `session-item${isActive ? " active" : ""}`;
+			item.dataset.file = s.file;
+			item.addEventListener("click", () => switchSession(s.file));
+
+			const content = document.createElement("div");
+			content.className = "overflow-hidden";
+
+			const preview = document.createElement("div");
+			preview.className = "font-body-md text-sm truncate";
+			preview.textContent = s.preview;
+
+			const meta = document.createElement("div");
+			meta.className = "session-meta";
+			meta.textContent = `${time} · ${s.messageCount || 0} msgs`;
+
+			content.append(preview, meta);
+			item.appendChild(content);
+			nodes.push(item);
 		}
 	}
-	sessionList.innerHTML = html;
+	sessionList.replaceChildren(...nodes);
 }
 
 function switchSession(sessionPath) {
@@ -519,10 +541,27 @@ function closeModal(id) {
 
 // ── Image attachment ──────────────────────────────────────────────────────
 function addImagePreview(dataUrl, mimeType) {
-	pendingImages.push({ dataUrl, mimeType });
+	const image = { dataUrl, mimeType };
+	pendingImages.push(image);
+
 	const wrap = document.createElement("div");
 	wrap.className = "image-preview";
-	wrap.innerHTML = `<img src="${dataUrl}" alt="Attached"><ds-button variant="fab" size="xs" primary onclick="this.parentElement.remove(); pendingImages = pendingImages.filter(i => i.dataUrl !== '${dataUrl}');">×</ds-button>`;
+
+	const thumbnail = document.createElement("img");
+	thumbnail.src = dataUrl;
+	thumbnail.alt = "Attached";
+
+	const remove = document.createElement("ds-button");
+	remove.setAttribute("variant", "fab");
+	remove.setAttribute("size", "xs");
+	remove.setAttribute("primary", "");
+	remove.textContent = "×";
+	remove.addEventListener("click", () => {
+		wrap.remove();
+		pendingImages = pendingImages.filter((pending) => pending !== image);
+	});
+
+	wrap.append(thumbnail, remove);
 	imagePreviews.appendChild(wrap);
 }
 function fileToDataUrl(file) {
