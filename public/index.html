@@ -192,12 +192,17 @@
       <div
         class="flex items-center gap-base cursor-pointer active:scale-95 transition-transform group"
       >
-        <button
-          onclick="toggleLeftSidebar()"
-          class="lg:hidden mr-2 text-on-surface-variant hover:text-primary transition-colors"
-        >
-          <span class="material-symbols-outlined">menu</span>
-        </button>
+        <span class="lg:hidden mr-2 inline-flex">
+          <ds-button
+            variant="fab"
+            size="sm"
+            onclick="toggleLeftSidebar()"
+            aria-label="Toggle sessions sidebar"
+            title="Toggle sessions"
+          >
+            <span class="material-symbols-outlined">menu</span>
+          </ds-button>
+        </span>
         <span class="material-symbols-outlined text-primary text-2xl"
           >terminal</span
         >
