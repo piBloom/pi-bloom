@@ -168,7 +168,9 @@
       The token values live in style.css so Tailwind resolves them at runtime
       via rgb(var(--tw-*)). The `.dark` block overrides them.
     -->
+    <link rel="stylesheet" href="ds/design-tokens.css" />
     <link rel="stylesheet" href="style.css" />
+    <script type="module" src="ds/topbar-actions.js"></script>
   </head>
   <body
     class="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden"
@@ -232,47 +234,51 @@
       </div>
 
       <div class="flex items-center gap-4">
-        <button
+        <ds-button
           id="btn-theme-toggle"
+          variant="fab"
+          size="md"
           onclick="toggleTheme()"
-          class="w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center text-on-surface-variant cursor-pointer active:scale-95"
           title="Toggle light/night mode"
         >
           <span class="material-symbols-outlined" id="theme-icon"
             >dark_mode</span
           >
-        </button>
-        <button
+        </ds-button>
+        <ds-button
           id="btn-restart"
+          variant="fab"
+          size="md"
           onclick="restartPi()"
-          class="w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center text-on-surface-variant cursor-pointer active:scale-95 relative"
           title="Restart Pi"
         >
           <span class="material-symbols-outlined">sync</span>
-        </button>
-        <button
+        </ds-button>
+        <ds-button
+          variant="fab"
+          size="md"
           onclick="openModelPicker()"
-          class="w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center text-on-surface-variant cursor-pointer active:scale-95"
           title="Switch model"
         >
           <span class="material-symbols-outlined">model_training</span>
-        </button>
-        <button
+        </ds-button>
+        <ds-button
+          variant="fab"
+          size="md"
           onclick="cycleThinking()"
-          class="w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center text-on-surface-variant cursor-pointer active:scale-95 relative"
           title="Thinking level"
         >
           <span class="material-symbols-outlined">psychology</span>
           <span
             id="thinking-indicator"
-            class="absolute top-2 right-2 w-2 h-2 bg-primary-container rounded-full border border-surface hidden"
+            class="w-2 h-2 bg-primary-container rounded-full border border-surface hidden"
           ></span>
-        </button>
-        <div
-          class="w-8 h-8 rounded-full border border-outline-variant overflow-hidden ml-2 flex items-center justify-center bg-surface-container-high cursor-pointer active:scale-95"
-        >
-          <span class="font-label-md text-primary text-xs">π</span>
-        </div>
+        </ds-button>
+        <ds-avatar
+          class="ml-2 cursor-pointer active:scale-95"
+          fallback="π"
+          size="md"
+        ></ds-avatar>
       </div>
     </header>
 

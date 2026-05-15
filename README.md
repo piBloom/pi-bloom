@@ -112,6 +112,7 @@ NixPi supports being served at the root of a private name, for example `http://n
 ```bash
 npm install
 make check
+npm --prefix design-system run typecheck
 nix build .#nixpi --no-link
 ```
 
