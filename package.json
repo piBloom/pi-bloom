@@ -4,7 +4,7 @@
   "description": "Nazar's private web interface for Pi Coding Agent",
   "type": "module",
   "bin": {
-    "nixpi": "./server.js"
+    "nixpi": "./bin/nixpi.js"
   },
   "scripts": {
     "start": "node server.js",

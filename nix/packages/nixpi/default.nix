@@ -16,11 +16,12 @@ buildNpmPackage' {
   src = lib.cleanSource ../../..;
 
   npmDepsFetcherVersion = 2;
-  npmDepsHash = "sha256-5GGa9oKTijwGljUi3Ea5zTScb+YcouW444NhscMf1UY=";
+  npmDepsHash = "sha256-+S8aqovxG6b44Cw9b5+NXHUZ/1QB4LMMHpo0FvMvnlA=";
 
   nativeBuildInputs = [ makeWrapper ];
 
   dontNpmBuild = true;
+  dontBuild = true;
 
   installPhase = ''
     runHook preInstall
@@ -32,12 +33,13 @@ buildNpmPackage' {
       server.js \
       sessions.js \
       workspaces.js \
+      bin \
       public \
       node_modules \
       $out/lib/nixpi/
 
     makeWrapper ${nodejs_22}/bin/node $out/bin/nixpi \
-      --add-flags $out/lib/nixpi/server.js
+      --add-flags $out/lib/nixpi/bin/nixpi.js
 
     runHook postInstall
   '';
