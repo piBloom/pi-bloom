@@ -11,14 +11,17 @@ function appUrl(path) {
 function md(text) {
 	if (!text) return "";
 	const source = String(text);
-	if (typeof DOMPurify === "undefined") return plainTextHtml(source);
 
-	let raw =
-		typeof marked !== "undefined"
-			? marked.parse(source, { breaks: true, gfm: true })
-			: simpleMd(source);
-	raw = DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
-	return hardenLinks(raw);
+	if (typeof DOMPurify !== "undefined") {
+		let raw =
+			typeof marked !== "undefined"
+				? marked.parse(source, { breaks: true, gfm: true })
+				: simpleSafeMd(source);
+		raw = DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
+		return hardenLinks(raw);
+	}
+
+	return simpleSafeMd(source);
 
 	function hardenLinks(html) {
 		return html.replace(
@@ -27,25 +30,20 @@ function md(text) {
 		);
 	}
 
-	function plainTextHtml(t) {
-		return t
-			.split(/\n\n+/)
-			.map((p) => p.trim())
-			.filter(Boolean)
-			.map((p) => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`)
-			.join("");
-	}
-
-	function simpleMd(t) {
-		let r = t;
+	function simpleSafeMd(t) {
+		let r = esc(t);
 		r = r.replace(/```(\w*)\n([\s\S]*?)```/g, "<pre><code>$2</code></pre>");
 		r = r.replace(/`([^`]+)`/g, "<code>$1</code>");
 		r = r.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 		r = r.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-		r = r.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+		r = r.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_match, label, href) => {
+			const normalized = href.replace(/&amp;/g, "&");
+			if (!isSafeHref(normalized)) return label;
+			return `<a target="_blank" rel="noopener noreferrer" href="${escAttr(normalized)}">${label}</a>`;
+		});
 		r = r.replace(/^\s*[-*]\s+(.+)$/gm, "<li>$1</li>");
 		r = r.replace(/(<li>.*<\/li>\s*)+/g, "<ul>$&</ul>");
-		r = r.replace(/^>\s+(.+)$/gm, "<blockquote>$1</blockquote>");
+		r = r.replace(/^&gt;\s+(.+)$/gm, "<blockquote>$1</blockquote>");
 		const paragraphs = r.split(/\n\n+/);
 		return paragraphs
 			.map((p) => {
@@ -62,6 +60,12 @@ function esc(s) {
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")
 		.replace(/>/g, "&gt;");
+}
+function escAttr(s) {
+	return esc(s).replace(/"/g, "&quot;");
+}
+function isSafeHref(href) {
+	return /^(https?:\/\/|\/)/i.test(href);
 }
 
 // ── DOM refs ──────────────────────────────────────────────────────────────
@@ -263,7 +267,7 @@ function avatar(kind) {
 
 function setMarkdown(el, text) {
 	// Sanitizer boundary: markdown is intentionally rendered as HTML here.
-	// md() uses marked + DOMPurify when available; keep all chat markdown on this path.
+	// md() escapes source text and emits only a tiny safe Markdown subset.
 	el.innerHTML = md(text);
 }
 

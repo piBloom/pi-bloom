@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.services.nixpi;
+  cfg = config.services.nixpi-bun;
   inherit (lib)
     concatMapStringsSep
     literalExpression
@@ -15,7 +15,7 @@ let
     types
     ;
 
-  packageDefault = pkgs.callPackage ../packages/nixpi { };
+  packageDefault = pkgs.callPackage ../packages/nixpi-bun { };
   sourceFirewallRules = concatMapStringsSep "\n" (source: ''
     iptables -A nixos-fw -p tcp -s ${source} --dport ${toString cfg.port} -j nixos-fw-accept
   '') cfg.firewallAllowedSources;
@@ -24,7 +24,7 @@ let
   '') cfg.firewallAllowedSources;
   workspacesJson = if cfg.workspaces == { }
     then null
-    else pkgs.writeText "nixpi-workspaces.json" (builtins.toJSON {
+    else pkgs.writeText "nixpi-bun-workspaces.json" (builtins.toJSON {
       default = if cfg.defaultWorkspace != null
         then cfg.defaultWorkspace
         else lib.optionalString (cfg.workspaces != { })
@@ -37,14 +37,14 @@ let
     });
 in
 {
-  options.services.nixpi = {
-    enable = mkEnableOption "NixPi, the web interface for Pi Coding Agent";
+  options.services.nixpi-bun = {
+    enable = mkEnableOption "NixPi Bun, the experimental Bun-native web interface for Pi Coding Agent";
 
     package = mkOption {
       type = types.package;
       default = packageDefault;
-      defaultText = literalExpression "pkgs.callPackage ../packages/nixpi { }";
-      description = "NixPi package to run.";
+      defaultText = literalExpression "pkgs.callPackage ../packages/nixpi-bun { }";
+      description = "NixPi Bun package to run.";
     };
 
     user = mkOption {
@@ -62,8 +62,8 @@ in
     home = mkOption {
       type = types.str;
       default = "/home/${cfg.user}";
-      defaultText = literalExpression ''"/home/''${config.services.nixpi.user}"'';
-      description = "HOME used by Pi/NixPi for configuration and session state.";
+      defaultText = literalExpression ''"/home/''${config.services.nixpi-bun.user}"'';
+      description = "HOME used by Pi/NixPi Bun for configuration and session state.";
     };
 
     host = mkOption {
@@ -74,14 +74,14 @@ in
 
     port = mkOption {
       type = types.port;
-      default = 4815;
-      description = "Port NixPi listens on.";
+      default = 4816;
+      description = "Port NixPi Bun listens on.";
     };
 
     workingDirectory = mkOption {
       type = types.str;
       default = cfg.home;
-      defaultText = literalExpression "config.services.nixpi.home";
+      defaultText = literalExpression "config.services.nixpi-bun.home";
       description = "Working directory passed to Pi as NIXPI_CWD.";
     };
 
@@ -102,7 +102,7 @@ in
       default = [ ];
       example = [ "10.10.10.1" ];
       description = ''
-        Optional source CIDRs/addresses allowed to reach NixPi. When empty and
+        Optional source CIDRs/addresses allowed to reach NixPi Bun. When empty and
         openFirewall is true, the port is opened normally with allowedTCPPorts.
         When non-empty, source-restricted iptables rules are added instead.
       '';
@@ -111,12 +111,13 @@ in
     sourceDir = mkOption {
       type = types.nullOr types.path;
       default = null;
-      example = literalExpression ''"''${config.users.users.alex.home}/repos/nixpi"'';
+      example = literalExpression ''"''${config.users.users.alex.home}/repos/nixpi-bun"'';
       description = ''
         Absolute path to a live-source checkout. When set, the service runs
-        directly from this directory instead of the nix store package, so you
-        can edit files and restart the service (or let systemd watch the dir)
-        without rebuilding the VM. The directory must contain node_modules.
+        directly from this directory with Bun instead of the nix store package,
+        so you can edit files and restart the service (or let systemd watch the
+        dir) without rebuilding the VM. This fork has no runtime npm dependency
+        requirement for live-source mode.
       '';
     };
 
@@ -179,9 +180,9 @@ in
         }
       '';
       description = ''
-        Declarative workspace definitions. When non-empty, NixPi runs in
+        Declarative workspace definitions. When non-empty, NixPi Bun runs in
         multi-workspace mode with a workspace switcher. When empty,
-        NixPi falls back to single-workspace mode using workingDirectory.
+        NixPi Bun falls back to single-workspace mode using workingDirectory.
       '';
     };
 
@@ -212,8 +213,8 @@ in
       "d ${toString cfg.home}/.pi/agent 0750 ${cfg.user} ${cfg.group} - -"
     ];
 
-    systemd.services.nixpi = {
-      description = "NixPi web interface for Pi Coding Agent";
+    systemd.services.nixpi-bun = {
+      description = "NixPi Bun web interface for Pi Coding Agent";
       wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
@@ -240,8 +241,8 @@ in
         Group = cfg.group;
         WorkingDirectory = if cfg.sourceDir != null then cfg.sourceDir else toString cfg.workingDirectory;
         ExecStart = if cfg.sourceDir != null
-          then "${pkgs.nodejs_22}/bin/node ${cfg.sourceDir}/server.js"
-          else "${cfg.package}/bin/nixpi";
+          then "${pkgs.bun}/bin/bun ${cfg.sourceDir}/server.js"
+          else "${cfg.package}/bin/nixpi-bun";
         Restart = "on-failure";
         RestartSec = 3;
         UMask = "0027";

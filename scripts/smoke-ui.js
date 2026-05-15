@@ -7,8 +7,10 @@ import http from "node:http";
 import net from "node:net";
 
 const cwd = new URL("..", import.meta.url).pathname;
-const userDataDir = mkdtempSync(join(tmpdir(), "nixpi-smoke-chrome-"));
+const userDataDir = mkdtempSync(join(tmpdir(), "nixpi-bun-smoke-chrome-"));
 const RPC_TIMEOUT_MS = 10_000;
+const serverRuntime = process.env.NIXPI_SERVER_RUNTIME || process.execPath;
+const serverEntry = process.env.NIXPI_SERVER_ENTRY || "server.js";
 
 const port = await freePort();
 const cdpPort = await freePort();
@@ -140,7 +142,7 @@ async function run() {
 		return;
 	}
 
-	server = spawn(process.execPath, ["server.js"], {
+	server = spawn(serverRuntime, [serverEntry], {
 		cwd,
 		env: {
 			...process.env,
@@ -247,7 +249,7 @@ async function run() {
 		window.DOMPurify = undefined;
 		addMsg('assistant', '**plain** <img src=x onerror="window.__bad=1">');
 		const fallback = [...document.querySelectorAll('#messages [data-type="assistant"] .msg-markdown')].at(-1);
-		ok('markdown-fallback-safe', !fallback.querySelector('strong') && !fallback.querySelector('img') && fallback.textContent.includes('<img') && !window.__bad);
+		ok('markdown-fallback-safe', fallback.querySelector('strong') && !fallback.querySelector('img') && fallback.textContent.includes('<img') && !window.__bad);
 		window.marked = markedSaved;
 		window.DOMPurify = purifySaved;
 

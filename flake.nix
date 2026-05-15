@@ -1,5 +1,5 @@
 {
-  description = "NixPi web interface for Pi Coding Agent";
+  description = "NixPi Bun web interface for Pi Coding Agent";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -17,7 +17,7 @@
     in
     {
       overlays.default = final: _prev: {
-        nixpi = final.callPackage ./nix/packages/nixpi { };
+        nixpi-bun = final.callPackage ./nix/packages/nixpi-bun { };
       };
 
       packages = forAllSystems (system:
@@ -28,17 +28,27 @@
           };
         in
         {
-          inherit (pkgs) nixpi;
-          default = pkgs.nixpi;
+          inherit (pkgs) nixpi-bun;
+          default = pkgs.nixpi-bun;
         });
 
       nixosModules = rec {
-        nixpi = ./nix/modules/nixpi.nix;
-        default = nixpi;
+        nixpi-bun = ./nix/modules/nixpi-bun.nix;
+        default = nixpi-bun;
       };
 
+      devShells = forAllSystems (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        {
+          default = pkgs.mkShell {
+            packages = [ pkgs.bun pkgs.nodejs_22 ];
+          };
+        });
+
       checks = forAllSystems (system: {
-        inherit (self.packages.${system}) nixpi;
+        inherit (self.packages.${system}) nixpi-bun;
       });
     };
 }

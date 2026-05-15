@@ -1,20 +1,15 @@
 {
-  "name": "nixpi",
-  "version": "1.6.3",
-  "description": "Nazar's private web interface for Pi Coding Agent",
+  "name": "nixpi-bun",
+  "version": "0.1.0",
+  "description": "Experimental Bun-native fork of Nazar's private web interface for Pi Coding Agent",
   "type": "module",
   "bin": {
-    "nixpi": "./bin/nixpi.js"
+    "nixpi-bun": "./bin/nixpi-bun.js"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
-  },
-  "dependencies": {
-    "dompurify": "^3.3.3",
-    "express": "^5.1.0",
-    "marked": "^18.0.0",
-    "ws": "^8.18.0"
+    "start": "bun server.js",
+    "dev": "bun --watch server.js",
+    "smoke": "NIXPI_SERVER_RUNTIME=bun NIXPI_SERVER_ENTRY=server.js bun scripts/smoke-ui.js"
   },
   "keywords": [
     "nix",
@@ -32,7 +27,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "ssh://alex@git.nazar.studio/nazar/nixpi.git"
+    "url": "ssh://alex@git.nazar.studio/nazar/nixpi-bun.git"
   },
-  "homepage": "https://git.nazar.studio/nazar/nixpi"
+  "homepage": "https://git.nazar.studio/nazar/nixpi-bun"
 }

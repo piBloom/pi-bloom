@@ -1,20 +1,20 @@
-# nixpi Repository Rules
+# nixpi-bun Repository Rules
 
-NixPi is Nazar's private web interface for Pi Coding Agent.
+NixPi Bun is Nazar's experimental Bun-native fork of NixPi.
 
 ## Goals
 
-- Keep the core behavior as a thin Pi RPC bridge: browser ⇄ WebSocket ⇄ nixpi ⇄ `pi --mode rpc`.
-- Keep the project lightweight: vanilla browser UI, Express, no build step for the app runtime.
+- Keep the core behavior as a thin Pi RPC bridge: browser ⇄ WebSocket ⇄ nixpi-bun ⇄ `pi --mode rpc`.
+- Keep the project lightweight: Bun runtime, vanilla browser UI, native Web Components, and minimal build steps.
 - Prefer Nix/NixOS integration for infrastructure deployments.
 - Preserve WireGuard/private-network assumptions in deployment docs; do not add public exposure by default.
 
 ## Before committing
 
 - [ ] No secrets, API keys, WireGuard private keys, or private DAV credentials.
-- [ ] UI, package metadata, CLI, and docs use NixPi/Nazar names.
-- [ ] `node --check server.js` passes.
-- [ ] If Nix packaging changed, `nix build .#nixpi` or `nix flake check --no-build` has been run.
+- [ ] UI, package metadata, CLI, and docs use NixPi Bun/Nazar names where this fork diverges.
+- [ ] `node --check server.js` passes for syntax and Bun smoke testing has been attempted when Bun is available.
+- [ ] If Nix packaging changed, `nix build .#nixpi-bun` or `nix flake check --no-build` has been run.
 
 ## Nazar integration boundary
 

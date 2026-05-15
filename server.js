@@ -9,18 +9,16 @@
  * killed after an idle timeout.
  *
  * Usage:
- *   node server.js                          # defaults
- *   NIXPI_PORT=8080 NIXPI_CWD=/path node server.js
- *   NIXPI_WORKSPACES_CONFIG=/path/to/workspaces.json node server.js
+ *   bun server.js                           # defaults
+ *   NIXPI_PORT=8080 NIXPI_CWD=/path bun server.js
+ *   NIXPI_WORKSPACES_CONFIG=/path/to/workspaces.json bun server.js
  */
 
+import { Buffer } from "node:buffer";
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { existsSync, statSync } from "node:fs";
+import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
-import express from "express";
-import { WebSocketServer } from "ws";
 import {
 	archiveSession,
 	deleteSession,
@@ -46,28 +44,6 @@ const IDLE_TIMEOUT_MS = parseInt(
 ); // 5 min default
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// ── Module path resolution (handles hoisted node_modules via npx) ──────────
-const _require = createRequire(import.meta.url);
-
-function resolveModuleFile(pkgName, subpath) {
-	try {
-		const mainPath = _require.resolve(pkgName);
-		// Walk up to find the package root (where package.json lives)
-		let dir = dirname(mainPath);
-		while (dir !== dirname(dir)) {
-			if (existsSync(join(dir, "package.json"))) break;
-			dir = dirname(dir);
-		}
-		return join(dir, subpath);
-	} catch {
-		// Fallback: assume package is installed alongside this package
-		return join(__dirname, "node_modules", pkgName, subpath);
-	}
-}
-
-const MARKED_UMD_PATH = resolveModuleFile("marked", "lib/marked.umd.js");
-const DOMPURIFY_PATH = resolveModuleFile("dompurify", "dist/purify.js");
-
 // ── Workspaces ──────────────────────────────────────────────────────────
 // Workspace config is loaded from workspaces.json (Nix-managed).
 // Each workspace has: name, cwd, mode ("local"|"ssh"), context, and
@@ -91,266 +67,221 @@ const {
 // ── State ───────────────────────────────────────────────────────────────
 const clients = new Set();
 
-// ── Express ─────────────────────────────────────────────────────────────
-const app = express();
-app.use(express.json());
-app.use(
-	"/assets",
-	express.static(join(__dirname, "public/assets"), { dotfiles: "allow" }),
-);
-app.use(
-	express.static(join(__dirname, "public"), {
-		index: false,
-	}),
-);
-
-app.get("/", (_req, res) => {
-	res.setHeader("Content-Type", "text/html; charset=utf-8");
-	res.sendFile(join(__dirname, "public", "index.html"), { dotfiles: "allow" });
-});
-
-// Serve bundled JS libs (resolved dynamically to handle hoisted node_modules)
-app.get("/lib/marked.umd.js", (_req, res) =>
-	res.sendFile(MARKED_UMD_PATH, { dotfiles: "allow" }),
-);
-app.get("/lib/purify.js", (_req, res) =>
-	res.sendFile(DOMPURIFY_PATH, { dotfiles: "allow" }),
-);
-
-app.get("/favicon.ico", (_req, res) => {
-	res.setHeader("Content-Type", "image/svg+xml");
-	res.send(
-		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="24" font-size="24" fill="#6EA8DB">π</text></svg>`,
-	);
-});
-
-// ── Design System Showcase ──────────────────────────────────────────────
-// Proxy /storybook/* to the web-dev-server on localhost:4820 so
-// TypeScript files get transpiled on the fly and live reload works.
-app.use("/storybook", (req, res) => {
-	const isRoot = req.url === "" || req.url === "/";
-	let targetPath = isRoot ? "/showcase/index.html" : req.url;
-
-	// ES modules omit .ts extension; add it when requesting from WDS
-	if (!isRoot) {
-		const base = basename(targetPath);
-		if (!base.includes(".") && base.startsWith("ds-")) {
-			targetPath += ".ts";
-		}
-	}
-
-	const targetUrl = `http://127.0.0.1:4820${targetPath}`;
-
-	const proxyRequest = (http) => {
-		const upstream = http.get(
-			targetUrl,
-			{ headers: { ...req.headers, host: "127.0.0.1:4820" } },
-			(uresp) => {
-				res.status(uresp.statusCode ?? 200);
-				uresp.headers &&
-					Object.entries(uresp.headers).forEach(([k, v]) =>
-						res.setHeader(k, v),
-					);
-				let body = "";
-				uresp.on("data", (c) => {
-					body += c;
-				});
-				uresp.on("end", () => {
-					if (targetPath.endsWith(".html")) {
-						// Rewrite absolute paths so the showcase works under /storybook/
-						res.send(body.replace(/(href|src)="\//g, '$1="/storybook/'));
-						return;
-					}
-					res.send(body);
-				});
-				uresp.on("error", (err) =>
-					res.status(502).send(`Upstream error: ${err.message}`),
-				);
-			},
-		);
-		upstream.on("error", (err) =>
-			res
-				.status(503)
-				.send(`Design System dev server unavailable: ${err.message}`),
-		);
-		req.pipe ? req.pipe(upstream) : null;
-	};
-
-	import("node:http")
-		.then((http) => proxyRequest(http))
-		.catch(() => {
-			// Fallback: try import('https') in case of SSL — not used for localhost
-			res.status(503).send("Design System dev server unavailable");
-		});
-});
-
-app.get("/manifest.json", (_req, res) => {
-	res.setHeader("Content-Type", "application/json");
-	res.json({
-		name: "nixpi",
-		short_name: "nixpi",
-		start_url: "/",
-		display: "standalone",
-		background_color: "#1a1a2e",
-		theme_color: "#6EA8DB",
-		icons: [{ src: "/favicon.ico", sizes: "any", type: "image/svg+xml" }],
-	});
-});
-
-// Session list REST endpoint
-app.get("/api/sessions", (_req, res) => {
-	try {
-		const ws = getActive();
-		res.json({
-			sessions: parseSessions(ws),
-			currentFile: ws.currentSessionFile,
-		});
-	} catch (e) {
-		res.status(500).json({ error: e.message });
-	}
-});
-
-// List archived sessions
-app.get("/api/sessions/archived", (_req, res) => {
-	try {
-		const ws = getActive();
-		res.json({ sessions: parseArchivedSessions(ws) });
-	} catch (e) {
-		res.status(500).json({ error: e.message });
-	}
-});
-
-// Restore archived session
-app.post("/api/sessions/restore", (req, res) => {
-	const { file } = req.body || {};
-	try {
-		const dest = restoreSession(file);
-		res.json({ ok: true, restoredTo: dest });
-	} catch (e) {
-		res.status(e.statusCode || 500).json({ error: e.message });
-	}
-});
-
-// Archive session (move to archived/ subfolder)
-app.post("/api/sessions/archive", (req, res) => {
-	const { file } = req.body || {};
-	try {
-		const dest = archiveSession(file);
-		res.json({ ok: true, archivedTo: dest });
-	} catch (e) {
-		res.status(e.statusCode || 500).json({ error: e.message });
-	}
-});
-
-// Delete session permanently
-app.delete("/api/sessions", (req, res) => {
-	const { file } = req.body || {};
-	try {
-		deleteSession(file);
-		res.json({ ok: true });
-	} catch (e) {
-		res.status(e.statusCode || 500).json({ error: e.message });
-	}
-});
-
-// Restart Pi subprocess (active workspace)
-app.post("/api/restart", (_req, res) => {
-	try {
-		const ws = getActive();
-		ws.restarting = true;
-		if (ws.piProc && !ws.piProc.killed) {
-			ws.piProc.kill("SIGTERM");
-			ws.piProc = null;
-		}
-		ws.busy = false;
-		setPiHealth(ws, false);
-		broadcast({
-			type: "status",
-			busy: false,
-			piConnected: false,
-			workspace: ws.name,
-		});
-		setTimeout(() => {
-			ensurePi(ws);
-			setTimeout(() => {
-				ws.restarting = false;
-			}, 2000);
-		}, 500);
-		res.json({ ok: true });
-	} catch (e) {
-		const ws = getActive();
-		ws.restarting = false;
-		res.status(500).json({ error: e.message });
-	}
-});
-
-// Workspace list REST endpoint
-app.get("/api/workspaces", (_req, res) => {
-	res.json(getWorkspacesInfo());
-});
-
-// ── Whisper Speech-to-Text ──────────────────────────────────────────────
+// ── Bun HTTP/WebSocket server ───────────────────────────────────────────
+const PUBLIC_DIR = join(__dirname, "public");
+const ASSETS_DIR = join(PUBLIC_DIR, "assets");
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const MAX_TRANSCRIBE_BYTES = 25 * 1024 * 1024;
 
-app.post(
-	"/api/transcribe",
-	express.raw({ type: "audio/webm", limit: "25mb" }),
-	async (req, res) => {
-		if (!OPENAI_API_KEY)
-			return res.status(500).json({ error: "OPENAI_API_KEY not set" });
-		if (!req.body?.length)
-			return res.status(400).json({ error: "No audio data" });
-		try {
-			const form = new FormData();
-			const file = new Blob([req.body], { type: "audio/webm" });
-			form.append("file", file, "audio.webm");
-			form.append("model", "whisper-1");
-			form.append("language", "en");
-			form.append("response_format", "json");
-			const r = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${OPENAI_API_KEY}`,
-				},
-				body: form,
-			});
-			if (!r.ok) {
-				const errText = await r.text();
-				console.error("Whisper error:", r.status, errText);
-				return res
-					.status(r.status)
-					.json({ error: `Whisper API error: ${r.status}` });
-			}
-			const data = await r.json();
-			res.json({ text: data.text || "" });
-		} catch (e) {
-			console.error("Transcription error:", e);
-			res.status(500).json({ error: e.message });
-		}
-	},
-);
+const MIME_TYPES = new Map([
+	[".html", "text/html; charset=utf-8"],
+	[".js", "text/javascript; charset=utf-8"],
+	[".mjs", "text/javascript; charset=utf-8"],
+	[".css", "text/css; charset=utf-8"],
+	[".json", "application/json; charset=utf-8"],
+	[".svg", "image/svg+xml"],
+	[".png", "image/png"],
+	[".jpg", "image/jpeg"],
+	[".jpeg", "image/jpeg"],
+	[".gif", "image/gif"],
+	[".webp", "image/webp"],
+	[".ico", "image/x-icon"],
+	[".woff", "font/woff"],
+	[".woff2", "font/woff2"],
+	[".ttf", "font/ttf"],
+]);
 
-const server = app.listen(PORT, HOST, () => {
-	console.log(`✓ nixpi http://${HOST}:${PORT}`);
-});
+function json(data, status = 200, headers = {}) {
+	return new Response(JSON.stringify(data), {
+		status,
+		headers: {
+			"Content-Type": "application/json; charset=utf-8",
+			...headers,
+		},
+	});
+}
 
-server.on("error", (err) => {
-	if (err.code === "EADDRINUSE") {
-		console.error(`❌ Port ${PORT} is already in use.`);
-		console.error("   Make sure no other instance of nixpi is running.");
-		console.error("   Stop the existing nixpi process, then retry.");
-		process.exit(1);
-	} else {
-		console.error("Server error:", err);
-		process.exit(1);
+function text(body, status = 200, contentType = "text/plain; charset=utf-8") {
+	return new Response(body, {
+		status,
+		headers: { "Content-Type": contentType },
+	});
+}
+
+function notFound() {
+	return text("Not found", 404);
+}
+
+async function readJson(request) {
+	const body = await request.text();
+	if (!body.trim()) return {};
+	try {
+		return JSON.parse(body);
+	} catch {
+		const err = new Error("Invalid JSON body");
+		err.statusCode = 400;
+		throw err;
 	}
-});
+}
 
-// ── WebSocket ───────────────────────────────────────────────────────────
-const wss = new WebSocketServer({ server, path: "/ws" });
+function safeResolve(root, relativePath) {
+	if (!relativePath || relativePath.includes("\0")) return null;
+	let decoded;
+	try {
+		decoded = decodeURIComponent(relativePath);
+	} catch {
+		return null;
+	}
+	const normalizedRoot = resolve(root);
+	const resolved = resolve(normalizedRoot, decoded);
+	if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + sep)) {
+		return null;
+	}
+	return resolved;
+}
 
-wss.on("connection", (ws) => {
-	clients.add(ws);
+function fileResponse(filePath, contentType) {
+	try {
+		if (!existsSync(filePath) || !statSync(filePath).isFile()) return null;
+		return new Response(Bun.file(filePath), {
+			headers: {
+				"Content-Type":
+					contentType || MIME_TYPES.get(extname(filePath)) || "application/octet-stream",
+			},
+		});
+	} catch {
+		return null;
+	}
+}
+
+function servePublic(pathname) {
+	if (pathname === "/") {
+		return fileResponse(join(PUBLIC_DIR, "index.html"), "text/html; charset=utf-8");
+	}
+	if (pathname === "/favicon.ico") {
+		return text(
+			`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="24" font-size="24" fill="#6EA8DB">π</text></svg>`,
+			200,
+			"image/svg+xml",
+		);
+	}
+	if (pathname.startsWith("/assets/")) {
+		const assetPath = safeResolve(ASSETS_DIR, pathname.slice("/assets/".length));
+		return assetPath ? fileResponse(assetPath) : null;
+	}
+	if (pathname.startsWith("/api/") || pathname.startsWith("/lib/") || pathname.startsWith("/storybook")) {
+		return null;
+	}
+	const publicPath = safeResolve(PUBLIC_DIR, pathname.slice(1));
+	return publicPath ? fileResponse(publicPath) : null;
+}
+
+async function transcribe(request) {
+	if (!OPENAI_API_KEY) return json({ error: "OPENAI_API_KEY not set" }, 500);
+	const body = await request.arrayBuffer();
+	if (!body.byteLength) return json({ error: "No audio data" }, 400);
+	if (body.byteLength > MAX_TRANSCRIBE_BYTES) {
+		return json({ error: "Audio data exceeds 25 MB limit" }, 413);
+	}
+
+	try {
+		const form = new FormData();
+		const file = new Blob([body], { type: "audio/webm" });
+		form.append("file", file, "audio.webm");
+		form.append("model", "whisper-1");
+		form.append("language", "en");
+		form.append("response_format", "json");
+		const r = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+			method: "POST",
+			headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+			body: form,
+		});
+		if (!r.ok) {
+			const errText = await r.text();
+			console.error("Whisper error:", r.status, errText);
+			return json({ error: `Whisper API error: ${r.status}` }, r.status);
+		}
+		const data = await r.json();
+		return json({ text: data.text || "" });
+	} catch (e) {
+		console.error("Transcription error:", e);
+		return json({ error: e.message }, 500);
+	}
+}
+
+async function handleHttp(request) {
+	try {
+		const { pathname } = new URL(request.url);
+		const method = request.method;
+
+		if (pathname.startsWith("/storybook")) return notFound();
+		if (pathname === "/manifest.json" && method === "GET") {
+			return json({
+				name: "nixpi-bun",
+				short_name: "nixpi-bun",
+				start_url: "/",
+				display: "standalone",
+				background_color: "#1a1a2e",
+				theme_color: "#6EA8DB",
+				icons: [{ src: "/favicon.ico", sizes: "any", type: "image/svg+xml" }],
+			});
+		}
+
+		if (pathname === "/api/sessions" && method === "GET") {
+			const ws = getActive();
+			return json({ sessions: parseSessions(ws), currentFile: ws.currentSessionFile });
+		}
+		if (pathname === "/api/sessions/archived" && method === "GET") {
+			return json({ sessions: parseArchivedSessions(getActive()) });
+		}
+		if (pathname === "/api/sessions/restore" && method === "POST") {
+			const { file } = await readJson(request);
+			const dest = restoreSession(file);
+			return json({ ok: true, restoredTo: dest });
+		}
+		if (pathname === "/api/sessions/archive" && method === "POST") {
+			const { file } = await readJson(request);
+			const dest = archiveSession(file);
+			return json({ ok: true, archivedTo: dest });
+		}
+		if (pathname === "/api/sessions" && method === "DELETE") {
+			const { file } = await readJson(request);
+			deleteSession(file);
+			return json({ ok: true });
+		}
+		if (pathname === "/api/restart" && method === "POST") {
+			const ws = getActive();
+			ws.restarting = true;
+			if (ws.piProc && !ws.piProc.killed) {
+				ws.piProc.kill("SIGTERM");
+				ws.piProc = null;
+			}
+			ws.busy = false;
+			setPiHealth(ws, false);
+			broadcast({ type: "status", busy: false, piConnected: false, workspace: ws.name });
+			setTimeout(() => {
+				ensurePi(ws);
+				setTimeout(() => {
+					ws.restarting = false;
+				}, 2000);
+			}, 500);
+			return json({ ok: true });
+		}
+		if (pathname === "/api/workspaces" && method === "GET") {
+			return json(getWorkspacesInfo());
+		}
+		if (pathname === "/api/transcribe" && method === "POST") {
+			return transcribe(request);
+		}
+
+		const staticResponse = method === "GET" || method === "HEAD" ? servePublic(pathname) : null;
+		return staticResponse || notFound();
+	} catch (e) {
+		return json({ error: e.message }, e.statusCode || 500);
+	}
+}
+
+function sendInitialClientState(ws) {
 	const active = getActive();
 	ws.send(
 		JSON.stringify({
@@ -363,9 +294,7 @@ wss.on("connection", (ws) => {
 		}),
 	);
 	if (active.cachedCommands.length > 0) {
-		ws.send(
-			JSON.stringify({ type: "commands", commands: active.cachedCommands }),
-		);
+		ws.send(JSON.stringify({ type: "commands", commands: active.cachedCommands }));
 	}
 	if (active.currentSessionFile || active.currentModel) {
 		ws.send(
@@ -378,28 +307,64 @@ wss.on("connection", (ws) => {
 			}),
 		);
 	}
-	console.log(`↔ client connected (${clients.size})`);
+}
 
-	ws.on("message", (raw) => {
-		let msg;
-		try {
-			msg = JSON.parse(raw);
-		} catch {
-			return;
-		}
-		handleClientMessage(ws, msg);
+let server;
+try {
+	server = Bun.serve({
+		hostname: HOST,
+		port: PORT,
+		maxRequestBodySize: MAX_TRANSCRIBE_BYTES + 1024 * 1024,
+		fetch(request, server) {
+			const { pathname } = new URL(request.url);
+			if (pathname === "/ws") {
+				if (server.upgrade(request)) return;
+				return text("WebSocket upgrade failed", 400);
+			}
+			return handleHttp(request);
+		},
+		websocket: {
+			open(ws) {
+				clients.add(ws);
+				sendInitialClientState(ws);
+				console.log(`↔ client connected (${clients.size})`);
+			},
+			message(ws, raw) {
+				let msg;
+				try {
+					const text = typeof raw === "string" ? raw : Buffer.from(raw).toString("utf8");
+					msg = JSON.parse(text);
+				} catch {
+					return;
+				}
+				handleClientMessage(ws, msg);
+			},
+			close(ws) {
+				clients.delete(ws);
+				console.log(`↔ client disconnected (${clients.size})`);
+			},
+		},
 	});
-
-	ws.on("close", () => {
-		clients.delete(ws);
-		console.log(`↔ client disconnected (${clients.size})`);
-	});
-});
+	console.log(`✓ nixpi-bun http://${HOST}:${server.port}`);
+} catch (err) {
+	if (err.code === "EADDRINUSE" || String(err.message).includes("EADDRINUSE")) {
+		console.error(`❌ Port ${PORT} is already in use.`);
+		console.error("   Make sure no other instance of nixpi-bun is running.");
+		console.error("   Stop the existing nixpi-bun process, then retry.");
+		process.exit(1);
+	}
+	console.error("Server error:", err);
+	process.exit(1);
+}
 
 function broadcast(data) {
 	const s = JSON.stringify(data);
 	for (const ws of clients) {
-		if (ws.readyState === 1) ws.send(s);
+		try {
+			ws.send(s);
+		} catch {
+			clients.delete(ws);
+		}
 	}
 }
 
@@ -938,8 +903,12 @@ function shutdown() {
 		if (ws.piHealthInterval) clearInterval(ws.piHealthInterval);
 		if (ws.piProc && !ws.piProc.killed) ws.piProc.kill("SIGTERM");
 	}
-	wss.close();
-	server.close();
+	for (const client of clients) {
+		try {
+			client.close();
+		} catch {}
+	}
+	server?.stop(true);
 	process.exit(0);
 }
 
