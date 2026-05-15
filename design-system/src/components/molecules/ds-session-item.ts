@@ -1,6 +1,6 @@
 /**
  * @element ds-session-item
- * @summary Session list item for sidebar.
+ * @summary Accessible session row for sidebars.
  */
 
 import { LitElement, html, css, type CSSResultGroup } from "lit";
@@ -11,46 +11,60 @@ export class DsSessionItem extends LitElement {
 	static styles: CSSResultGroup = css`
     :host { display: block; }
 
-    .item {
+    button {
       display: flex;
+      width: 100%;
       justify-content: space-between;
       align-items: center;
+      gap: var(--space-sm, 12px);
       padding: 8px 12px;
-      border-radius: var(--radius-default, 4px);
+      border: 0;
       border-left: 2px solid transparent;
+      border-radius: var(--radius-default, 4px);
+      background: transparent;
+      color: var(--color-on-surface, #f1dfd9);
       cursor: pointer;
+      text-align: left;
       transition: all 0.15s ease;
     }
 
-    .item:hover {
+    button:hover,
+    button:focus-visible,
+    :host([active]) button {
       background: var(--color-surface-container, #271d1a);
-      color: var(--color-primary, #ffb59d);
     }
 
-    .item.active {
+    button:hover,
+    button:focus-visible {
+      color: var(--color-primary, #ffb59d);
+      outline: none;
+    }
+
+    :host([active]) button {
       border-left-color: var(--color-primary, #ffb59d);
-      background: var(--color-surface-container, #271d1a);
       padding-left: 10px;
+    }
+
+    .content {
+      overflow: hidden;
+      min-width: 0;
     }
 
     .title {
       font-family: var(--font-body, 'Work Sans', sans-serif);
       font-size: 14px;
-      color: var(--color-on-surface, #f1dfd9);
+      color: inherit;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .subtitle {
+      margin-top: 2px;
+      color: var(--color-on-surface-variant, #dcc1b8);
       font-family: var(--font-label, 'JetBrains Mono', monospace);
       font-size: 11px;
-      color: var(--color-on-surface-variant, #dcc1b8);
-      margin-top: 2px;
     }
-
-    .menu { opacity: 0; transition: opacity 0.15s; }
-    .item:hover .menu, .item.active .menu { opacity: 1; }
   `;
 
 	@property({ type: String }) title = "";
@@ -59,24 +73,13 @@ export class DsSessionItem extends LitElement {
 
 	render() {
 		return html`
-      <div class="item ${this.active ? "active" : ""}" @click="${this._onClick}">
-        <div style="overflow:hidden">
-          <div class="title">${this.title}</div>
-          <div class="subtitle">${this.subtitle}</div>
-        </div>
-        <span class="menu material-symbols-outlined" style="font-size:18px;color:var(--color-on-surface-variant)">more_vert</span>
-      </div>
+      <button type="button" aria-current=${this.active ? "true" : "false"}>
+        <span class="content">
+          <span class="title">${this.title}</span>
+          <span class="subtitle">${this.subtitle}</span>
+        </span>
+      </button>
     `;
-	}
-
-	private _onClick(_e: Event) {
-		this.dispatchEvent(
-			new CustomEvent("select", {
-				detail: { title: this.title },
-				bubbles: true,
-				composed: true,
-			}),
-		);
 	}
 }
 

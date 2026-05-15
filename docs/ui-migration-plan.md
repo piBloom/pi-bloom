@@ -63,8 +63,8 @@ Acceptance:
 
 ### 5. Design-system alignment
 
-- Backport stable production APIs to `design-system/src/**` after production behavior is proven.
-- Keep typecheck green.
+- Backport stable production APIs to `design-system/src/**` after production behavior is proven. ✅
+- Keep typecheck green. ✅
 - Avoid large app-shell/sidebar/topbar rewrites until atoms/molecules are stable.
 
 ## Current status
@@ -72,3 +72,4 @@ Acceptance:
 - Phase 1 complete: message scaffolding uses DOM APIs and markdown is isolated behind `setMarkdown()`.
 - Phase 2 complete: session rows use a minimal production `ds-session-item`.
 - Phase 4 implementation complete: markdown falls back to escaped plaintext HTML if DOMPurify is unavailable; repo-local browser smoke tests are still future work.
+- Phase 5 partially complete: source `ds-button`, `ds-input`, and `ds-session-item` align with the proven production APIs.

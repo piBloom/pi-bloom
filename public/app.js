@@ -1098,7 +1098,9 @@ onClick("#btn-help", () => openModal("help-modal"));
 onClick("#btn-export", exportSession);
 onClick("#btn-help-close", () => closeModal("help-modal"));
 onClick("#btn-model-close", () => closeModal("model-modal"));
-$("#model-search")?.addEventListener("input", (e) => filterModels(e.target.value));
+$("#model-search")?.addEventListener("input", (e) =>
+	filterModels(e.target.value),
+);
 
 $("#attach-btn").addEventListener("click", () => {
 	if (!currentModelSupportsImages) return;
@@ -1140,12 +1142,7 @@ document.addEventListener("keydown", (e) => {
 		msgs.replaceChildren();
 		addMsg("system", "Chat cleared. Session history preserved.");
 	}
-	if (
-		e.key === "?" &&
-		!e.ctrlKey &&
-		!e.altKey &&
-		!isTextEntryActive()
-	) {
+	if (e.key === "?" && !e.ctrlKey && !e.altKey && !isTextEntryActive()) {
 		openModal("help-modal");
 	}
 });

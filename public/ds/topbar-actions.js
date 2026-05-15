@@ -378,7 +378,11 @@ class DsInput extends HTMLElement {
 	];
 
 	get value() {
-		return this.shadowRoot.querySelector("input, textarea")?.value ?? this._value ?? "";
+		return (
+			this.shadowRoot.querySelector("input, textarea")?.value ??
+			this._value ??
+			""
+		);
 	}
 
 	set value(value) {
