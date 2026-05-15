@@ -134,7 +134,10 @@ function safeResolve(root, relativePath) {
 	}
 	const normalizedRoot = resolve(root);
 	const resolved = resolve(normalizedRoot, decoded);
-	if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + sep)) {
+	if (
+		resolved !== normalizedRoot &&
+		!resolved.startsWith(normalizedRoot + sep)
+	) {
 		return null;
 	}
 	return resolved;
@@ -146,7 +149,9 @@ function fileResponse(filePath, contentType) {
 		return new Response(Bun.file(filePath), {
 			headers: {
 				"Content-Type":
-					contentType || MIME_TYPES.get(extname(filePath)) || "application/octet-stream",
+					contentType ||
+					MIME_TYPES.get(extname(filePath)) ||
+					"application/octet-stream",
 			},
 		});
 	} catch {
@@ -156,7 +161,10 @@ function fileResponse(filePath, contentType) {
 
 function servePublic(pathname) {
 	if (pathname === "/") {
-		return fileResponse(join(PUBLIC_DIR, "index.html"), "text/html; charset=utf-8");
+		return fileResponse(
+			join(PUBLIC_DIR, "index.html"),
+			"text/html; charset=utf-8",
+		);
 	}
 	if (pathname === "/favicon.ico") {
 		return text(
@@ -166,10 +174,17 @@ function servePublic(pathname) {
 		);
 	}
 	if (pathname.startsWith("/assets/")) {
-		const assetPath = safeResolve(ASSETS_DIR, pathname.slice("/assets/".length));
+		const assetPath = safeResolve(
+			ASSETS_DIR,
+			pathname.slice("/assets/".length),
+		);
 		return assetPath ? fileResponse(assetPath) : null;
 	}
-	if (pathname.startsWith("/api/") || pathname.startsWith("/lib/") || pathname.startsWith("/storybook")) {
+	if (
+		pathname.startsWith("/api/") ||
+		pathname.startsWith("/lib/") ||
+		pathname.startsWith("/storybook")
+	) {
 		return null;
 	}
 	const publicPath = safeResolve(PUBLIC_DIR, pathname.slice(1));
@@ -229,7 +244,10 @@ async function handleHttp(request) {
 
 		if (pathname === "/api/sessions" && method === "GET") {
 			const ws = getActive();
-			return json({ sessions: parseSessions(ws), currentFile: ws.currentSessionFile });
+			return json({
+				sessions: parseSessions(ws),
+				currentFile: ws.currentSessionFile,
+			});
 		}
 		if (pathname === "/api/sessions/archived" && method === "GET") {
 			return json({ sessions: parseArchivedSessions(getActive()) });
@@ -258,7 +276,12 @@ async function handleHttp(request) {
 			}
 			ws.busy = false;
 			setPiHealth(ws, false);
-			broadcast({ type: "status", busy: false, piConnected: false, workspace: ws.name });
+			broadcast({
+				type: "status",
+				busy: false,
+				piConnected: false,
+				workspace: ws.name,
+			});
 			setTimeout(() => {
 				ensurePi(ws);
 				setTimeout(() => {
@@ -274,7 +297,8 @@ async function handleHttp(request) {
 			return transcribe(request);
 		}
 
-		const staticResponse = method === "GET" || method === "HEAD" ? servePublic(pathname) : null;
+		const staticResponse =
+			method === "GET" || method === "HEAD" ? servePublic(pathname) : null;
 		return staticResponse || notFound();
 	} catch (e) {
 		return json({ error: e.message }, e.statusCode || 500);
@@ -294,7 +318,9 @@ function sendInitialClientState(ws) {
 		}),
 	);
 	if (active.cachedCommands.length > 0) {
-		ws.send(JSON.stringify({ type: "commands", commands: active.cachedCommands }));
+		ws.send(
+			JSON.stringify({ type: "commands", commands: active.cachedCommands }),
+		);
 	}
 	if (active.currentSessionFile || active.currentModel) {
 		ws.send(
@@ -332,7 +358,8 @@ try {
 			message(ws, raw) {
 				let msg;
 				try {
-					const text = typeof raw === "string" ? raw : Buffer.from(raw).toString("utf8");
+					const text =
+						typeof raw === "string" ? raw : Buffer.from(raw).toString("utf8");
 					msg = JSON.parse(text);
 				} catch {
 					return;
