@@ -10,16 +10,31 @@ function appUrl(path) {
 // ── Markdown setup ────────────────────────────────────────────────────────
 function md(text) {
 	if (!text) return "";
-	// Use marked + DOMPurify if available, otherwise fallback to simple parser
+	const source = String(text);
+	if (typeof DOMPurify === "undefined") return plainTextHtml(source);
+
 	let raw =
 		typeof marked !== "undefined"
-			? marked.parse(String(text), { breaks: true, gfm: true })
-			: simpleMd(String(text));
-	if (typeof DOMPurify !== "undefined")
-		raw = DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
-	// Force all links to open in new tab
-	raw = raw.replace(/<a\s+/g, '<a target="_blank" rel="noopener noreferrer" ');
-	return raw;
+			? marked.parse(source, { breaks: true, gfm: true })
+			: simpleMd(source);
+	raw = DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
+	return hardenLinks(raw);
+
+	function hardenLinks(html) {
+		return html.replace(
+			/<a\s+/g,
+			'<a target="_blank" rel="noopener noreferrer" ',
+		);
+	}
+
+	function plainTextHtml(t) {
+		return t
+			.split(/\n\n+/)
+			.map((p) => p.trim())
+			.filter(Boolean)
+			.map((p) => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`)
+			.join("");
+	}
 
 	function simpleMd(t) {
 		let r = t;
@@ -1110,7 +1125,8 @@ document.addEventListener("keydown", (e) => {
 $("#global-search").addEventListener("input", (e) => {
 	const q = e.target.value.toLowerCase();
 	document.querySelectorAll("ds-session-item").forEach((item) => {
-		const text = `${item.getAttribute("title") || ""} ${item.getAttribute("subtitle") || ""}`.toLowerCase();
+		const text =
+			`${item.getAttribute("title") || ""} ${item.getAttribute("subtitle") || ""}`.toLowerCase();
 		item.style.display = text.includes(q) ? "block" : "none";
 	});
 });

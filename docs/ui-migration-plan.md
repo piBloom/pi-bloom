@@ -52,9 +52,9 @@ Acceptance:
 
 ### 4. Markdown sanitizer hardening
 
-- Make `md()` safe when marked/DOMPurify fail to load.
-- Preserve link hardening (`target="_blank"`, `rel="noopener noreferrer"`).
-- Add focused hostile-markdown smoke checks.
+- Make `md()` safe when marked/DOMPurify fail to load. ✅
+- Preserve link hardening (`target="_blank"`, `rel="noopener noreferrer"`). ✅
+- Add focused hostile-markdown smoke checks before future sanitizer changes.
 
 Acceptance:
 
@@ -67,6 +67,8 @@ Acceptance:
 - Keep typecheck green.
 - Avoid large app-shell/sidebar/topbar rewrites until atoms/molecules are stable.
 
-## Current first slice
+## Current status
 
-Implement Phase 1: message scaffolding DOM cleanup and explicit markdown boundary.
+- Phase 1 complete: message scaffolding uses DOM APIs and markdown is isolated behind `setMarkdown()`.
+- Phase 2 complete: session rows use a minimal production `ds-session-item`.
+- Phase 4 implementation complete: markdown falls back to escaped plaintext HTML if DOMPurify is unavailable; repo-local browser smoke tests are still future work.
