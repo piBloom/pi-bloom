@@ -58,7 +58,7 @@ async function prepareMobileScene(page) {
 		);
 		window.addMsg?.(
 			"assistant",
-			"Yes — the session list is a drawer, telemetry is hidden on mobile, and the composer compresses into a stacked action row.",
+			"Yes — the session list and telemetry become drawers on mobile, while the composer compresses into a stacked action row.",
 		);
 		const input = document.querySelector("#input");
 		if (input) input.value = "Ask the agent from mobile…";
@@ -132,22 +132,30 @@ async function main() {
 		await page.waitForTimeout(200);
 		await page.screenshot({ path: screenshotPath("03-help-modal.png") });
 
-		await page.setViewportSize({ width: 360, height: 740 });
 		await page.evaluate(() => window.closeModal?.("help-modal"));
+		await page.click("#btn-details-toggle");
+		await page.waitForTimeout(300);
+		await page.screenshot({ path: screenshotPath("04-details-drawer.png") });
+		await page.click("#btn-details-close");
 		await page.waitForTimeout(200);
+
+		await page.setViewportSize({ width: 360, height: 740 });
 		await page.screenshot({
-			path: screenshotPath("04-narrow-chat-mobile.png"),
+			path: screenshotPath("05-narrow-chat-mobile.png"),
 		});
 
-		const metrics = await page.evaluate(() => ({
-			viewport: `${window.innerWidth}x${window.innerHeight}`,
-			scrollWidth: document.documentElement.scrollWidth,
-			hasHorizontalOverflow:
-				document.documentElement.scrollWidth > window.innerWidth + 2,
-			rightSidebarDisplay: getComputedStyle(
-				document.querySelector("#sidebar-right"),
-			).display,
-		}));
+		const metrics = await page.evaluate(() => {
+			const details = document.querySelector("#sidebar-right");
+			return {
+				viewport: `${window.innerWidth}x${window.innerHeight}`,
+				scrollWidth: document.documentElement.scrollWidth,
+				hasHorizontalOverflow:
+					document.documentElement.scrollWidth > window.innerWidth + 2,
+				detailsDrawerClosed:
+					details.getAttribute("aria-hidden") === "true" &&
+					!details.classList.contains("open"),
+			};
+		});
 
 		console.log(`visual-mobile-url=${appUrl}`);
 		console.log(`visual-mobile-dir=${outDir}`);
@@ -158,7 +166,8 @@ async function main() {
 			"01-chat-mobile.png",
 			"02-session-drawer.png",
 			"03-help-modal.png",
-			"04-narrow-chat-mobile.png",
+			"04-details-drawer.png",
+			"05-narrow-chat-mobile.png",
 		]) {
 			console.log(`- ${screenshotPath(name)}`);
 		}

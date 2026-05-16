@@ -261,10 +261,20 @@ async function run() {
 
 		await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 		ok('mobile-no-horizontal-overflow', document.documentElement.scrollWidth <= window.innerWidth + 2);
-		ok('mobile-right-sidebar-hidden', getComputedStyle(document.querySelector('#sidebar-right')).display === 'none');
+		const details = document.querySelector('#sidebar-right');
+		ok('mobile-details-drawer-closed', details.getAttribute('aria-hidden') === 'true' && !details.classList.contains('open') && details.inert);
+		document.querySelector('#btn-details-toggle').click();
+		await new Promise((resolve) => setTimeout(resolve, 80));
+		ok('mobile-details-drawer-opens', details.classList.contains('open') && details.getAttribute('role') === 'dialog' && !details.inert && document.body.classList.contains('details-open'));
+		ok('mobile-details-focus-inert', details.contains(document.activeElement) && document.querySelector('header').inert && document.querySelector('main').inert);
+		ok('mobile-details-tab-trap', !document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })));
+		document.querySelector('#btn-details-close').click();
+		await new Promise((resolve) => setTimeout(resolve, 80));
+		ok('mobile-details-drawer-closes', !details.classList.contains('open') && details.getAttribute('aria-hidden') === 'true' && getComputedStyle(document.querySelector('#sidebar-overlay')).display === 'none' && !document.querySelector('main').inert);
 		document.querySelector('#btn-sidebar-toggle').click();
 		await new Promise((resolve) => setTimeout(resolve, 80));
 		ok('mobile-sidebar-opens', document.querySelector('#sidebar-left').classList.contains('open') && getComputedStyle(document.querySelector('#sidebar-overlay')).display !== 'none');
+		ok('mobile-sidebar-focus-inert', document.querySelector('#sidebar-left').contains(document.activeElement) && document.querySelector('main').inert);
 		document.querySelector('#sidebar-overlay').click();
 		await new Promise((resolve) => setTimeout(resolve, 80));
 		ok('mobile-sidebar-closes', !document.querySelector('#sidebar-left').classList.contains('open') && getComputedStyle(document.querySelector('#sidebar-overlay')).display === 'none');

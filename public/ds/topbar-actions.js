@@ -26,6 +26,7 @@ const buttonStyles = `
     user-select: none;
     position: relative;
     overflow: visible;
+    min-height: var(--target-min, 44px);
     transition: all 0.15s ease-out;
   }
 
@@ -134,9 +135,9 @@ const buttonStyles = `
     text-align: left;
   }
 
-  .variant-fab.size-xs { width: 20px; height: 20px; font-size: 12px; }
-  .variant-fab.size-sm { width: 32px; height: 32px; }
-  .variant-fab.size-md { width: 40px; height: 40px; }
+  .variant-fab.size-xs { width: 24px; height: 24px; min-height: 24px; font-size: 12px; }
+  .variant-fab.size-sm { width: 40px; height: 40px; min-height: 40px; }
+  .variant-fab.size-md { width: var(--target-min, 44px); height: var(--target-min, 44px); }
   .variant-fab.size-lg { width: 48px; height: 48px; }
 
   ::slotted(.material-symbols-outlined) {
@@ -371,6 +372,10 @@ class DsButton extends HTMLElement {
 		if (this.isConnected) this.render();
 	}
 
+	focus(options) {
+		this.shadowRoot.querySelector("button")?.focus(options);
+	}
+
 	render() {
 		const variant = this.getAttribute("variant") || "filled";
 		const size = this.getAttribute("size") || "md";
@@ -384,8 +389,8 @@ class DsButton extends HTMLElement {
 		const button = document.createElement("button");
 		button.type = type;
 		button.disabled = disabled;
-		button.ariaLabel =
-			this.getAttribute("aria-label") || this.getAttribute("title") || "";
+		const label = this.getAttribute("aria-label") || this.getAttribute("title");
+		if (label) button.setAttribute("aria-label", label);
 		button.classList.add(`variant-${variant}`, `size-${size}`);
 		if (primary) button.classList.add("primary");
 
@@ -494,6 +499,10 @@ class DsSessionItem extends HTMLElement {
 
 	attributeChangedCallback() {
 		if (this.isConnected) this.render();
+	}
+
+	focus(options) {
+		this.shadowRoot.querySelector("button")?.focus(options);
 	}
 
 	render() {

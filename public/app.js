@@ -79,7 +79,10 @@ const sessionList = $("#session-list");
 const imagePreviews = $("#image-previews");
 const eventLog = $("#event-log");
 const sidebarLeft = $("#sidebar-left");
+const sidebarRight = $("#sidebar-right");
 const sidebarOverlay = $("#sidebar-overlay");
+const topbar = $("header");
+const mainPane = $("main");
 const diagModelBar = $("#diag-model-bar");
 const diagCtxBar = $("#diag-ctx-bar");
 const diagModelText = $("#diag-model");
@@ -115,6 +118,8 @@ let allCommands = [],
 	activeCmdIndex = -1;
 let currentSessionFile = null;
 let sidebarOpen = false;
+let detailsOpen = false;
+let drawerReturnFocus = null;
 let currentModel = null,
 	currentThinkingLevel = null;
 let currentModelSupportsImages = true;
@@ -183,13 +188,143 @@ window
 		}
 	});
 
-// ── Sidebar ───────────────────────────────────────────────────────────────
+// ── Responsive shell / drawers ───────────────────────────────────────────
+const SHELL_COMPACT_QUERY = "(max-width: 1024px)";
+const SHELL_WIDE_QUERY = "(min-width: 1025px)";
+const compactShellQuery = window.matchMedia(SHELL_COMPACT_QUERY);
+const wideShellQuery = window.matchMedia(SHELL_WIDE_QUERY);
+const drawerFocusableSelector = [
+	"a[href]",
+	"button:not([disabled])",
+	"input:not([disabled])",
+	"select:not([disabled])",
+	"textarea:not([disabled])",
+	"ds-button:not([disabled])",
+	"ds-input",
+	"ds-session-item",
+	"[tabindex]:not([tabindex='-1'])",
+].join(",");
+
+function isCompactShell() {
+	return compactShellQuery.matches;
+}
+
+function isVisible(el) {
+	if (!el || el.hidden) return false;
+	const style = getComputedStyle(el);
+	return style.display !== "none" && style.visibility !== "hidden";
+}
+
+function drawerFocusables(drawer) {
+	return [...drawer.querySelectorAll(drawerFocusableSelector)].filter(isVisible);
+}
+
+function focusFirstInDrawer(drawer) {
+	const [first] = drawerFocusables(drawer);
+	(first || drawer).focus?.({ preventScroll: true });
+}
+
+function restoreDrawerFocus() {
+	const target = drawerReturnFocus;
+	drawerReturnFocus = null;
+	if (target?.isConnected) target.focus?.({ preventScroll: true });
+}
+
+function setDrawerBackgroundInert(activeDrawer) {
+	for (const target of [topbar, mainPane, sidebarLeft, sidebarRight]) {
+		if (!target || target === activeDrawer) continue;
+		target.inert = Boolean(activeDrawer);
+	}
+}
+
+function syncDrawerState({ restoreFocus = false } = {}) {
+	const compact = isCompactShell();
+	document.body.dataset.shell = compact ? "compact" : "wide";
+	if (!compact) {
+		sidebarOpen = false;
+		detailsOpen = false;
+	}
+
+	sidebarLeft?.classList.toggle("open", compact && sidebarOpen);
+	sidebarRight?.classList.toggle("open", compact && detailsOpen);
+	const activeDrawer = compact
+		? sidebarOpen
+			? sidebarLeft
+			: detailsOpen
+				? sidebarRight
+				: null
+		: null;
+
+	for (const [drawer, open, label] of [
+		[sidebarLeft, sidebarOpen, "Sessions"],
+		[sidebarRight, detailsOpen, "Session details"],
+	]) {
+		if (!drawer) continue;
+		if (compact) {
+			drawer.inert = !open;
+			drawer.setAttribute("aria-hidden", open ? "false" : "true");
+			if (open) {
+				drawer.setAttribute("role", "dialog");
+				drawer.setAttribute("aria-modal", "true");
+				drawer.setAttribute("aria-label", label);
+			} else {
+				drawer.removeAttribute("role");
+				drawer.removeAttribute("aria-modal");
+			}
+		} else {
+			drawer.inert = false;
+			drawer.removeAttribute("aria-hidden");
+			drawer.removeAttribute("role");
+			drawer.removeAttribute("aria-modal");
+		}
+	}
+
+	if (sidebarOverlay) {
+		sidebarOverlay.style.display = activeDrawer ? "block" : "none";
+	}
+	document.body.classList.toggle("drawer-open", Boolean(activeDrawer));
+	document.body.classList.toggle("sidebar-open", compact && sidebarOpen);
+	document.body.classList.toggle("details-open", compact && detailsOpen);
+	setDrawerBackgroundInert(activeDrawer);
+	if (compact) {
+		if (sidebarLeft && !sidebarOpen) sidebarLeft.inert = true;
+		if (sidebarRight && !detailsOpen) sidebarRight.inert = true;
+	}
+
+	if (activeDrawer) {
+		requestAnimationFrame(() => {
+			focusFirstInDrawer(activeDrawer);
+			setTimeout(() => {
+				if (!activeDrawer.contains(document.activeElement)) {
+					focusFirstInDrawer(activeDrawer);
+				}
+			}, 50);
+		});
+	} else if (restoreFocus) {
+		restoreDrawerFocus();
+	}
+}
+
 function setLeftSidebar(open) {
-	sidebarOpen = Boolean(open);
-	sidebarLeft?.classList.toggle("open", sidebarOpen);
-	if (sidebarOverlay)
-		sidebarOverlay.style.display = sidebarOpen ? "block" : "none";
-	document.body.classList.toggle("sidebar-open", sidebarOpen);
+	const next = Boolean(open) && isCompactShell();
+	if (next && !sidebarOpen) drawerReturnFocus = document.activeElement;
+	sidebarOpen = next;
+	if (next) detailsOpen = false;
+	syncDrawerState({ restoreFocus: !next });
+}
+
+function setDetailsDrawer(open) {
+	const next = Boolean(open) && isCompactShell();
+	if (next && !detailsOpen) drawerReturnFocus = document.activeElement;
+	detailsOpen = next;
+	if (next) sidebarOpen = false;
+	syncDrawerState({ restoreFocus: !next });
+}
+
+function closeDrawers({ restoreFocus = true } = {}) {
+	sidebarOpen = false;
+	detailsOpen = false;
+	syncDrawerState({ restoreFocus });
 }
 
 function toggleLeftSidebar() {
@@ -200,25 +335,68 @@ function closeLeftSidebar() {
 	setLeftSidebar(false);
 }
 
-window.matchMedia("(min-width: 1025px)").addEventListener("change", (event) => {
-	if (event.matches) closeLeftSidebar();
+function toggleDetailsDrawer() {
+	setDetailsDrawer(!detailsOpen);
+}
+
+function closeDetailsDrawer() {
+	setDetailsDrawer(false);
+}
+
+function closeCompactDrawerAfterAction() {
+	if (isCompactShell()) closeDrawers();
+}
+
+function trapDrawerFocus(event) {
+	if (event.key !== "Tab" || !isCompactShell()) return;
+	const activeDrawer = sidebarOpen ? sidebarLeft : detailsOpen ? sidebarRight : null;
+	if (!activeDrawer) return;
+	const focusables = drawerFocusables(activeDrawer);
+	if (!focusables.length) {
+		event.preventDefault();
+		activeDrawer.focus({ preventScroll: true });
+		return;
+	}
+	const first = focusables[0];
+	const last = focusables.at(-1);
+	const active = document.activeElement;
+	if (event.shiftKey && (active === first || !activeDrawer.contains(active))) {
+		event.preventDefault();
+		last.focus({ preventScroll: true });
+	} else if (!event.shiftKey && active === last) {
+		event.preventDefault();
+		first.focus({ preventScroll: true });
+	}
+}
+
+compactShellQuery.addEventListener("change", () => syncDrawerState());
+wideShellQuery.addEventListener("change", (event) => {
+	if (event.matches) closeDrawers({ restoreFocus: false });
 });
+syncDrawerState();
 
 function newChat() {
 	if (!ws || ws.readyState !== 1) return;
 	ws.send(JSON.stringify({ type: "new_session" }));
-	if (window.innerWidth <= 1024) closeLeftSidebar();
+	closeCompactDrawerAfterAction();
 }
 
 // ── Scroll ─────────────────────────────────────────────────────────────────
-window.addEventListener("scroll", () => {
-	const atBottom =
-		window.innerHeight + window.scrollY >=
-		document.documentElement.scrollHeight - 100;
-	userScrolledUp = !atBottom;
+function messagesAtBottom() {
+	if (!msgs) return true;
+	return msgs.scrollTop + msgs.clientHeight >= msgs.scrollHeight - 100;
+}
+
+msgs?.addEventListener("scroll", () => {
+	userScrolledUp = !messagesAtBottom();
 });
+
+function resetScrollFollow() {
+	userScrolledUp = false;
+}
+
 function scrollBottom() {
-	if (!userScrolledUp) {
+	if (!userScrolledUp && msgs) {
 		msgs.scrollTop = msgs.scrollHeight;
 	}
 }
@@ -513,7 +691,7 @@ function renderSessionList(sessions, activeFile) {
 function switchSession(sessionPath) {
 	if (!ws || ws.readyState !== 1) return;
 	ws.send(JSON.stringify({ type: "switch_session", sessionPath }));
-	if (window.innerWidth <= 1024) closeLeftSidebar();
+	closeCompactDrawerAfterAction();
 }
 
 // ── Model picker ──────────────────────────────────────────────────────────
@@ -642,6 +820,7 @@ function addImagePreview(dataUrl, mimeType) {
 	remove.setAttribute("variant", "fab");
 	remove.setAttribute("size", "xs");
 	remove.setAttribute("primary", "");
+	remove.setAttribute("aria-label", "Remove attached image");
 	remove.textContent = "×";
 	remove.addEventListener("click", () => {
 		wrap.remove();
@@ -728,7 +907,8 @@ function handleEvent(data) {
 			// Reload sessions for the new workspace
 			loadSessions();
 			// Clear the chat area for the new workspace
-			document.getElementById("messages").replaceChildren();
+			msgs.replaceChildren();
+			resetScrollFollow();
 			currentAssistantEl = null;
 			currentThinkingEl = null;
 			break;
@@ -859,6 +1039,7 @@ function handleEvent(data) {
 
 		case "session_switched":
 			msgs.replaceChildren();
+			resetScrollFollow();
 			currentAssistantEl = null;
 			currentThinkingEl = null;
 			currentToolCalls = {};
@@ -869,6 +1050,7 @@ function handleEvent(data) {
 
 		case "session_reset":
 			msgs.replaceChildren();
+			resetScrollFollow();
 			currentAssistantEl = null;
 			currentThinkingEl = null;
 			currentToolCalls = {};
@@ -878,6 +1060,7 @@ function handleEvent(data) {
 
 		case "history":
 			msgs.replaceChildren();
+			resetScrollFollow();
 			if (data.messages?.length) {
 				for (const m of data.messages) {
 					if (m.role === "user") {
@@ -1103,8 +1286,10 @@ function onClick(selector, handler) {
 	$(selector)?.addEventListener("click", handler);
 }
 
-$("#sidebar-overlay")?.addEventListener("click", toggleLeftSidebar);
+$("#sidebar-overlay")?.addEventListener("click", () => closeDrawers());
 onClick("#btn-sidebar-toggle", toggleLeftSidebar);
+onClick("#btn-details-toggle", toggleDetailsDrawer);
+onClick("#btn-details-close", closeDetailsDrawer);
 $("#workspace-select")?.addEventListener("change", (e) =>
 	switchWorkspace(e.target.value),
 );
@@ -1141,9 +1326,11 @@ function isTextEntryActive() {
 }
 
 document.addEventListener("keydown", (e) => {
+	trapDrawerFocus(e);
+	if (e.defaultPrevented) return;
 	if (e.key === "Escape") {
-		if (sidebarOpen) {
-			closeLeftSidebar();
+		if (sidebarOpen || detailsOpen) {
+			closeDrawers();
 			return;
 		}
 		const openDialog = document.querySelector("dialog[open]");
@@ -1164,6 +1351,7 @@ document.addEventListener("keydown", (e) => {
 	if (e.key === "l" && e.ctrlKey) {
 		e.preventDefault();
 		msgs.replaceChildren();
+		resetScrollFollow();
 		addMsg("system", "Chat cleared. Session history preserved.");
 	}
 	if (e.key === "?" && !e.ctrlKey && !e.altKey && !isTextEntryActive()) {

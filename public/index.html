@@ -177,6 +177,7 @@
     <div
       id="sidebar-overlay"
       class="fixed inset-0 bg-black/50 z-40"
+      aria-hidden="true"
       style="display: none"
     ></div>
 
@@ -260,6 +261,15 @@
             class="w-2 h-2 bg-primary-container rounded-full border border-surface hidden"
           ></span>
         </ds-button>
+        <ds-button
+          id="btn-details-toggle"
+          class="lg:hidden"
+          variant="fab"
+          size="md"
+          title="Session details"
+        >
+          <span class="material-symbols-outlined">monitoring</span>
+        </ds-button>
         <ds-avatar
           class="mobile-avatar ml-2 cursor-pointer active:scale-95"
           fallback="π"
@@ -295,6 +305,8 @@
       <nav
         id="sidebar-left"
         class="h-full w-64 border-r border-dashed border-outline-variant bg-surface-container-lowest flex flex-col py-md flex-shrink-0 z-10 transition-transform duration-300"
+        aria-label="Sessions"
+        tabindex="-1"
       >
         <div class="px-4 mb-2">
           <ds-input
@@ -390,7 +402,7 @@
                   </ds-button>
                   <span
                     class="hidden sm:inline text-outline-variant text-xs font-label-sm"
-                    >Ctrl+Enter to send</span
+                    >Enter to send</span
                   >
                 </div>
                 <div
@@ -415,6 +427,8 @@
       <aside
         id="sidebar-right"
         class="h-full w-72 border-l border-dashed border-outline-variant bg-surface-container-low flex flex-col py-md flex-shrink-0 z-10"
+        aria-label="Telemetry and session details"
+        tabindex="-1"
       >
         <div class="px-4 mb-6 flex items-center justify-between">
           <div>
@@ -425,14 +439,26 @@
               v1.0.4-alpha
             </p>
           </div>
-          <div
-            class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center bg-surface-container"
-          >
-            <span
-              id="telemetry-sensor"
-              class="material-symbols-outlined text-tertiary text-sm animate-pulse-glow"
-              >sensors</span
+          <div class="flex items-center gap-2">
+            <div
+              class="hidden lg:flex w-8 h-8 rounded border border-outline-variant items-center justify-center bg-surface-container"
             >
+              <span
+                id="telemetry-sensor"
+                class="material-symbols-outlined text-tertiary text-sm animate-pulse-glow"
+                >sensors</span
+              >
+            </div>
+            <ds-button
+              id="btn-details-close"
+              class="lg:hidden"
+              variant="fab"
+              size="sm"
+              aria-label="Close session details"
+              title="Close details"
+            >
+              <span class="material-symbols-outlined">close</span>
+            </ds-button>
           </div>
         </div>
 
@@ -619,9 +645,6 @@
           <div class="flex items-center">
             <kbd
               class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
-              >Ctrl</kbd
-            ><kbd
-              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
               >Enter</kbd
             ><span>Send message</span>
           </div>
@@ -646,26 +669,8 @@
               >Ctrl</kbd
             ><kbd
               class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
-              >R</kbd
-            ><span>Restart Pi connection</span>
-          </div>
-          <div class="flex items-center">
-            <kbd
-              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
-              >Ctrl</kbd
-            ><kbd
-              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
               >L</kbd
             ><span>Clear chat</span>
-          </div>
-          <div class="flex items-center">
-            <kbd
-              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
-              >Ctrl</kbd
-            ><kbd
-              class="bg-surface-container px-2 py-1 rounded border border-outline-variant mr-2"
-              >T</kbd
-            ><span>Toggle thinking</span>
           </div>
           <div class="flex items-center">
             <kbd

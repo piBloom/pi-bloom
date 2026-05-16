@@ -205,6 +205,18 @@
 	--space-gutter: 24px;
 	--space-margin: 32px;
 
+	/* ── Responsive shell / interaction ─────────────────────── */
+	/* JS mirrors these breakpoint values for drawer behavior. */
+	--breakpoint-compact-max: 1024px;
+	--breakpoint-wide-min: 1025px;
+	--target-min: 44px;
+	--panel-session-width: 20rem;
+	--panel-details-width: 22rem;
+	--z-topbar: 20;
+	--z-overlay: 40;
+	--z-drawer: 50;
+	--z-dialog: 60;
+
 	/* ── Border radius ──────────────────────────────────────── */
 	--radius-xs: 2px;
 	--radius-sm: 2px;
