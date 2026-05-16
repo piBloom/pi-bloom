@@ -37,7 +37,9 @@ function screenshotPath(name) {
 
 async function prepareMobileScene(page) {
 	await page.goto(appUrl, { waitUntil: "domcontentloaded" });
-	await page.waitForFunction(() => Boolean(window.customElements?.get("ds-button")));
+	await page.waitForFunction(() =>
+		Boolean(window.customElements?.get("ds-button")),
+	);
 	await page.waitForFunction(() => typeof window.addMsg === "function");
 	await page.evaluate(() => {
 		window.applyTheme?.("dark");
@@ -133,7 +135,9 @@ async function main() {
 		await page.setViewportSize({ width: 360, height: 740 });
 		await page.evaluate(() => window.closeModal?.("help-modal"));
 		await page.waitForTimeout(200);
-		await page.screenshot({ path: screenshotPath("04-narrow-chat-mobile.png") });
+		await page.screenshot({
+			path: screenshotPath("04-narrow-chat-mobile.png"),
+		});
 
 		const metrics = await page.evaluate(() => ({
 			viewport: `${window.innerWidth}x${window.innerHeight}`,
