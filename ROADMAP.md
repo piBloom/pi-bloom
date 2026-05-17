@@ -9,9 +9,9 @@
 ## v2 — Nazar fleet integration
 
 - [x] Install and run NixPi on the `nazar` host.
-- [x] Install and run NixPi in each MicroVM as the VM-local Pi web interface.
-- [x] Expose NixPi through `/nixpi/` on existing WireGuard-private service domains.
-- [x] Keep dedicated `nixpi*.nazar.studio` private DNS routes for direct access.
+- [x] Use host NixPi SSH workspaces for VM-local Pi sessions.
+- [x] Expose NixPi through a dedicated sshuttle-private `nixpi.nazar.studio` route.
+- [x] Keep NixPi host-only rather than running per-VM HTTP services.
 - [x] Document validation, rollback, and authority boundaries in Nazar runbooks.
 
 ## v3 — Personal workflow/base-agent integration

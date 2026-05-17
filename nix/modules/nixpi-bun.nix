@@ -143,7 +143,7 @@ in
             default = "local";
             description = ''
               Connection mode. "local" runs Pi directly on the host.
-              "ssh" connects to a remote VM via Pi's --host flag.
+              "ssh" connects to a remote VM and starts `pi --mode rpc` there.
             '';
           };
           sshHost = mkOption {
@@ -247,7 +247,12 @@ in
         RestartSec = 3;
         UMask = "0027";
       };
-      path = [ pkgs.openssh ];
+      # OpenSSH supports remote VM workspaces; Node remains available for Pi's
+      # npm-based extension/package workflows.
+      path = [
+        pkgs.nodejs_22
+        pkgs.openssh
+      ];
     };
 
     networking.firewall.allowedTCPPorts = mkIf (cfg.openFirewall && cfg.firewallAllowedSources == [ ]) [

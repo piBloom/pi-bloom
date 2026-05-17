@@ -6,18 +6,16 @@ Experimental Bun-native fork of Nazar's private web interface for [Pi Coding Age
 
 ## Status
 
-This repository is the comparison track. Keep the original `nixpi` repository as the boring production baseline while this fork proves Bun runtime, Nix packaging, and UI simplification choices.
-
-Current dependency note: the runtime app has no npm dependencies. Markdown rendering uses a small native safe subset rather than loading parser/sanitizer packages.
+This repository is the production NixPi implementation consumed by Nazar through a flake input and the reusable `services.nixpi-bun` NixOS module. The runtime app has no npm dependencies. Markdown rendering uses a small native safe subset rather than loading parser/sanitizer packages.
 
 ## Why this exists
 
-NixPi Bun is the experimental comparison repo for a more native NixOS + Bun appliance shape. It is intended to run:
+NixPi Bun is a native NixOS + Bun appliance shape for the private Nazar operator surface. It is intended to run:
 
 - on the `nazar` host for host-side development/operator work;
-- inside each Nazar MicroVM for VM-local Pi sessions;
-- behind WireGuard/private DNS only when deployed as infrastructure;
-- behind a reverse-proxy subpath such as `/nixpi/` on an existing private service domain.
+- with SSH workspaces that start remote `pi --mode rpc` inside Nazar MicroVMs;
+- behind sshuttle/private host access when deployed as infrastructure;
+- behind a dedicated private reverse-proxy name such as `nixpi.nazar.studio`.
 
 It deliberately reuses Pi RPC instead of replacing Pi internals.
 
@@ -111,7 +109,7 @@ NixPi Bun keeps state in the normal Pi session directory for the configured `HOM
 
 ## Reverse proxy paths
 
-NixPi Bun supports being served at the root of a private name, for example `http://nixpi-bun.nazar.studio/`, or under `/nixpi/` on an existing private service domain, for example `http://git.nazar.studio/nixpi/`. When served under `/nixpi/`, configure the proxy to strip the prefix before forwarding to the NixPi Bun service and preserve WebSocket upgrades.
+NixPi Bun supports being served at the root of a private name, for example `http://nixpi.nazar.studio/`. Dedicated private hostnames are preferred for Nazar production because WebSocket routing stays simple. If served under a subpath elsewhere, configure the proxy to strip the prefix before forwarding to the NixPi Bun service and preserve WebSocket upgrades.
 
 ## Development checks
 
