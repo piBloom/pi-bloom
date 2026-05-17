@@ -15,8 +15,8 @@
  */
 
 import { Buffer } from "node:buffer";
-import { spawn } from "node:child_process";
-import { existsSync, statSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -37,6 +37,76 @@ const SSH_BIN = process.env.NIXPI_SSH_BIN || "ssh";
 
 function shellQuote(value) {
 	return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
+function buildPiAuthSyncScript() {
+	const agentDir = join(process.env.HOME || "", ".pi", "agent");
+	const files = [
+		{ name: "auth.json", mode: "600" },
+		{ name: "models.json", mode: "600" },
+	];
+	const installs = [];
+
+	for (const file of files) {
+		const path = join(agentDir, file.name);
+		if (!existsSync(path)) continue;
+
+		const payload = readFileSync(path).toString("base64");
+		installs.push(
+			[
+				`target="$agent_dir/${file.name}"`,
+				`tmp="$target.tmp.$$"`,
+				`printf %s ${shellQuote(payload)} | base64 -d > "$tmp"`,
+				`chmod ${file.mode} "$tmp"`,
+				`mv "$tmp" "$target"`,
+			].join("\n"),
+		);
+	}
+
+	if (installs.length === 0) return null;
+
+	return [
+		"set -eu",
+		'agent_dir="$HOME/.pi/agent"',
+		'mkdir -p "$agent_dir"',
+		"umask 077",
+		...installs,
+		"exit 0",
+	].join("\n");
+}
+
+function syncRemotePiAuth(ws) {
+	const script = buildPiAuthSyncScript();
+	if (!script) return;
+
+	const result = spawnSync(
+		SSH_BIN,
+		[
+			"-T",
+			"-o",
+			"StrictHostKeyChecking=accept-new",
+			"-o",
+			"ServerAliveInterval=30",
+			"-o",
+			"ServerAliveCountMax=3",
+			`${ws.sshUser}@${ws.sshHost}`,
+			"sh",
+			"-s",
+		],
+		{
+			input: script,
+			encoding: "utf8",
+			timeout: 15000,
+			env: { ...process.env },
+		},
+	);
+
+	if (result.status !== 0) {
+		const message = (result.stderr || result.error?.message || "unknown error")
+			.trim()
+			.slice(0, 200);
+		console.log(`  pi auth sync failed [${ws.name}]: ${message}`);
+	}
 }
 
 console.log(
@@ -642,6 +712,8 @@ function ensurePi(ws) {
 	// SSH:    spawn("ssh", ["alex@10.10.10.30", "cd '/repo' && exec pi --mode rpc"])
 	let spawnBin, spawnArgs, spawnCwd;
 	if (ws.mode === "ssh" && ws.sshHost) {
+		syncRemotePiAuth(ws);
+
 		const remoteCwd = ws.cwd || ".";
 		const remoteCommand = [
 			`cd ${shellQuote(remoteCwd)}`,
