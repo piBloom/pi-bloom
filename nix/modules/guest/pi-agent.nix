@@ -56,9 +56,10 @@ let
       lifecycle changes from a VM repo. Those belong to `/root/nazar`.
   '';
   pi = pkgs.callPackage ../../packages/pi { };
+  sharedAuthMountPoint = "/var/lib/nazar/pi-agent-auth";
 
   # Per-VM LSP servers. Override in fleet config with
-  #   vm.nixpi.lspServers = [ pkgs.gopls ];
+  #   vm.piAgent.lspServers = [ pkgs.gopls ];
   # or add to the defaults below.
   defaultLspServers = [
     pkgs.nixd                       # Nix
@@ -105,5 +106,50 @@ in
   system.activationScripts.nazar-vm-agent-context = lib.stringAfter [ "users" ] ''
     install -d -m 0755 -o alex -g users /home/alex/.pi/agent
     install -m 0644 -o alex -g users ${lib.escapeShellArg agentsMarkdown} /home/alex/.pi/agent/AGENTS.md
+  '';
+
+  # VM agents share only provider auth/model configuration with Nazar. Session
+  # history, extension installs, caches, and project settings remain VM-local.
+  # If a VM already has local auth files, seed the shared copy when it is empty;
+  # otherwise keep a one-time backup before linking to the shared directory.
+  system.activationScripts.nazar-vm-pi-shared-auth = lib.stringAfter [ "users" "nazar-pi-default-packages" ] ''
+    set -euo pipefail
+
+    agent_dir=/home/alex/.pi/agent
+    shared_dir=${lib.escapeShellArg sharedAuthMountPoint}
+
+    if [ ! -d "$shared_dir" ]; then
+      echo "Pi shared auth directory $shared_dir is not mounted; leaving local VM auth untouched." >&2
+      exit 0
+    fi
+
+    install -d -m 0755 -o alex -g users "$agent_dir"
+
+    link_shared_file() {
+      local name="$1"
+      local mode="$2"
+      local local_file="$agent_dir/$name"
+      local shared_file="$shared_dir/$name"
+      local backup_file="$agent_dir/$name.${vm.hostname}-local-backup"
+
+      if [ -e "$local_file" ] && [ ! -L "$local_file" ]; then
+        if [ ! -e "$shared_file" ]; then
+          install -m "$mode" -o alex -g users "$local_file" "$shared_file"
+        elif [ ! -e "$backup_file" ]; then
+          install -m "$mode" -o alex -g users "$local_file" "$backup_file"
+        fi
+        rm -f "$local_file"
+      fi
+
+      ln -sfn "$shared_file" "$local_file"
+
+      if [ -e "$shared_file" ]; then
+        chown alex:users "$shared_file"
+        chmod "$mode" "$shared_file"
+      fi
+    }
+
+    link_shared_file auth.json 0600
+    link_shared_file models.json 0600
   '';
 }

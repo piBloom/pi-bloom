@@ -11,6 +11,7 @@ let
   hostSite = exposure.host.site or { };
   hostNixpi = exposure.host.nixpi or { };
   microvmUnits = map (name: "microvm@${name}.service") (lib.attrNames fleet.vms);
+  perVmNixpiEnabled = lib.filterAttrs (name: _vm: exposure.vms.${name}.nixpi.enable or false) fleet.vms;
 
   isPublic = route: (route.access or "private") == "public";
   isRouted = route: route.enable or false;
@@ -99,14 +100,9 @@ let
         backend = serviceBackend;
         access = "private";
       };
-      nixpiRoute = lib.optional (vmExposure.nixpi.enable or false) {
-        name = "nixpi";
-        enable = true;
-        path = vmExposure.nixpi.path or "/nixpi/";
-        backend = "http://${vm.ip}:${toString (vm.nixpi.port or 4815)}";
-        access = vmExposure.nixpi.access or "private";
-        stripPrefix = true;
-      };
+      # NixPI is intentionally host-only. VM access happens through the host
+      # workspace switcher over SSH into Pi agents, not per-VM HTTP services.
+      nixpiRoute = [ ];
       subagentRoute = lib.optional (vmExposure.subagent.enable or false) {
         name = "subagent";
         enable = true;
@@ -252,4 +248,11 @@ in
   };
 
   networking.firewall.allowedTCPPorts = lib.mkIf publicHttpEnabled [ 80 ];
+
+  assertions = [
+    {
+      assertion = perVmNixpiEnabled == { };
+      message = "NixPI runs only on Nazar. Remove exposure.vms.<name>.nixpi and use the host NixPI workspace switcher instead.";
+    }
+  ];
 }

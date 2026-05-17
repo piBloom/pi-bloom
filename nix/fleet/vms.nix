@@ -75,9 +75,8 @@
       onboot = true;
       startupOrder = 30;
       role = "small PaperMC Minecraft server";
-      piAgent.enable = true;
-      nixpi = {
-        port = 4815;
+      piAgent = {
+        enable = true;
         workingDirectory = "/home/alex/minecraft";
       };
 
@@ -203,9 +202,8 @@
       onboot = false;
       startupOrder = 41;
       role = "private personal DAV, CalDAV, CardDAV, WebDAV, and markdown wiki data VM";
-      piAgent.enable = true;
-      nixpi = {
-        port = 4815;
+      piAgent = {
+        enable = true;
         workingDirectory = "/home/alex/dav-server";
       };
 

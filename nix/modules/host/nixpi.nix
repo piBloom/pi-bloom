@@ -1,12 +1,14 @@
-{ fleet, pkgs, ... }:
+{ fleet, lib, pkgs, ... }:
 let
   pi = pkgs.callPackage ../../packages/pi { };
   sourceDir = "/home/alex/repos/nixpi";
 
   # Build workspace definitions from the fleet config.
-  # Local workspaces (host) + SSH workspaces (one per VM with nixpi enabled).
+  # Nazar runs the only NixPI web service; VM workspaces SSH into lightweight
+  # Pi agents and start `pi --mode rpc` in the VM-owned checkout.
+  piAgentVms = lib.filterAttrs (_name: vm: vm.piAgent.enable or false) fleet.vms;
   mkWorkspace = name: vm: {
-    cwd = vm.nixpi.workingDirectory or "/home/alex/${name}";
+    cwd = vm.piAgent.workingDirectory or "/home/alex/${vm.repoName or name}";
     mode = "ssh";
     sshHost = vm.ip;
     sshUser = "alex";
@@ -19,7 +21,7 @@ let
     context = "Nazar host (infrastructure)";
   };
 
-  vmWorkspaces = builtins.mapAttrs mkWorkspace fleet.vms;
+  vmWorkspaces = builtins.mapAttrs mkWorkspace piAgentVms;
   workspacesJson = pkgs.writeText "nixpi-bun-workspaces.json" (builtins.toJSON {
     default = "nazar";
     workspaces = {
