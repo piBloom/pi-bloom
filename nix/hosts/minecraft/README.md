@@ -8,6 +8,5 @@ Important paths:
 
 - Service state: `/var/lib/minecraft` from the `minecraft-state` virtiofs share.
 - Service repo: `/home/alex/minecraft` from the `minecraft-repo` virtiofs share.
-- VM-local switch helper: `nazar-vm-switch`.
 
-Validate service changes with `nix flake check --no-build`, commit and push, then use `nazar-vm-switch` or the Nazar fallback app `nix run .#deploy-minecraft`.
+Validate service changes in the guest with `nix flake check --no-build`, then commit and push. Production switching happens from `/root/nazar` with `nix flake lock --update-input minecraft`, `nix flake check --no-build`, and `nix run .#switch-minecraft`.

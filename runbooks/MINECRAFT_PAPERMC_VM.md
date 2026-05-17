@@ -10,7 +10,7 @@ Canonical runtime: Nazar MicroVM only. Do not create alternate VM variants for M
 - Guest IP: `10.10.10.30`
 - Public game endpoint: `mc.nazar.studio:25565/tcp`
 - Simple Voice Chat: `24454/udp`
-- Private NixPi route: `http://mc.nazar.studio/nixpi/` through sshuttle
+- Host NixPi route: `http://nixpi.nazar.studio/` through sshuttle; select the Minecraft workspace there.
 
 ## State and persistence
 
@@ -22,7 +22,7 @@ State is declarative at the OS/service layer and persistent through MicroVM virt
 
 ## Deploy
 
-From the guest for service-only changes:
+From the guest for service-only edits and validation:
 
 ```bash
 ssh alex@minecraft
@@ -30,16 +30,15 @@ cd ~/minecraft
 nix flake check --no-build
 git status
 # commit and push durable changes
-nazar-vm-switch
 ```
 
-Fallback from the Nazar host:
+Switch production from the Nazar host after updating the `minecraft` input:
 
 ```bash
 cd /root/nazar
 nix flake lock --update-input minecraft
 nix flake check --no-build
-nix run .#deploy-minecraft
+nix run .#switch-minecraft
 ```
 
 ## Lifecycle
