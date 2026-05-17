@@ -1341,7 +1341,9 @@ onClick("#btn-mobile-actions-close", closeMobileActions);
 onClick("#btn-mobile-model", () => runMobileAction(openModelPicker));
 onClick("#btn-mobile-thinking", () => runMobileAction(cycleThinking));
 onClick("#btn-mobile-restart", () => runMobileAction(restartPi));
-onClick("#btn-mobile-help", () => runMobileAction(() => openModal("help-modal")));
+onClick("#btn-mobile-help", () =>
+	runMobileAction(() => openModal("help-modal")),
+);
 onClick("#btn-mobile-export", () => runMobileAction(exportSession));
 onClick("#btn-help-close", () => closeModal("help-modal"));
 onClick("#btn-model-close", () => closeModal("model-modal"));
