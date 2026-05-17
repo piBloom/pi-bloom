@@ -9,7 +9,7 @@ Canonical runtime: Nazar MicroVM only. Do not create alternate VM variants for D
 - Guest hostname: `dav-server`
 - Guest IP: `10.10.10.41`
 - Private endpoint: `dav.nazar.studio` through sshuttle
-- Private NixPi route: `http://dav.nazar.studio/nixpi/` through sshuttle
+- Host NixPi route: `http://nixpi.nazar.studio/` through sshuttle; select the DAV workspace there.
 
 ## State and persistence
 
@@ -21,7 +21,7 @@ State is declarative at the OS/service layer and persistent through MicroVM virt
 
 ## Deploy
 
-From the guest for service-only changes:
+From the guest for service-only edits and validation:
 
 ```bash
 ssh alex@dav-server
@@ -29,16 +29,15 @@ cd ~/dav-server
 nix flake check --no-build
 git status
 # commit and push durable changes
-nazar-vm-switch
 ```
 
-Fallback from the Nazar host:
+Switch production from the Nazar host after updating the `dav-server` input:
 
 ```bash
 cd /root/nazar
 nix flake lock --update-input dav-server
 nix flake check --no-build
-nix run .#deploy-dav-server
+nix run .#switch-dav-server
 ```
 
 ## Lifecycle

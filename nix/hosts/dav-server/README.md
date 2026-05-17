@@ -8,6 +8,5 @@ Important paths:
 
 - DAV state: `/var/lib/dav-server` from the `dav-server-data` virtiofs share.
 - Radicale collections: `/var/lib/radicale/collections` from the `dav-server-radicale` virtiofs share.
-- VM-local switch helper: `nazar-vm-switch`.
 
-Validate service changes with `nix flake check --no-build`, commit and push, then use `nazar-vm-switch` or the Nazar fallback app `nix run .#deploy-dav-server`.
+Validate service changes in the guest with `nix flake check --no-build`, then commit and push. Production switching happens from `/root/nazar` with `nix flake lock --update-input dav-server`, `nix flake check --no-build`, and `nix run .#switch-dav-server`.
