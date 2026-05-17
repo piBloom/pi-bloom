@@ -104,6 +104,6 @@ Check host private address and services:
 
 ```bash
 ip addr show nazar-private
-systemctl is-active sshd systemd-networkd nginx nixpi
+systemctl is-active sshd systemd-networkd nginx nixpi-bun
 git ls-remote ssh://alex@git.nazar.studio/nazar/nazar.git
 ```

@@ -28,7 +28,7 @@ There is intentionally no public Git, DAV, or NixPi exposure.
 | -------------- | ------------------------------------ | ------------------------------------------ | ------------------------------------------------------------------ |
 | Host dashboard | host `nazar`                         | `http://nazar.studio/`                     | public static site                                                 |
 | Git            | host `nazar`                         | `git.nazar.studio` over sshuttle           | SSH-only bare repos owned by `alex`                                |
-| NixPi          | host `nazar`                         | `http://nixpi.nazar.studio/` over sshuttle | Bun live checkout at `/home/alex/repos/nixpi`; Pi RPC workspace UI |
+| NixPi          | host `nazar`                         | `http://nixpi.nazar.studio/` over sshuttle | Flake-packaged Bun service; Pi RPC workspace UI                    |
 | Minecraft      | MicroVM `minecraft` / `10.10.10.30`  | `mc.nazar.studio:25565`, voice `24454/udp` | public game service                                                |
 | DAV Server     | MicroVM `dav-server` / `10.10.10.41` | `http://dav.nazar.studio/` over sshuttle   | WebDAV, CalDAV, CardDAV, private data service                      |
 
@@ -70,6 +70,9 @@ nix run .#switch-minecraft
 
 nix flake lock --update-input dav-server
 nix run .#switch-dav-server
+
+nix flake lock --update-input nixpi
+nix run .#switch-host
 ```
 
 `switch-minecraft` and `switch-dav-server` switch the host configuration and restart the selected MicroVM. `switch-fleet` switches the host and restarts all active MicroVMs.
@@ -80,7 +83,7 @@ nix run .#switch-dav-server
 nix flake check --no-build
 nix --accept-flake-config build .#nixosConfigurations.nazar.config.system.build.toplevel --no-link --print-build-logs
 nix eval --json .#nixosConfigurations.alex-laptop.config.nazar.access.sshuttle.privateDomains
-systemctl is-active sshd systemd-networkd nginx nixpi
+systemctl is-active sshd systemd-networkd nginx nixpi-bun
 systemctl is-active microvm@minecraft.service microvm@dav-server.service
 ip addr show nazar-private
 ```

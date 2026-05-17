@@ -92,8 +92,6 @@ in
 
   systemd.tmpfiles.rules = [
     "d /persist/microvms 0755 root root - -"
-    "d /persist/microvms/shared 0750 alex users - -"
-    "d /persist/microvms/shared/pi-agent 0700 alex users - -"
     "d /persist/microvms-runtime 0775 microvm kvm - -"
     "d /home/alex/.ssh 0700 alex users - -"
     "f /home/alex/.ssh/nazar_microvm_known_hosts 0600 alex users - -"

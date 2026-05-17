@@ -246,7 +246,7 @@ in
   systemd.services.nginx = {
     after = [
       "network-online.target"
-      "nixpi.service"
+      "nixpi-bun.service"
     ]
     ++ microvmUnits;
     wants = [ "network-online.target" ];

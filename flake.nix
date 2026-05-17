@@ -32,6 +32,11 @@
       url = "git+ssh://alex@git.nazar.studio/nazar/dav-server.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nixpi = {
+      url = "git+ssh://alex@git.nazar.studio/nazar/nixpi-bun.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -103,7 +108,7 @@
                   exec sudo "$0" "$@"
                 fi
 
-                if [ "''${NAZAR_SWITCH_SYSTEMD_RUN:-0}" != "1" ] && grep -q 'nixpi\.service' /proc/self/cgroup; then
+                if [ "''${NAZAR_SWITCH_SYSTEMD_RUN:-0}" != "1" ] && grep -Eq 'nixpi(-bun)?\.service' /proc/self/cgroup; then
                   unit="nazar-switch-${name}-$(date +%s)"
                   echo "==> detected NixPi service context; continuing rebuild in transient systemd unit $unit"
                   exec systemd-run \

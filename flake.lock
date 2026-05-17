@@ -184,6 +184,26 @@
         "url": "ssh://alex@git.nazar.studio/nazar/minecraft.git"
       }
     },
+    "nixpi": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1779040453,
+        "narHash": "sha256-MrhbR/m4ReMqNOt6bFmHP8zOyCGs9Fwv+Ke+aWnf0PI=",
+        "ref": "refs/heads/main",
+        "rev": "008be2b0898ef3e35d2adf95106621beb7c91ea4",
+        "revCount": 87,
+        "type": "git",
+        "url": "ssh://alex@git.nazar.studio/nazar/nixpi-bun.git"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://alex@git.nazar.studio/nazar/nixpi-bun.git"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1778458615,
@@ -223,6 +243,7 @@
         "llm-agents": "llm-agents",
         "microvm": "microvm",
         "minecraft": "minecraft",
+        "nixpi": "nixpi",
         "nixpkgs": "nixpkgs_2"
       }
     },
