@@ -74,12 +74,12 @@ A **workspace** is a named profile in nixpi that maps to:
 
 ### Example Workspaces
 
-| Workspace  | CWD                     | Connection          | Context                            |
-| ---------- | ----------------------- | ------------------- | ---------------------------------- |
-| nazar      | `/home/alex/nazar`      | local (host)        | Infrastructure repo on the host    |
-| minecraft  | `/home/alex/minecraft`  | SSH → `10.10.10.30` | Minecraft VM, PaperMC server       |
-| dav-server | `/home/alex`            | local (host)        | DAV host service                   |
-| git        | `/home/alex/nazar`      | local/host SSH      | SSH-only Git on host               |
+| Workspace  | CWD                    | Connection          | Context                         |
+| ---------- | ---------------------- | ------------------- | ------------------------------- |
+| nazar      | `/home/alex/nazar`     | local (host)        | Infrastructure repo on the host |
+| minecraft  | `/home/alex/minecraft` | SSH → `10.10.10.30` | Minecraft VM, PaperMC server    |
+| dav-server | `/home/alex`           | local (host)        | DAV host service                |
+| git        | `/home/alex/nazar`     | local/host SSH      | SSH-only Git on host            |
 
 ## Implementation Plan
 
