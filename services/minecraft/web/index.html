@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nazar Minecraft</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="wrap">
+        <p class="eyebrow">Nazar Minecraft Server</p>
+        <h1>Play Minecraft at <code>mc.nazar.studio</code></h1>
+        <p class="lede">
+          A PaperMC survival server for the Nazar community. Vanilla clients can
+          connect, and the recommended Prism Launcher setup below adds better
+          performance, shaders, distant terrain, and voice chat support.
+        </p>
+        <div class="actions">
+          <a class="button primary" href="#launcher-guide">Setup guide</a>
+          <a class="button" href="#mods">Recommended mods</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="cards" aria-label="Server details">
+        <article class="card">
+          <h2>Server address</h2>
+          <p class="big"><code>mc.nazar.studio</code></p>
+          <p>Use the default Minecraft port unless told otherwise.</p>
+        </article>
+        <article class="card">
+          <h2>Server type</h2>
+          <p class="big">PaperMC survival</p>
+          <p>Online-mode server with a small set of server-side plugins.</p>
+        </article>
+        <article class="card">
+          <h2>Voice chat</h2>
+          <p class="big">Simple Voice Chat</p>
+          <p>Install the client mod below to join proximity voice chat.</p>
+        </article>
+      </section>
+
+      <section id="launcher-guide" class="panel">
+        <h2>Prism Launcher setup</h2>
+        <ol>
+          <li>Install <a href="https://prismlauncher.org/download/" rel="noreferrer">Prism Launcher</a>.</li>
+          <li>Open Prism Launcher and sign in with your Microsoft account.</li>
+          <li>Create a new instance: <strong>Add Instance → Custom → Minecraft</strong>.</li>
+          <li>Select the Minecraft version used by the server, then choose the <strong>Fabric</strong> loader.</li>
+          <li>Open the instance folder, put the recommended <code>.jar</code> files in the <code>mods</code> folder, and start the game.</li>
+          <li>In Multiplayer, add a server named <strong>Nazar</strong> with address <code>mc.nazar.studio</code>.</li>
+        </ol>
+      </section>
+
+      <section id="mods" class="panel">
+        <h2>Recommended client mods</h2>
+        <p>
+          These are client-side Fabric mods. Download the matching files from Modrinth
+          and place them in your Prism instance's <code>mods</code> folder.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mod</th>
+                <th>Version</th>
+                <th>File</th>
+                <th>Why install it?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a href="https://modrinth.com/mod/uCdwusMi" rel="noreferrer">Distant Horizons</a></td>
+                <td>3.0.3-b</td>
+                <td><code>DistantHorizons-3.0.3-b-26.1.2-fabric-neoforge.jar</code></td>
+                <td>Renders far-away terrain with level-of-detail chunks.</td>
+              </tr>
+              <tr>
+                <td><a href="https://modrinth.com/mod/P7dR8mSH" rel="noreferrer">Fabric API</a></td>
+                <td>0.148.0+26.1.2</td>
+                <td><code>fabric-api-0.148.0+26.1.2.jar</code></td>
+                <td>Required library for many Fabric mods.</td>
+              </tr>
+              <tr>
+                <td><a href="https://modrinth.com/mod/YL57xq9U" rel="noreferrer">Iris</a></td>
+                <td>1.10.9+mc26.1.1</td>
+                <td><code>iris-fabric-1.10.9+mc26.1.1.jar</code></td>
+                <td>Adds shader support.</td>
+              </tr>
+              <tr>
+                <td><a href="https://modrinth.com/mod/9eGKb6K1" rel="noreferrer">Simple Voice Chat</a></td>
+                <td>2.6.17+26.1.2</td>
+                <td><code>voicechat-fabric-2.6.17+26.1.2.jar</code></td>
+                <td>Enables proximity voice chat on the server.</td>
+              </tr>
+              <tr>
+                <td><a href="https://modrinth.com/mod/AANobbMI" rel="noreferrer">Sodium</a></td>
+                <td>0.8.12-beta.1+mc26.1.2</td>
+                <td><code>sodium-fabric-0.8.12-beta.1+mc26.1.2.jar</code></td>
+                <td>Major rendering performance improvements.</td>
+              </tr>
+              <tr>
+                <td><a href="https://modrinth.com/mod/PtjYWJkn" rel="noreferrer">Sodium Extra</a></td>
+                <td>0.8.7+mc26.1.1</td>
+                <td><code>sodium-extra-fabric-0.8.7+mc26.1.1.jar</code></td>
+                <td>Additional Sodium video settings and quality options.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap footer">
+      <p>Questions or access issues? Ask a Nazar admin.</p>
+    </footer>
+  </body>
+</html>

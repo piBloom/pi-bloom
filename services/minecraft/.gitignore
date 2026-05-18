@@ -1,0 +1,13 @@
+result
+result-*
+.direnv/
+.env
+.env.*
+secrets/
+*.key
+*.pem
+*.age
+node_modules/
+dist/
+coverage/
+.pi/
