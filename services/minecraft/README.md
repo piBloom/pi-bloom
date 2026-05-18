@@ -2,12 +2,15 @@
 
 Nazar-owned PaperMC Minecraft NixOS service module.
 
-This directory owns the reusable Minecraft module. The root Nazar flake imports it into the host configuration and supplies the service context from `nix/fleet/vms.nix`.
+This directory owns the reusable Minecraft module and related service files. The root Nazar flake imports `services/minecraft/nix/modules/minecraft-papermc.nix` through `nix/modules/host/minecraft.nix` and supplies production context from `nix/fleet/services.nix`.
 
-## Exports
+## Root exports
 
-- `nixosModules.minecraft-service` — PaperMC service module.
-- `nixosModules.minecraft` / `default` — aliases for the service module.
+The repository root flake exposes:
+
+- `nixosModules.minecraft` / `nixosModules.minecraft-service` — PaperMC service module.
+- `nixosModules.minecraft-web` — optional Minecraft web module.
+- `checks.x86_64-linux.minecraft-module-eval` — module evaluation check.
 
 ## Production
 

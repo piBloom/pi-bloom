@@ -1,10 +1,12 @@
 # Nazar
 
-Declarative dendritic NixOS configuration for the Hetzner host `nazar`, client profile, and host services.
+Declarative NixOS configuration for the Hetzner host `nazar`, a client laptop profile, host services, and service source code.
 
 ## Scope
 
-This repository owns the host configuration, client access profile, private access model, nginx routing, DAV/NixPi/Code services, Minecraft, operator switch apps, and service code for Nazar. The root flake exposes the production NixOS module surface through `nixosModules` and `modules.nixos`; service subflakes under `services/` may still be used for standalone development, but production composition imports their modules directly from the root repository.
+This repository has one production Nix surface: the root `flake.nix`. The host and laptop configurations import modules directly from `nix/modules`, while service source and reusable service modules live under `services/`.
+
+The root flake owns deployment, private access policy, nginx routing, DAV/NixPi/Code services, Minecraft, operator switch apps, and the Pi package.
 
 ## Services
 
@@ -16,13 +18,18 @@ This repository owns the host configuration, client access profile, private acce
 ## Repository map
 
 ```text
-nix/aspects/                  # dendritic NixOS aspects and profiles
-nix/hosts/                    # generated hardware/disk files and legacy profile entrypoints
-nix/modules/                  # existing module bodies wrapped by dendritic aspects
-nix/fleet/                    # service and exposure metadata
-services/minecraft/           # Minecraft NixOS service module and standalone subflake
-services/dav-server/          # DAV/Radicale/WebDAV NixOS module and standalone subflake
-services/nixpi/               # NixPi service module/package and standalone subflake
+flake.nix                     # root flake: configs, modules, packages, checks, apps
+nix/hosts/nazar/              # production host composition, hardware, and disk layout
+nix/hosts/alex-laptop/        # client/laptop composition and hardware config
+nix/modules/host/             # host baseline, networking, service adapters, monitoring
+nix/modules/laptop/           # client-side access modules
+nix/modules/guest/            # shared Pi/default package modules used by host/client
+nix/modules/services/         # small shared service identity modules
+nix/fleet/                    # host identity, exposure policy, service metadata
+services/minecraft/           # Minecraft source and reusable NixOS module
+services/dav-server/          # DAV/Radicale/WebDAV reusable NixOS module
+services/nixpi/               # NixPi source, module, and package expression
+runbooks/                     # operational notes
 ```
 
 ## Common commands
@@ -35,6 +42,14 @@ nix run .#switch-minecraft
 nix run .#switch-dav-server
 ```
 
+## Development commands
+
+```bash
+nix build .#pi
+nix build .#nixpi-bun
+nix develop .#nixpi
+```
+
 ## Quick health checks
 
 ```bash
@@ -44,6 +59,7 @@ curl -I http://dav.nazar.studio/files/
 
 ## Policy
 
-- Keep deployment authority in this repository.
+- Keep deployment authority in the root flake.
 - Keep private HTTP services bound to the host private address and reachable through sshuttle.
-- Keep service modules reusable, but compose production configuration from the root host flake.
+- Keep service code in `services/`, but compose production from the root host configuration.
+- Prefer explicit direct imports over generated module discovery or wrapper layers.

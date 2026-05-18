@@ -1,62 +1,59 @@
 # nixpi-bun
 
-Experimental Bun-native fork of Nazar's private web interface for [Pi Coding Agent](https://github.com/badlogic/pi-mono).
+Experimental Bun-native private web interface for [Pi Coding Agent](https://github.com/badlogic/pi-mono), used by Nazar as the private operator surface.
 
-`nixpi-bun` keeps the same thin Pi RPC bridge as `nixpi`, but replaces the Node/Express/`ws` server with Bun's native HTTP and WebSocket runtime. It spawns `pi --mode rpc` and exposes the existing Pi RPC functionality in a browser: streaming chat, session management, model switching, thinking levels, image input, command palette, session export, and optional Whisper speech-to-text.
+`nixpi-bun` keeps a thin Pi RPC bridge and runs on Bun's native HTTP/WebSocket runtime. It spawns `pi --mode rpc` and exposes streaming chat, session management, model switching, thinking levels, image input, command palette, session export, and optional Whisper speech-to-text.
 
 ## Status
 
-This repository is the production NixPi implementation consumed by Nazar through a flake input and the reusable `services.nixpi-bun` NixOS module. The runtime app has no npm dependencies. Markdown rendering uses a small native safe subset rather than loading parser/sanitizer packages.
+This directory owns the NixPi source, reusable NixOS module, and package expression. The Nazar root flake imports those files directly and exposes the package as `.#nixpi-bun`; there is no service-local flake.
 
-## Why this exists
+The runtime app has no npm dependencies. Markdown rendering uses a small native safe subset rather than loading parser/sanitizer packages.
 
-NixPi Bun is a native NixOS + Bun appliance shape for the private Nazar operator surface. It is intended to run:
+## Production shape
 
-- on the `nazar` host for host-side development/operator work;
-- with local workspaces for Nazar service directories;
-- behind sshuttle/private host access when deployed as infrastructure;
-- behind a dedicated private reverse-proxy name such as `nixpi.nazar.studio`.
-
-It deliberately reuses Pi RPC instead of replacing Pi internals.
+- Root package: `nix build .#nixpi-bun` from the repository root.
+- Root module import: `nix/modules/host/nixpi.nix` imports `services/nixpi/nix/modules/nixpi-bun.nix`.
+- Systemd unit: `nixpi-bun.service`.
+- Backend bind: `127.0.0.1:4815`.
+- Private route: `http://nixpi.nazar.studio/` through sshuttle and host nginx.
 
 ## Quick start
 
+From the repository root:
+
 ```bash
-nix develop
+nix develop .#nixpi
+cd services/nixpi
 NIXPI_CWD="$PWD" bun server.js
 # open http://localhost:4815 unless NIXPI_PORT is set
 ```
 
-Or via the CLI entry point:
+Or via the package:
 
 ```bash
-bun install -g .
-nixpi-bun
+nix run .#nixpi-bun
 ```
 
 ## Configuration
 
-| Variable         | Default   | Description                              |
-| ---------------- | --------- | ---------------------------------------- |
-| `NIXPI_PORT`     | `4815`    | Server port (`4816` in the NixOS module) |
-| `NIXPI_HOST`     | `0.0.0.0` | Server bind address                      |
-| `NIXPI_CWD`      | `$HOME`   | Working directory for Pi                 |
-| `NIXPI_PI_BIN`   | `pi`      | Path to Pi binary                        |
-| `OPENAI_API_KEY` | unset     | Optional Whisper speech-to-text key      |
+| Variable         | Default   | Description                                |
+| ---------------- | --------- | ------------------------------------------ |
+| `NIXPI_PORT`     | `4815`    | Server port (`4816` in the module default) |
+| `NIXPI_HOST`     | `0.0.0.0` | Server bind address                        |
+| `NIXPI_CWD`      | `$HOME`   | Working directory for Pi                   |
+| `NIXPI_PI_BIN`   | `pi`      | Path to Pi binary                          |
+| `OPENAI_API_KEY` | unset     | Optional Whisper speech-to-text key        |
 
-## Nix/NixOS
+## NixOS module
 
-This flake exports:
+The reusable module lives at `services/nixpi/nix/modules/nixpi-bun.nix` and is exported by the root flake as `nixosModules.nixpi-bun` / `nixosModules.nixpi-bun-service`.
 
-- `packages.x86_64-linux.nixpi-bun`
-- `overlays.default`
-- `nixosModules.nixpi-bun`
-
-Example NixOS module usage:
+Example usage inside this repository:
 
 ```nix
 {
-  imports = [ inputs.nixpi-bun.nixosModules.nixpi-bun ];
+  imports = [ ../../../services/nixpi/nix/modules/nixpi-bun.nix ];
 
   services.nixpi-bun = {
     enable = true;
@@ -65,7 +62,7 @@ Example NixOS module usage:
     home = "/home/alex";
     workingDirectory = "/home/alex";
     host = "127.0.0.1";
-    port = 4816;
+    port = 4815;
     piBinary = "/run/current-system/sw/bin/pi";
   };
 }
@@ -73,31 +70,7 @@ Example NixOS module usage:
 
 ### Live-source mode
 
-Set `sourceDir` to point at your local `nixpi-bun` checkout. The service will run `bun server.js` directly from that directory instead of the Nix store package. This lets you edit `public/index.html` or server code and restart the systemd unit (`systemctl restart nixpi-bun`) without rebuilding the consumer VM.
-
-```nix
-{
-  imports = [ inputs.nixpi-bun.nixosModules.nixpi-bun ];
-
-  services.nixpi-bun = {
-    enable = true;
-    user = "alex";
-    group = "users";
-    home = "/home/alex";
-    workingDirectory = "/home/alex";
-    sourceDir = "/home/alex/repos/nazar/services/nixpi";
-    host = "0.0.0.0";
-    port = 4816;
-    piBinary = "/run/current-system/sw/bin/pi";
-    openFirewall = true;
-  };
-}
-```
-
-**Requirements** for live-source mode:
-
-- The `public/` directory must contain the static assets.
-- No `node_modules/` directory is required for the runtime app.
+Set `sourceDir` to point at a local checkout. The service will run `bun server.js` directly from that directory instead of the Nix store package, so you can edit static assets or server code and restart `nixpi-bun.service` without rebuilding.
 
 ## Architecture
 
@@ -109,14 +82,22 @@ NixPi Bun keeps state in the normal Pi session directory for the configured `HOM
 
 ## Reverse proxy paths
 
-NixPi Bun supports being served at the root of a private name, for example `http://nixpi.nazar.studio/`. Dedicated private hostnames are preferred for Nazar production because WebSocket routing stays simple. If served under a subpath elsewhere, configure the proxy to strip the prefix before forwarding to the NixPi Bun service and preserve WebSocket upgrades.
+NixPi Bun supports being served at the root of a private name, for example `http://nixpi.nazar.studio/`. Dedicated private hostnames are preferred for Nazar production because WebSocket routing stays simple.
 
 ## Development checks
 
+From the repository root:
+
 ```bash
-nix develop
-make smoke
+nix develop .#nixpi --command make -C services/nixpi check
 nix build .#nixpi-bun --no-link
+```
+
+From this directory inside `nix develop ../..#nixpi`:
+
+```bash
+make check
+make build
 ```
 
 ## License

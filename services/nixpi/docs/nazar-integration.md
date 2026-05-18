@@ -1,17 +1,18 @@
 # Nazar reproducible integration
 
-NixPi is integrated into Nazar as a private, sshuttle-routed Pi web surface. Nazar production consumes this monorepo subflake as a local flake input and runs the reusable `services.nixpi-bun` NixOS module/package.
+NixPi is integrated into Nazar as a private, sshuttle-routed Pi web surface. The root flake imports this directory's module and package expression directly; `services/nixpi` is not a separate flake surface.
 
 ## Current production shape
 
-- Source of truth: monorepo subflake `services/nixpi`, wired as Nazar flake input `nixpi`.
-- Host module: `nazar/nix/modules/host/nixpi.nix` configures `inputs.nixpi.nixosModules.nixpi-bun`.
-- Runtime package: flake-built `nixpi-bun` package in the Nix store.
+- Source of truth: `services/nixpi` in this repository.
+- Host adapter: `nix/modules/host/nixpi.nix`.
+- Reusable module: `services/nixpi/nix/modules/nixpi-bun.nix`.
+- Root package: `packages.x86_64-linux.nixpi-bun` / `nix build .#nixpi-bun`.
 - Service unit: `nixpi-bun.service`.
 - Backend bind: `127.0.0.1:4815`.
 - Public exposure: none.
 - Private route: host nginx serves `http://nixpi.nazar.studio/` on the sshuttle-routed private listener.
-- Workspaces: host-local and SSH workspaces are generated from Nazar fleet data; VM work is reached through SSH into Pi agents, not by running per-VM NixPi HTTP services.
+- Workspaces: host-local service directories configured in `nix/modules/host/nixpi.nix`.
 
 Live-source mode remains available through the module's `sourceDir` option for development, but it is not the Nazar production path.
 
@@ -19,9 +20,7 @@ Live-source mode remains available through the module's `sourceDir` option for d
 
 - Private services stay behind sshuttle and host nginx on `10.44.0.1`.
 - Do not publish public DNS or public HTTP for NixPi endpoints.
-- The `nazar` host owns VM lifecycle, VMID/IP/MAC, NAT/firewall, and public exposure.
-- NixPi runs centrally on the host; VM work is reached through configured workspaces rather than VM-local NixPi services.
-- Runtime VM auth propagation is owned by NixPi: before spawning remote Pi over SSH, NixPi copies host Pi auth/model files into the remote `$HOME/.pi/agent` directory.
+- NixPi runs centrally on the host; service workspaces are local root-repository paths.
 - DAV data remains isolated in `dav-server`; NixPi should not co-locate DAV state or secrets.
 
 ## Routing
@@ -39,14 +38,14 @@ Nazar keeps host HTTP exposure policy in `nix/fleet/exposure.nix`:
 - `access = "private"` serves only on the sshuttle-routed private listener.
 - `access = "public"` also serves on the host public IPv4 listener and opens public TCP/80.
 
-VM private service domains come from `nix/fleet/vms.nix` `privateAccess`. Keep NixPi private unless a separate auth/hardening review happens.
+Keep NixPi private unless a separate auth/hardening review happens.
 
 ## Deployment flow
 
-After changes to this subflake, commit and push the monorepo, then switch Nazar:
+After changes to NixPi or the host adapter, commit and push the monorepo, then switch Nazar from the repository root:
 
 ```bash
-cd /root/nazar
+nix flake check --no-build
 nix run .#switch-host
 ```
 
@@ -56,22 +55,12 @@ NixPi is an operator surface: it can drive Pi tools as `alex` in configured work
 
 ## Validation checklist
 
-From `/root/nazar` after changes to the host module, route policy, or `services/nixpi` subflake:
+From the repository root after host module, route policy, or NixPi changes:
 
 ```bash
 nix flake check --no-build
-nix run .#switch-host
-```
-
-From `/home/alex/repos/nazar/services/nixpi` after app changes:
-
-```bash
-node --check server.js
-node --check pi-rpc.js
-node --check public/app.js
-node --check public/ds/topbar-actions.js
-nix develop --command make check
 nix build .#nixpi-bun --no-link
+nix develop .#nixpi --command make -C services/nixpi check
 ```
 
 From the host:

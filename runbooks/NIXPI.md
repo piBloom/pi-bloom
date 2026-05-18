@@ -27,25 +27,23 @@ Do not set `access = "public"` for NixPi unless the operator surface has had a s
 
 ## Runtime shape
 
-The active NixPi implementation lives in this monorepo at `services/nixpi` and is consumed through the local `nixpi` flake input:
+The active NixPi implementation lives at `services/nixpi` and is imported directly by the root flake/host module:
 
 ```text
-services/nixpi -> inputs.nixpi.nixosModules.nixpi-bun -> systemd.services.nixpi-bun
+services/nixpi/nix/modules/nixpi-bun.nix -> nix/modules/host/nixpi.nix -> systemd.services.nixpi-bun
 ```
 
 Nazar configures the reusable module in `nix/modules/host/nixpi.nix`:
 
-- package: flake-provided `nixpi-bun` package
+- package: root-built `nixpi-bun` package
 - backend bind: `127.0.0.1:4815`
 - service unit: `nixpi-bun.service`
-- host workspace: local `/home/alex`
-- VM workspaces: generated from `nix/fleet/vms.nix` entries with `piAgent.enable = true`
-
-VM workspaces SSH into the VM and start remote `pi --mode rpc`. NixPi copies host Pi auth/model files into the remote `$HOME/.pi/agent` directory at runtime over SSH before spawning remote Pi. There is no shared host/VM auth mount in the production path.
+- default workspace: local `/home/alex`
+- service workspaces: local `services/minecraft` and `services/dav-server`
 
 ## Switch
 
-From `/root/nazar` on the host:
+From the repository root on the host:
 
 ```bash
 nix flake check --no-build
@@ -53,17 +51,17 @@ sudo nix --accept-flake-config build .#nixosConfigurations.nazar.config.system.b
 sudo nixos-rebuild switch --flake .#nazar
 ```
 
-After NixPi app changes, commit the `services/nixpi` changes in the monorepo and switch the host:
+Or use the repository app:
 
 ```bash
 nix run .#switch-host
 ```
 
-Then switch services as usual if another service changed:
+The service-named switch apps are full host rebuild shortcuts:
 
 ```bash
-nix run .#switch-minecraft   # host switch for Minecraft
-nix run .#switch-dav-server  # host switch for the DAV host service
+nix run .#switch-minecraft
+nix run .#switch-dav-server
 ```
 
 ## Validate
@@ -82,6 +80,13 @@ From a configured sshuttle laptop:
 systemctl status nazar-sshuttle
 getent hosts nazar.studio nixpi.nazar.studio dav.nazar.studio
 curl -I http://nixpi.nazar.studio/
+```
+
+From a development checkout:
+
+```bash
+nix develop .#nixpi --command make -C services/nixpi check
+nix build .#nixpi-bun --no-link
 ```
 
 ## Troubleshooting 502 Bad Gateway

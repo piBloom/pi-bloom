@@ -29,44 +29,23 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
       pi = pkgs.callPackage ./nix/packages/pi { };
-      fleet = import ./nix/fleet/vms.nix;
+      nixpi-bun = pkgs.callPackage ./services/nixpi/nix/packages/nixpi-bun { };
+      fleet = import ./nix/fleet/services.nix;
 
-      aspectModule = rel: import (./nix/aspects + "/${rel}/default.nix");
-      nixosModules = {
-        "system-base" = aspectModule "system/base";
-        "guest-base" = aspectModule "system/guest-base";
-        "development-tools" = aspectModule "development/tools";
+      nixosModules = rec {
+        nazar = ./nix/hosts/nazar;
+        alex-laptop = ./nix/hosts/alex-laptop;
+        default = nazar;
 
-        "admin-users" = aspectModule "users/admin";
+        dav-server = ./services/dav-server/nix/modules/dav-server.nix;
+        dav-server-service = dav-server;
 
-        "ssh-host-access" = aspectModule "access/ssh-host";
-        "private-http-access" = aspectModule "access/private-http";
-        "sshuttle-client-access" = aspectModule "access/sshuttle-client";
+        nixpi-bun = ./services/nixpi/nix/modules/nixpi-bun.nix;
+        nixpi-bun-service = nixpi-bun;
 
-        "host-networking" = aspectModule "networking/host-uplink";
-        "host-firewall" = aspectModule "networking/firewall";
-        "service-proxy" = aspectModule "networking/service-proxy";
-
-        "pi-default-packages" = aspectModule "agents/pi-default-packages";
-        "host-pi-agent" = aspectModule "agents/pi-agent-host";
-        "guest-pi-agent" = aspectModule "agents/pi-agent-guest";
-        "llm-agents" = aspectModule "agents/llm-agents";
-
-        "nixpi-host-service" = aspectModule "services/nixpi";
-        "code-host-service" = aspectModule "services/code";
-        "dav-server-host-service" = aspectModule "services/dav-server";
-        "minecraft-host-service" = aspectModule "services/minecraft";
-
-        "backup-inventory" = aspectModule "storage/backup";
-        "host-monitoring" = aspectModule "monitoring/mdraid-smart";
-
-        "profile-host-production" = aspectModule "profiles/host-production";
-        "profile-client-alex-laptop" = aspectModule "profiles/client-alex-laptop";
-
-        "dav-server-service" = import ./services/dav-server/nix/modules/dav-server.nix;
-        "nixpi-bun-service" = import ./services/nixpi/nix/modules/nixpi-bun.nix;
-        "minecraft-service" = import ./services/minecraft/nix/modules/minecraft-papermc.nix;
-        "minecraft-web" = import ./services/minecraft/nix/modules/minecraft-web.nix;
+        minecraft = ./services/minecraft/nix/modules/minecraft-papermc.nix;
+        minecraft-service = minecraft;
+        minecraft-web = ./services/minecraft/nix/modules/minecraft-web.nix;
       };
 
       mkNixosSystem =
@@ -120,15 +99,13 @@
     {
       inherit nixosModules;
 
-      modules.nixos = nixosModules;
-
       nixosConfigurations = {
-        nazar = mkNixosSystem nixosModules."profile-host-production";
-        alex-laptop = mkNixosSystem nixosModules."profile-client-alex-laptop";
+        nazar = mkNixosSystem nixosModules.nazar;
+        alex-laptop = mkNixosSystem nixosModules.alex-laptop;
       };
 
       packages.${system} = {
-        inherit pi;
+        inherit pi nixpi-bun;
       };
 
       apps.${system} = {
@@ -139,10 +116,81 @@
         switch-dav-server = mkSwitchApp "dav-server" "Switch the Nazar host configuration for the host DAV service";
       };
 
-      checks.${system} = { };
+      checks.${system} =
+        let
+          minecraftTestSystem = nixpkgs.lib.nixosSystem {
+            inherit system;
+            specialArgs = {
+              minecraftContext = {
+                service = "minecraft";
+                dns = "mc.example.invalid";
+                minecraft = {
+                  operators = [
+                    {
+                      name = "ExampleOp";
+                      uuid = "00000000-0000-0000-0000-000000000001";
+                    }
+                  ];
+                  gameRules.keep_inventory = true;
+                  pluginConfigs."voicechat/voicechat-server.properties" = ''
+                    port=24454
+                    allow_pings=true
+                  '';
+                  rcon = {
+                    enable = true;
+                    passwordFile = builtins.toFile "minecraft-rcon-password-test" "not-a-real-secret\n";
+                  };
+                };
+              };
+            };
+            modules = [ nixosModules.minecraft ];
+          };
 
-      devShells.${system}.default = pkgs.mkShell {
-        packages = [ pkgs.nixos-rebuild ];
+          davServerTestSystem = nixpkgs.lib.nixosSystem {
+            inherit system;
+            specialArgs = {
+              davServerContext = {
+                service = "dav-server";
+                dns = "dav.example.invalid";
+                davServer = {
+                  listenAddress = "127.0.0.1";
+                  nginxDefault = false;
+                  radicalePort = 5232;
+                  httpPort = 8080;
+                  auth.enable = false;
+                };
+              };
+            };
+            modules = [ nixosModules.dav-server ];
+          };
+        in
+        {
+          inherit nixpi-bun;
+
+          minecraft-module-eval = pkgs.runCommand "minecraft-module-eval" { } ''
+            mkdir -p $out
+            echo ${toString minecraftTestSystem.config.services.minecraft-server.serverProperties.server-port} > $out/server-port
+          '';
+
+          dav-server-module-eval = pkgs.runCommand "dav-server-module-eval" { } ''
+            mkdir -p $out
+            echo ${toString davServerTestSystem.config.services.radicale.enable} > $out/radicale-enabled
+          '';
+        };
+
+      devShells.${system} = {
+        default = pkgs.mkShell {
+          packages = [ pkgs.nixos-rebuild ];
+        };
+
+        nixpi = pkgs.mkShell {
+          packages = [
+            pkgs.bun
+            pkgs.nodejs_22
+            pkgs.chromium
+            pkgs.gnumake
+          ];
+        };
       };
 
       formatter.${system} = pkgs.writeShellApplication {

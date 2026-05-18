@@ -1,5 +1,7 @@
 .PHONY: dev start smoke check build
 
+ROOT := ../..
+
 dev:
 	bun --watch server.js
 
@@ -12,11 +14,13 @@ smoke:
 check:
 	node --check server.js
 	node --check pi-rpc.js
+	node --check sessions.js
+	node --check workspaces.js
 	node --check public/app.js
 	node --check public/ds/topbar-actions.js
 	node --check scripts/smoke-ui.js
 	$(MAKE) smoke
-	nix flake check --no-build
+	nix flake check $(ROOT) --no-build --no-write-lock-file
 
 build:
-	nix build .#nixpi-bun --no-link
+	nix build $(ROOT)#nixpi-bun --no-link

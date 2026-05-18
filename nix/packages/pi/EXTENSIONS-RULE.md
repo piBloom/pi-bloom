@@ -77,14 +77,14 @@ provides the `npm` and `node` binaries pi's package-manager spawns.
 ### B. Host NixPi (Bun systemd service)
 
 ```
-host/nixpi.nix           →  services.nixpi-bun from the nixpi flake input
+host/nixpi.nix           →  services.nixpi-bun from services/nixpi/nix/modules
                             + pi-default-packages.nix
                             + systemd.services.nixpi-bun.path = [ nodejs_22 openssh ]
 ```
 
-NixPi itself is provided by the flake-packaged Bun service and runs only on the
-Nazar host. VM-local NixPi HTTP services have been removed; VM workspaces are
-reached through SSH.
+NixPi itself is provided by the root-flake-packaged Bun service and runs only on the
+Nazar host. Service workspaces are local repository paths configured by the host
+module.
 
 **Critical difference from an interactive shell:** NixPi runs pi as a
 **systemd service**, not in a PAM session. `environment.sessionVariables` is NOT
@@ -100,7 +100,7 @@ that pi's package-manager runs).
 **Also required:**
 
 - `path = [ pkgs.nodejs_22 pkgs.openssh ]` — npm must be in `$PATH` for pi's
-  extension installer, and SSH is needed for remote VM workspaces
+  extension installer, and SSH remains available for Pi-managed remote work
 - `~/.npmrc` written by the activation script from `pi-default-packages.nix`
 
 ## The Extension Install Lifecycle

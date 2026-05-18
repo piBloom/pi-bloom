@@ -9,7 +9,7 @@ Goal: make the browser UI as native as practical: static files under `public/`, 
 - Do not reintroduce Lit, decorators, or a TypeScript-only design-system source tree unless there is a concrete need.
 - Keep chat markdown routed through `md()` and the explicit sanitizer/fallback boundary.
 - Preserve WebSocket/session orchestration in `public/app.js` until there is a tested store.
-- Prefer small, deployable slices with `make smoke`, `nix build .#nixpi-bun --no-link`, and live smoke on Nazar.
+- Prefer small, deployable slices with `make smoke`, `nix build ../..#nixpi-bun --no-link` from this directory, and live smoke on Nazar.
 
 ## Current status
 
