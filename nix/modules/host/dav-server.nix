@@ -73,15 +73,22 @@ in
   };
 
   systemd.tmpfiles.rules = lib.mkIf enable [
-    "d ${stateDir} 0750 root root - -"
+    "d ${stateDir} 0755 root root - -"
     "d ${webdavRoot} 0750 nginx nginx - -"
     "d ${webdavRoot}/wiki 0750 nginx nginx - -"
     "d ${stateDir}/nginx-client-body 0750 nginx nginx - -"
     "d ${radicaleStateDir} 0750 radicale radicale - -"
+    "z ${stateDir} 0755 root root - -"
     "z ${webdavRoot} 0750 nginx nginx - -"
     "z ${stateDir}/nginx-client-body 0750 nginx nginx - -"
     "z ${radicaleStateDir} 0750 radicale radicale - -"
   ];
+
+  systemd.services.nginx.preStart = lib.mkIf enable (
+    lib.mkBefore ''
+      ${pkgs.systemd}/bin/systemd-tmpfiles --create
+    ''
+  );
 
   assertions = lib.mkIf enable [
     {
