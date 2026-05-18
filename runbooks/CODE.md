@@ -30,9 +30,10 @@ Nazar configures OpenVSCode Server with:
 
 ## Switch
 
-From `/root/nazar` on the host:
+From `/home/alex/repos/nazar` on the host:
 
 ```bash
+cd /home/alex/repos/nazar
 nix flake check --no-build
 sudo nix --accept-flake-config build .#nixosConfigurations.nazar.config.system.build.toplevel --print-build-logs
 sudo nixos-rebuild switch --flake .#nazar

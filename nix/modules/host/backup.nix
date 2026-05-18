@@ -1,11 +1,11 @@
 { pkgs, ... }:
 let
+  hostIdentity = import ../../fleet/host.nix;
   inventory = pkgs.writeShellScriptBin "nazar-backup-inventory" ''
     set -eu
     cat <<'EOF'
     Nazar backup roots:
-      /srv/nazar
-      /persist/repos
+      ${hostIdentity.repository.localPath}
       /persist/services/minecraft
       /persist/services/dav-server
       /persist/secrets

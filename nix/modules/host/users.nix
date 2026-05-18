@@ -1,6 +1,7 @@
 { ... }:
 let
   alexPublicSshKeys = import ../../users/alex-public-ssh-keys.nix;
+  hostIdentity = import ../../fleet/host.nix;
 in
 {
   users.mutableUsers = false;
@@ -31,9 +32,8 @@ in
   systemd.tmpfiles.rules = [
     "d /persist 0755 root root - -"
     "d /persist/secrets 0700 root root - -"
-    "d /persist/repos 0755 alex users - -"
-    "d /srv 0755 root root - -"
-    "d /srv/nazar 0755 alex users - -"
+    "d /home/alex/repos 0755 alex users - -"
+    "d ${hostIdentity.repository.localPath} 0755 alex users - -"
     "d /var/lib/nazar 0750 root root - -"
   ];
 

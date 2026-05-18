@@ -4,6 +4,12 @@ Declarative NixOS configuration for the Hetzner host `nazar`, a client laptop pr
 
 ## Scope
 
+The canonical local checkout on the Nazar VPS is:
+
+```text
+/home/alex/repos/nazar
+```
+
 This repository has one production Nix surface: the root `flake.nix`. The host and laptop configurations import modules directly from `nix/modules`, while service source and reusable service modules live under `services/`.
 
 The root flake owns deployment, private access policy, nginx routing, DAV/Code services, Minecraft, operator switch apps, and the Hermes Agent NixOS module wiring.
@@ -34,6 +40,7 @@ runbooks/                     # operational notes
 ## Common commands
 
 ```bash
+cd /home/alex/repos/nazar
 nix flake check
 nix fmt
 nix run .#switch-host
@@ -57,6 +64,7 @@ curl -I http://dav.nazar.studio/files/
 ## Policy
 
 - Keep deployment authority in the root flake.
+- Treat `/home/alex/repos/nazar` as the only canonical local checkout on the VPS.
 - Keep private HTTP services bound to the host private address and reachable through sshuttle.
 - Keep Hermes configured through NixOS and secrets files, not ad-hoc host services.
 - Keep service code in `services/`, but compose production from the root host configuration.

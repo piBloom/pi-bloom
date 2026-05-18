@@ -16,6 +16,7 @@
 
   repository = {
     forge = "Codeberg";
+    localPath = "/home/alex/repos/nazar";
     webUrl = "https://codeberg.org/NazarStudio/Nazar";
     httpsUrl = "https://codeberg.org/NazarStudio/Nazar.git";
     sshUrl = "git@codeberg.org:NazarStudio/Nazar.git";
