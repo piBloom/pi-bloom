@@ -45,10 +45,7 @@ in
 
     # Optional host-local env file for non-OAuth secrets such as API server
     # keys. OpenAI Codex/ChatGPT OAuth persists in $HERMES_HOME/auth.json.
-    environmentFiles = [
-      "/var/lib/hermes/env"
-      "/var/lib/hermes/.hermes/.env"
-    ];
+    environmentFiles = [ "/var/lib/hermes/env" ];
 
     settings = {
       model = {

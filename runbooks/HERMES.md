@@ -45,7 +45,7 @@ printf 'API_SERVER_KEY=change-me\n' \
   | sudo install -m 0600 -o alex -g users /dev/stdin /var/lib/hermes/env
 ```
 
-The dashboard edits `/var/lib/hermes/.hermes/.env`. Both `hermes-agent.service` and `hermes-dashboard.service` load that file, so dashboard-managed API keys are picked up on service restart. Use `/reload` in an active Hermes CLI session to refresh environment variables without restarting that session.
+The dashboard edits `/var/lib/hermes/.hermes/.env`. Hermes reads that file on startup, so dashboard-managed API keys are picked up by new sessions or after the gateway restarts. Use `/reload` in an active Hermes CLI session to refresh environment variables without restarting that session.
 
 ## Switch
 
