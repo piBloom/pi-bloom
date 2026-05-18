@@ -1,18 +1,25 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 {
-  # The upstream Hermes NixOS module owns
-  # the hermes user, state directory, generated config, and gateway service.
+  # The upstream Hermes NixOS module owns the state directory, generated
+  # config, and gateway service. Run it as alex because Nazar is a private,
+  # single-user operator host and we want OAuth/files/repo edits to behave like
+  # normal alex shell sessions.
   services.hermes-agent = {
     enable = true;
+    user = "alex";
+    group = "users";
+    createUser = false;
     addToSystemPackages = true;
 
-    # Keep provider tokens out of the Nix store. This file may be absent during
-    # the first rebuild; the upstream activation script only merges it when it
-    # exists. Seed it with e.g. OPENROUTER_API_KEY=... before real use.
+    # Optional host-local env file for non-OAuth secrets such as API server
+    # keys. OpenAI Codex/ChatGPT OAuth persists in $HERMES_HOME/auth.json.
     environmentFiles = [ "/var/lib/hermes/env" ];
 
     settings = {
-      model.default = "anthropic/claude-sonnet-4";
+      model = {
+        provider = "openai-codex";
+        default = "gpt-5.5";
+      };
       toolsets = [ "all" ];
       terminal = {
         backend = "local";
@@ -40,8 +47,8 @@
     ];
   };
 
-  # The native module exports HERMES_HOME globally, but the shared state is
-  # group-owned by hermes. Add the operator user so `hermes chat` from SSH or
-  # code.nazar.studio can share the managed gateway state.
-  users.users.alex.extraGroups = [ config.services.hermes-agent.group ];
+  # Keep the module's default workspace under /var/lib/hermes so activation does
+  # not change /home/alex permissions, but allow the private gateway to work on
+  # alex-owned repos when explicitly asked.
+  systemd.services.hermes-agent.serviceConfig.ReadWritePaths = [ "/home/alex" ];
 }

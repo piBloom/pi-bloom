@@ -8,26 +8,41 @@ Hermes Agent is installed through the upstream Hermes NixOS module and runs as `
 inputs.hermes-agent.nixosModules.default -> nix/modules/host/hermes-agent.nix -> services.hermes-agent
 ```
 
-Nazar uses native mode by default:
+Nazar uses native mode with the service running as `alex`:
 
 - service unit: `hermes-agent.service`
 - state directory: `/var/lib/hermes`
 - managed home: `/var/lib/hermes/.hermes`
 - workspace: `/var/lib/hermes/workspace`
 - CLI: `hermes` is on the system PATH with `HERMES_HOME=/var/lib/hermes/.hermes`
+- main model/provider: `openai-codex` with `gpt-5.5`
 
-The service runs as the unprivileged `hermes` user. The `alex` user is in the `hermes` group so interactive CLI sessions from SSH or `code.nazar.studio` can share the managed state.
+Running the service as `alex` keeps this private single-user host simple: OAuth, repo edits, and files created by Hermes behave like normal `alex` shell sessions.
 
-## Secrets
+## OAuth and secrets
 
-Do not put API keys in Nix files. Seed the host-local environment file before first real use:
+OpenAI Codex / ChatGPT OAuth persists in:
 
-```bash
-printf 'OPENROUTER_API_KEY=sk-or-your-key\n' \
-  | sudo install -m 0600 -o hermes -g hermes /dev/stdin /var/lib/hermes/env
+```text
+/var/lib/hermes/.hermes/auth.json
 ```
 
-Other provider or gateway tokens can go in the same file, one `KEY=value` per line. The Hermes module merges `/var/lib/hermes/env` into `/var/lib/hermes/.hermes/.env` during `nixos-rebuild switch`.
+Authenticate after the first rebuild:
+
+```bash
+hermes auth add openai-codex --method browser
+# or use the model picker if your pinned Hermes version prefers it:
+hermes model
+```
+
+Do not put API keys or OAuth JSON in Nix files. If you later need non-OAuth secrets such as an API server key, seed the optional host-local environment file:
+
+```bash
+printf 'API_SERVER_KEY=change-me\n' \
+  | sudo install -m 0600 -o alex -g users /dev/stdin /var/lib/hermes/env
+```
+
+The Hermes module merges `/var/lib/hermes/env` into `/var/lib/hermes/.hermes/.env` during `nixos-rebuild switch` when the file exists.
 
 ## Switch
 
@@ -54,11 +69,11 @@ hermes version
 hermes config
 ```
 
-If a fresh shell cannot read `/var/lib/hermes/.hermes`, confirm group membership and re-login:
+If a fresh shell does not see the managed home, open a new login shell and confirm:
 
 ```bash
-id alex
-getent group hermes
+echo "$HERMES_HOME"
+ls -la /var/lib/hermes/.hermes
 ```
 
 ## Updating Hermes
