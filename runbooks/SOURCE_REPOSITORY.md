@@ -15,7 +15,6 @@ This path is declared in `nix/fleet/host.nix` as `repository.localPath` and is t
 ## Canonical remote
 
 - Web: <https://codeberg.org/NazarStudio/Nazar>
-- HTTPS Git: `https://codeberg.org/NazarStudio/Nazar.git`
 - SSH Git: `git@codeberg.org:NazarStudio/Nazar.git`
 
 The same locations are declared in `nix/fleet/host.nix` under `repository`.
@@ -31,13 +30,11 @@ The same locations are declared in `nix/fleet/host.nix` under `repository`.
 ## Local remote setup
 
 ```bash
-git remote add codeberg https://codeberg.org/NazarStudio/Nazar.git
-# or, with SSH configured:
 git remote add codeberg git@codeberg.org:NazarStudio/Nazar.git
 ```
 
 Validate access with:
 
 ```bash
-git ls-remote https://codeberg.org/NazarStudio/Nazar.git
+git ls-remote git@codeberg.org:NazarStudio/Nazar.git
 ```
