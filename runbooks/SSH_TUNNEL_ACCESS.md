@@ -2,6 +2,14 @@
 
 OpenSSH local forwarding is the canonical browser access path for Nazar.
 
+## Relationship To Tailscale
+
+SSH local forwarding remains the fallback/admin path. For phone and desktop apps
+that need persistent CalDAV/WebDAV sync, prefer Tailscale private access; mobile
+CalDAV/WebDAV clients generally cannot use SSH tunnels reliably for background
+sync. Keep the SSH tunnel for loopback-only services such as the Hermes
+Dashboard until a deliberate tailnet reverse-proxy/auth design exists.
+
 ## Server Model
 
 - Public endpoint: `alex@167.235.12.22:22`

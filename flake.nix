@@ -118,18 +118,79 @@
         '';
         nazar-host-module-eval = pkgs.runCommand "nazar-host-module-eval" { } ''
           mkdir -p $out
-          echo ${toString self.nixosConfigurations.nazar.config.services.openssh.enable} > $out/openssh-enabled
-          echo ${
+
+          assert_true() {
+            name="$1"
+            value="$2"
+            echo "$value" > "$out/$name"
+            if [ "$value" != "1" ]; then
+              echo "nazar-host-module-eval failed: $name expected 1, got $value" >&2
+              exit 1
+            fi
+          }
+
+          assert_equals() {
+            name="$1"
+            actual="$2"
+            expected="$3"
+            echo "$actual" > "$out/$name"
+            if [ "$actual" != "$expected" ]; then
+              echo "nazar-host-module-eval failed: $name expected $expected, got $actual" >&2
+              exit 1
+            fi
+          }
+
+          assert_true openssh-enabled ${toString self.nixosConfigurations.nazar.config.services.openssh.enable}
+          assert_true hermes-dashboard-enabled ${
             toString (self.nixosConfigurations.nazar.config.systemd.services.hermes-dashboard.enable or false)
-          } > $out/hermes-dashboard-enabled
-          echo ${
+          }
+          assert_true hermes-dashboard-wanted ${
             toString (
               nixpkgs.lib.elem "multi-user.target" (
                 self.nixosConfigurations.nazar.config.systemd.services.hermes-dashboard.wantedBy or [ ]
               )
             )
-          } > $out/hermes-dashboard-wanted
-          echo ${self.nixosConfigurations.nazar.config.systemd.services.hermes-dashboard.serviceConfig.Restart} > $out/hermes-dashboard-restart
+          }
+          assert_equals hermes-dashboard-restart ${self.nixosConfigurations.nazar.config.systemd.services.hermes-dashboard.serviceConfig.Restart} always
+          assert_true tailscale-enabled ${toString self.nixosConfigurations.nazar.config.services.tailscale.enable}
+          assert_true tailscale-open-firewall ${toString self.nixosConfigurations.nazar.config.services.tailscale.openFirewall}
+          assert_true tailscale-private-http-allowed ${
+            toString (
+              nixpkgs.lib.elem 80 (
+                self.nixosConfigurations.nazar.config.networking.firewall.interfaces.tailscale0.allowedTCPPorts
+                  or [ ]
+              )
+            )
+          }
+          assert_true tailscale-private-https-allowed ${
+            toString (
+              nixpkgs.lib.elem 443 (
+                self.nixosConfigurations.nazar.config.networking.firewall.interfaces.tailscale0.allowedTCPPorts
+                  or [ ]
+              )
+            )
+          }
+          assert_true public-http-not-globally-allowed ${
+            toString (
+              !(nixpkgs.lib.elem 80 (
+                self.nixosConfigurations.nazar.config.networking.firewall.allowedTCPPorts or [ ]
+              ))
+            )
+          }
+          assert_true public-https-not-globally-allowed ${
+            toString (
+              !(nixpkgs.lib.elem 443 (
+                self.nixosConfigurations.nazar.config.networking.firewall.allowedTCPPorts or [ ]
+              ))
+            )
+          }
+          assert_true tailscale-not-trusted-interface ${
+            toString (
+              !(nixpkgs.lib.elem "tailscale0" (
+                self.nixosConfigurations.nazar.config.networking.firewall.trustedInterfaces or [ ]
+              ))
+            )
+          }
         '';
         alex-laptop-tunnel-module-eval = pkgs.runCommand "alex-laptop-tunnel-module-eval" { } ''
           mkdir -p $out

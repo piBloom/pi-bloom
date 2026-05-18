@@ -18,6 +18,7 @@ The root flake owns deployment, SSH-only operator access, the Hermes services, o
 
 - Host Hermes Agent: `hermes-agent.service` managed declaratively by NixOS; use `hermes` from SSH.
 - Hermes Dashboard: `http://127.0.0.1:9119/` through the laptop SSH tunnel, backed by `hermes-dashboard.service`.
+- Tailscale private access: `tailscaled.service` joins Nazar to a tailnet so phone/desktop apps can reach future private CalDAV/WebDAV endpoints without public HTTP exposure.
 
 ## Repository map
 
@@ -60,6 +61,7 @@ curl -I http://127.0.0.1:9119/
 - Keep deployment authority in the root flake.
 - Treat `/home/alex/repos/nazar` as the only canonical local checkout on the VPS.
 - Keep browser services bound to host loopback and reachable through SSH local forwarding.
+- Keep CalDAV/WebDAV and other personal-data sync endpoints private-first; prefer explicit `tailscale0` firewall exposure over public HTTP exposure.
 - Keep Hermes configured through NixOS and secrets files, not ad-hoc host services.
 - Keep service code in `services/`, but compose production from the root host configuration.
 - Prefer explicit direct imports over generated module discovery or wrapper layers.
