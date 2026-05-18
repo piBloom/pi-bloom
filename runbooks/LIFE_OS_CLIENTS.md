@@ -4,13 +4,18 @@ This runbook describes how NixOS laptops and future clients consume Life OS over
 
 ## Design
 
-Life OS data lives on Nazar under `/srv/life`. Nazar exposes that tree as a private WebDAV endpoint:
+Life OS data lives on Nazar under `/srv/life`. Nazar exposes two private DAV services to Tailscale clients:
 
 ```text
-http://100.92.138.94/life/
+WebDAV files/Markdown:      http://100.92.138.94/life/
+Radicale CalDAV/CardDAV:   http://100.92.138.94:5232/
 ```
 
-The endpoint is intended for Tailscale clients only. Public HTTP remains blocked by the host firewall; TCP/80 is allowed only on `tailscale0` by the Nazar Tailscale firewall module.
+Both endpoints are intended for Tailscale clients only:
+
+- TCP/80 is allowed on `tailscale0` for the Nginx WebDAV endpoint.
+- TCP/5232 is allowed on `tailscale0` for Radicale.
+- Public/global firewall exposure for those services stays blocked.
 
 Client machines enable `nazar.lifeOs.client`, which provides:
 
@@ -18,8 +23,27 @@ Client machines enable `nazar.lifeOs.client`, which provides:
 - `davfs2` support.
 - A lazy WebDAV automount at `/home/alex/LifeOS`.
 - Obsidian for browsing the mounted Markdown/filesystem view.
+- `services.vdirsyncer` for declarative CalDAV/CardDAV sync.
+- CLI consumers: `khal` for calendars, `todoman` for VTODO tasks/reminders, and `khard` for contacts.
+- Human GUI clients: KDE PIM apps and Thunderbird.
 
-The current Nazar endpoint is generic WebDAV, not a CalDAV/CardDAV server. KDE PIM apps and Thunderbird are therefore optional debugging/future-sync tools, not installed by default.
+## Declarative app choice
+
+The declarative NixOS split is:
+
+| Need | Tool | Declarative status |
+| --- | --- | --- |
+| Server CalDAV/CardDAV | `services.radicale` | Native NixOS module |
+| Server WebDAV files | Nginx DAV module | Native NixOS config |
+| Laptop WebDAV mount | `services.davfs2` + `fileSystems` | Native NixOS config |
+| Laptop DAV sync | `services.vdirsyncer` | Native NixOS module |
+| Laptop CLI calendar | `khal` | Package + declarative XDG config |
+| Laptop CLI contacts | `khard` | Package + declarative XDG config |
+| Laptop CLI tasks/reminders | `todoman` | Package + declarative XDG config |
+| Laptop GUI calendar/contact/task | KDE PIM / Thunderbird | Declarative install; account state may still require UI confirmation |
+| Laptop notes/journal UI | Obsidian | Declarative install; vault is `/home/alex/LifeOS` |
+
+KDE Akonadi and Thunderbird account internals are user-session state, not clean stable NixOS options. The clean declarative layer is therefore Radicale + vdirsyncer + local vdir stores, with GUI clients installed as human-friendly consumers/debuggers.
 
 ## Enable on a NixOS client
 
@@ -35,11 +59,7 @@ Import the shared modules from the host configuration:
   nazar.lifeOs.client = {
     enable = true;
     davUrl = "http://100.92.138.94/life/";
-    obsidian.enable = true;
-
-    # Only enable these after Nazar exposes real CalDAV/CardDAV collections.
-    kdeApps.enable = false;
-    thunderbird.enable = false;
+    caldav.url = "http://100.92.138.94:5232/";
   };
 }
 ```
@@ -53,6 +73,13 @@ From the client checkout:
 ```bash
 cd /home/alex/repos/nazar
 sudo nixos-rebuild switch --flake .#alex-laptop
+```
+
+On Nazar:
+
+```bash
+cd /home/alex/repos/nazar
+sudo nixos-rebuild switch --flake .#nazar
 ```
 
 ## Tailscale enrollment
@@ -98,6 +125,49 @@ journalctl -u home-alex-LifeOS.automount --no-pager -l
 curl -I http://100.92.138.94/life/
 ```
 
+## Radicale verification
+
+From the laptop, Radicale should be reachable over Tailscale:
+
+```bash
+curl -I http://100.92.138.94:5232/
+curl -X PROPFIND -H 'Depth: 0' -i http://100.92.138.94:5232/
+```
+
+Expected result: Radicale responds on TCP/5232. `PROPFIND` should not be a generic Nginx `/life/` response.
+
+Service checks on Nazar:
+
+```bash
+systemctl status radicale --no-pager -l
+ss -ltnp | grep 5232
+```
+
+## vdirsyncer verification
+
+The laptop has a declarative `services.vdirsyncer.jobs.life-os` job and timer.
+
+```bash
+systemctl status 'vdirsyncer@life-os.timer' --no-pager -l
+systemctl start 'vdirsyncer@life-os.service'
+journalctl -u 'vdirsyncer@life-os.service' --no-pager -l
+```
+
+Local sync directories:
+
+```text
+/home/alex/.local/share/life-os/calendars
+/home/alex/.local/share/life-os/contacts
+```
+
+CLI consumers:
+
+```bash
+khal list today 7d
+todo list
+khard list
+```
+
 ## Desktop use
 
 ### Obsidian
@@ -115,13 +185,25 @@ For now this is a direct WebDAV-backed mount. If Obsidian becomes slow or has fi
 
 Use KOrganizer, KAddressBook, Kontact, or Merkuro for human calendar/contact/task UI.
 
-These apps need real CalDAV/CardDAV collections. The current `/life/` endpoint is generic WebDAV, so KDE PIM auto-discovery against `/.well-known/caldav`, `/.well-known/carddav`, or `/caldav/` is expected to fail until a CalDAV/CardDAV backend such as Radicale is added.
+Radicale URL:
 
-KDE Akonadi DAV account provisioning is not currently generated declaratively. Add DAV accounts manually in the KDE UI if real CalDAV/CardDAV is enabled later.
+```text
+http://100.92.138.94:5232/
+```
+
+The GUI apps are installed declaratively, but KDE Akonadi DAV account provisioning is not currently generated declaratively because it is user-session state. If the local vdirsyncer/CLI layer works but KDE does not auto-detect accounts, add the DAV source manually in KDE using the Radicale URL above.
 
 ### Thunderbird
 
-Thunderbird is optional as a reliable CalDAV/CardDAV client and debugging fallback. It should not be expected to consume the generic WebDAV `/life/` endpoint as a calendar/address-book source.
+Thunderbird is installed as a reliable CalDAV/CardDAV client and debugging fallback.
+
+Use the Radicale URL:
+
+```text
+http://100.92.138.94:5232/
+```
+
+Do not point Thunderbird calendar/address-book setup at the generic WebDAV `/life/` endpoint.
 
 ## Protocol verification
 
@@ -135,17 +217,16 @@ curl -X PROPFIND -H 'Depth: 0' -i http://100.92.138.94/life/
 
 Expected WebDAV result: `PROPFIND` returns `207 Multi-Status`.
 
-CalDAV/CardDAV is not currently exposed. These are expected to return `404` until a real calendar/contact server is added:
+CalDAV/CardDAV is served separately by Radicale:
 
 ```bash
-curl -I http://100.92.138.94/.well-known/caldav
-curl -I http://100.92.138.94/.well-known/carddav
-curl -I http://100.92.138.94/caldav/
+curl -I http://100.92.138.94:5232/
+curl -X PROPFIND -H 'Depth: 0' -i http://100.92.138.94:5232/
 ```
 
 ## Security notes
 
-- The WebDAV endpoint is private-by-network: reachable through Tailscale, not public internet.
-- Do not expose TCP/80 or TCP/443 globally just to make DAV work.
+- The WebDAV and Radicale endpoints are private-by-network: reachable through Tailscale, not public internet.
+- Do not expose TCP/80, TCP/443, or TCP/5232 globally just to make DAV work.
 - Do not put DAV credentials, Tailscale auth keys, OAuth tokens, or private certificates into Nix expressions.
-- If DAV authentication is added later, place credentials in a runtime secret file and wire it through agenix/sops-nix.
+- Radicale currently uses Tailscale-only access without app-level credentials to keep secrets out of the Nix store. If app-level authentication is needed later, switch Radicale to `htpasswd` and provide the password file via a runtime secret mechanism such as agenix/sops-nix.

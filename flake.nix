@@ -160,6 +160,28 @@
               ? "/life/"
             )
           }
+          assert_true radicale-enabled ${toString self.nixosConfigurations.nazar.config.services.radicale.enable}
+          assert_true radicale-init-enabled ${
+            toString (
+              self.nixosConfigurations.nazar.config.systemd.services.life-os-radicale-init.enable or false
+            )
+          }
+          assert_equals radicale-storage ${self.nixosConfigurations.nazar.config.services.radicale.settings.storage.filesystem_folder} /var/lib/radicale/collections
+          assert_true radicale-tailscale-port-allowed ${
+            toString (
+              nixpkgs.lib.elem 5232 (
+                self.nixosConfigurations.nazar.config.networking.firewall.interfaces.tailscale0.allowedTCPPorts
+                  or [ ]
+              )
+            )
+          }
+          assert_true radicale-port-not-globally-allowed ${
+            toString (
+              !(nixpkgs.lib.elem 5232 (
+                self.nixosConfigurations.nazar.config.networking.firewall.allowedTCPPorts or [ ]
+              ))
+            )
+          }
           assert_true tailscale-open-firewall ${toString self.nixosConfigurations.nazar.config.services.tailscale.openFirewall}
           assert_true tailscale-private-http-allowed ${
             toString (
@@ -241,6 +263,13 @@
           assert_true life-os-client-enabled ${toString self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.enable}
           assert_true life-os-client-davfs2-enabled ${toString self.nixosConfigurations.alex-laptop.config.services.davfs2.enable}
           assert_equals life-os-client-dav-url ${self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.davUrl} http://100.92.138.94/life/
+          assert_equals life-os-client-caldav-url ${self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.caldav.url} http://100.92.138.94:5232/
+          assert_true life-os-client-vdirsyncer-enabled ${toString self.nixosConfigurations.alex-laptop.config.services.vdirsyncer.enable}
+          assert_true life-os-client-vdirsyncer-job ${
+            toString (self.nixosConfigurations.alex-laptop.config.services.vdirsyncer.jobs ? life-os)
+          }
+          assert_true life-os-client-kde-apps-enabled ${toString self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.kdeApps.enable}
+          assert_true life-os-client-thunderbird-enabled ${toString self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.thunderbird.enable}
           assert_equals life-os-client-mount-fstype ${
             self.nixosConfigurations.alex-laptop.config.fileSystems."/home/alex/LifeOS".fsType
           } davfs

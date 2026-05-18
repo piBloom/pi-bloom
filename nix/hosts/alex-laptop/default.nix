@@ -19,6 +19,7 @@
   nazar.lifeOs.client = {
     enable = true;
     davUrl = "http://100.92.138.94/life/";
+    caldav.url = "http://100.92.138.94:5232/";
   };
 
   boot.loader.systemd-boot.enable = true;

@@ -101,14 +101,18 @@ Replace `<tailnet>` with the real tailnet DNS name.
 
 Suggested clients for the current setup:
 
-- NixOS laptop: `nazar.lifeOs.client` installs Obsidian, Thunderbird, KDE PIM
-  apps, and mounts WebDAV at `/home/alex/LifeOS`.
+- NixOS laptop: `nazar.lifeOs.client` installs Obsidian, KDE PIM apps,
+  Thunderbird, and the declarative CLI stack (`vdirsyncer`, `khal`, `khard`,
+  `todoman`). It mounts WebDAV at `/home/alex/LifeOS` and syncs
+  CalDAV/CardDAV from Radicale at `http://100.92.138.94:5232/`.
 - iOS: a WebDAV-capable Files app integration or third-party file client for
-  Life OS files. Calendar/Reminders should wait for CalDAV/VTODO wiring.
-- Android: a WebDAV file client for Life OS files. DAVx⁵ + Tasks.org/Etar can be
-  added after CalDAV/VTODO/CardDAV endpoints exist.
-- Desktop: Obsidian over `/home/alex/LifeOS` for Markdown; Thunderbird/KDE PIM as
-  DAV clients once calendar/contact/task endpoints are added.
+  Life OS files. Calendar/Reminders can use the Radicale CalDAV endpoint once
+  the device is on Tailscale.
+- Android: a WebDAV file client for Life OS files. DAVx⁵ + Tasks.org/Etar can
+  consume Radicale CalDAV/VTODO/CardDAV once the device is on Tailscale.
+- Desktop: Obsidian over `/home/alex/LifeOS` for Markdown; KDE PIM/Thunderbird
+  for human calendar/contact/task UI; `khal`/`khard`/`todoman` for the fully
+  declarative local vdir layer.
 
 See `runbooks/LIFE_OS_CLIENTS.md` for NixOS client setup and verification.
 
@@ -147,15 +151,16 @@ sudo systemctl stop tailscaled
 To remove Tailscale declaratively, revert the Tailscale module/import change and
 switch to the previous or updated NixOS configuration.
 
-## Follow-Up: CalDAV, CardDAV, And Authentication
+## Follow-Up: CalDAV/CardDAV Authentication And HTTPS
 
-The current private service exposes `/srv/life` as WebDAV files over Tailscale at
-`http://100.92.138.94/life/`.
+The current private services expose:
+
+- `/srv/life` as WebDAV files over Tailscale at `http://100.92.138.94/life/`.
+- Radicale CalDAV/CardDAV/VTODO over Tailscale at `http://100.92.138.94:5232/`.
 
 Still to design separately:
 
-- `services.radicale` or equivalent for CalDAV/VTODO/CardDAV.
 - explicit DAV authentication/app passwords if tailnet-only network trust is not
   sufficient.
 - private HTTPS using Tailscale certificates.
-- no public TCP/80 or TCP/443 exposure.
+- no public TCP/80, TCP/443, or TCP/5232 exposure.
