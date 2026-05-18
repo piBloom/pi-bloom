@@ -79,6 +79,7 @@ in
       ReadWritePaths = [
         "/var/lib/hermes"
         "/home/alex"
+        "/srv/life"
       ];
       StateDirectory = [ "hermes" ];
       StateDirectoryMode = "0750";

@@ -139,7 +139,10 @@ in
 
   # Keep the module's default workspace under /var/lib/hermes so activation does
   # not change /home/alex permissions, but allow the private gateway to work on
-  # alex-owned repos when explicitly asked.
-  systemd.services.hermes-agent.serviceConfig.ReadWritePaths = [ "/home/alex" ];
+  # alex-owned repos and the canonical Life OS data root when explicitly asked.
+  systemd.services.hermes-agent.serviceConfig.ReadWritePaths = [
+    "/home/alex"
+    "/srv/life"
+  ];
   systemd.services.hermes-agent.environment = whatsappEnvironment;
 }
