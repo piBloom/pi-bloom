@@ -119,6 +119,32 @@
         nazar-host-module-eval = pkgs.runCommand "nazar-host-module-eval" { } ''
           mkdir -p $out
           echo ${toString self.nixosConfigurations.nazar.config.services.openssh.enable} > $out/openssh-enabled
+          echo ${
+            toString (self.nixosConfigurations.nazar.config.systemd.services.hermes-dashboard.enable or false)
+          } > $out/hermes-dashboard-enabled
+          echo ${
+            toString (
+              nixpkgs.lib.elem "multi-user.target" (
+                self.nixosConfigurations.nazar.config.systemd.services.hermes-dashboard.wantedBy or [ ]
+              )
+            )
+          } > $out/hermes-dashboard-wanted
+          echo ${self.nixosConfigurations.nazar.config.systemd.services.hermes-dashboard.serviceConfig.Restart} > $out/hermes-dashboard-restart
+        '';
+        alex-laptop-tunnel-module-eval = pkgs.runCommand "alex-laptop-tunnel-module-eval" { } ''
+          mkdir -p $out
+          echo ${toString self.nixosConfigurations.alex-laptop.config.nazar.access.tunnel.enable} > $out/nazar-tunnel-option-enabled
+          echo ${
+            toString (self.nixosConfigurations.alex-laptop.config.systemd.services.nazar-tunnel.enable or false)
+          } > $out/nazar-tunnel-service-enabled
+          echo ${
+            toString (
+              nixpkgs.lib.elem "multi-user.target" (
+                self.nixosConfigurations.alex-laptop.config.systemd.services.nazar-tunnel.wantedBy or [ ]
+              )
+            )
+          } > $out/nazar-tunnel-wanted
+          echo ${self.nixosConfigurations.alex-laptop.config.systemd.services.nazar-tunnel.serviceConfig.Restart} > $out/nazar-tunnel-restart
         '';
       };
 

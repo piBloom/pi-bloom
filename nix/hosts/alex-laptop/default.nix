@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  config,
+  inputs,
+  pkgs,
+  ...
+}:
 {
   imports = [
     ./hardware-configuration.nix
@@ -90,6 +95,23 @@
     vscodium
     wget
     inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default
+  ];
+
+  assertions = [
+    {
+      assertion = config.nazar.access.tunnel.enable;
+      message = "alex-laptop must keep nazar.access.tunnel enabled so http://127.0.0.1:9119/chat reaches Nazar.";
+    }
+    {
+      assertion = config.systemd.services.nazar-tunnel.enable or false;
+      message = "alex-laptop must keep nazar-tunnel.service enabled.";
+    }
+    {
+      assertion = builtins.elem "multi-user.target" (
+        config.systemd.services.nazar-tunnel.wantedBy or [ ]
+      );
+      message = "alex-laptop must start nazar-tunnel.service automatically at boot.";
+    }
   ];
 
   system.stateVersion = "25.11";

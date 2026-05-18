@@ -139,7 +139,10 @@ in
       wantedBy = [ "multi-user.target" ];
       wants = [ "network-online.target" ];
       after = [ "network-online.target" ];
-      unitConfig.ConditionPathExists = cfg.keyPath;
+      unitConfig = {
+        ConditionPathExists = cfg.keyPath;
+        StartLimitIntervalSec = 0;
+      };
       serviceConfig = {
         Type = "simple";
         ExecStart = "${pkgs.openssh}/bin/ssh ${sshArgs}";

@@ -64,5 +64,15 @@
       assertion = config.networking.hostName == "nazar";
       message = "The bare-metal host configuration must keep hostname nazar.";
     }
+    {
+      assertion = config.systemd.services.hermes-dashboard.enable or false;
+      message = "Nazar must keep hermes-dashboard.service enabled for laptop browser access.";
+    }
+    {
+      assertion = builtins.elem "multi-user.target" (
+        config.systemd.services.hermes-dashboard.wantedBy or [ ]
+      );
+      message = "Nazar must start hermes-dashboard.service automatically at boot.";
+    }
   ];
 }

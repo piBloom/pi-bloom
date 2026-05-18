@@ -26,6 +26,7 @@ in
   systemd.services.hermes-dashboard = lib.mkIf enable {
     description = "Hermes Agent Web Dashboard";
     wantedBy = [ "multi-user.target" ];
+    unitConfig.StartLimitIntervalSec = 0;
     wants = [
       "hermes-agent.service"
       "network-online.target"
