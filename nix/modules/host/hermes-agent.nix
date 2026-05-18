@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 {
   # The upstream Hermes NixOS module owns the state directory, generated
   # config, and gateway service. Run it as alex because Nazar is a private,
@@ -46,6 +46,13 @@
       ripgrep
     ];
   };
+
+  # The upstream module only chowns top-level state directories. Convert any
+  # existing state files from the previous hermes-user deployment so gateway
+  # locks, OAuth tokens, sessions, memories, and logs are readable by alex.
+  system.activationScripts.nazar-hermes-alex-state = lib.stringAfter [ "hermes-agent-setup" ] ''
+    chown -R alex:users /var/lib/hermes
+  '';
 
   # Keep the module's default workspace under /var/lib/hermes so activation does
   # not change /home/alex permissions, but allow the private gateway to work on
