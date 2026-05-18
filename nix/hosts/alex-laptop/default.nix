@@ -90,6 +90,7 @@
     chromium
     curl
     ghostty
+    gh
     git
     htop
     jdk25
