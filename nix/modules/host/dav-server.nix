@@ -84,12 +84,6 @@ in
     "z ${radicaleStateDir} 0750 radicale radicale - -"
   ];
 
-  systemd.services.nginx.preStart = lib.mkIf enable (
-    lib.mkBefore ''
-      ${pkgs.systemd}/bin/systemd-tmpfiles --create --prefix=${stateDir}
-    ''
-  );
-
   assertions = lib.mkIf enable [
     {
       assertion = lib.any (listen: listen.addr == privateIp && listen.port == 80) (
