@@ -13,7 +13,7 @@ in
     user = "alex";
     group = "users";
     host = "127.0.0.1";
-    port = hostCode.port or 4820;
+    port = hostCode.port or 4821;
 
     # The nginx route is private-only in nix/fleet/exposure.nix. Keeping the
     # OpenVSCode connection token disabled makes mobile browser entry match

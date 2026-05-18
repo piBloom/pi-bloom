@@ -6,7 +6,7 @@
 
 Canonical UI:
 
-- `http://code.nazar.studio/` -> host `127.0.0.1:4820`
+- `http://code.nazar.studio/` -> host `127.0.0.1:4821`
 
 This is an operator surface running as `alex`, so keep it private behind sshuttle only. `nix/modules/host/code.nix` intentionally disables the OpenVSCode connection token for mobile-friendly access and has an assertion that prevents `exposure.host.code.access = "public"`.
 
@@ -21,7 +21,7 @@ nix/fleet/exposure.nix -> nix/modules/host/code.nix -> services.openvscode-serve
 
 Nazar configures OpenVSCode Server with:
 
-- backend bind: `127.0.0.1:4820`
+- backend bind: `127.0.0.1:4821`
 - service unit: `openvscode-server.service`
 - user/group: `alex:users`
 - initial folder: `/home/alex`
@@ -44,7 +44,7 @@ On the host:
 
 ```bash
 systemctl is-active openvscode-server nginx
-curl -I http://127.0.0.1:4820/
+curl -I http://127.0.0.1:4821/
 curl -I --resolve code.nazar.studio:80:10.44.0.1 http://code.nazar.studio/
 ```
 
@@ -64,7 +64,7 @@ A 502 from `code.nazar.studio` means host nginx is reachable but OpenVSCode Serv
 systemctl status nginx openvscode-server
 journalctl -u nginx -n 100 --no-pager
 journalctl -u openvscode-server -n 100 --no-pager
-curl -I http://127.0.0.1:4820/
+curl -I http://127.0.0.1:4821/
 ```
 
 ## Rollback

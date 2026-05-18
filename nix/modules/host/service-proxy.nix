@@ -186,7 +186,7 @@ let
     name = "host-code";
     enable = hostCode.enable or false;
     path = "/";
-    backend = "http://127.0.0.1:${toString (hostCode.port or 4820)}";
+    backend = "http://127.0.0.1:${toString (hostCode.port or 4821)}";
     access = hostCode.access or "private";
     stripPrefix = false;
   };

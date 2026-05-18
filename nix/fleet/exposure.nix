@@ -40,7 +40,7 @@
     code = {
       enable = true;
       domain = "code.nazar.studio";
-      port = 4820;
+      port = 4821;
       access = "private";
     };
 
