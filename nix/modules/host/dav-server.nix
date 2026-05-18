@@ -1,6 +1,5 @@
 {
   config,
-  inputs,
   lib,
   ...
 }:
@@ -28,7 +27,7 @@ let
   };
 in
 {
-  imports = [ inputs.dav-server.nixosModules.dav-server-service ];
+  imports = [ ../../../services/dav-server/nix/modules/dav-server.nix ];
 
   _module.args.davServerContext = davServerContext;
 

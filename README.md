@@ -1,10 +1,10 @@
 # Nazar
 
-Declarative NixOS configuration for the Hetzner host `nazar` and its host services.
+Declarative dendritic NixOS configuration for the Hetzner host `nazar`, client profile, and host services.
 
 ## Scope
 
-This repository owns the host configuration, private access model, nginx routing, DAV/NixPi/Code services, Minecraft, operator switch apps, and service code for Nazar. NixPi, Minecraft, and DAV live as local subflakes under `services/`; the running host remains the deployment authority.
+This repository owns the host configuration, client access profile, private access model, nginx routing, DAV/NixPi/Code services, Minecraft, operator switch apps, and service code for Nazar. The root flake exposes the production NixOS module surface through `nixosModules` and `modules.nixos`; service subflakes under `services/` may still be used for standalone development, but production composition imports their modules directly from the root repository.
 
 ## Services
 
@@ -16,13 +16,13 @@ This repository owns the host configuration, private access model, nginx routing
 ## Repository map
 
 ```text
-nix/hosts/nazar/              # bare-metal host configuration
-nix/modules/host/             # host networking, firewall, nginx, DAV, Minecraft, NixPi, Code
-nix/modules/laptop/           # client-side sshuttle access module
+nix/aspects/                  # dendritic NixOS aspects and profiles
+nix/hosts/                    # generated hardware/disk files and legacy profile entrypoints
+nix/modules/                  # existing module bodies wrapped by dendritic aspects
 nix/fleet/                    # service and exposure metadata
-services/minecraft/           # Minecraft NixOS service module
-services/dav-server/          # DAV/Radicale/WebDAV NixOS service module
-services/nixpi/               # NixPi service
+services/minecraft/           # Minecraft NixOS service module and standalone subflake
+services/dav-server/          # DAV/Radicale/WebDAV NixOS module and standalone subflake
+services/nixpi/               # NixPi service module/package and standalone subflake
 ```
 
 ## Common commands

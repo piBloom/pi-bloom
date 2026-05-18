@@ -59,22 +59,6 @@
         "type": "github"
       }
     },
-    "dav-server": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "path": "./services/dav-server",
-        "type": "path"
-      },
-      "original": {
-        "path": "./services/dav-server",
-        "type": "path"
-      },
-      "parent": []
-    },
     "disko": {
       "inputs": {
         "nixpkgs": [
@@ -139,38 +123,6 @@
         "type": "github"
       }
     },
-    "minecraft": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "path": "./services/minecraft",
-        "type": "path"
-      },
-      "original": {
-        "path": "./services/minecraft",
-        "type": "path"
-      },
-      "parent": []
-    },
-    "nixpi": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "path": "./services/nixpi",
-        "type": "path"
-      },
-      "original": {
-        "path": "./services/nixpi",
-        "type": "path"
-      },
-      "parent": []
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1778458615,
@@ -205,11 +157,8 @@
     },
     "root": {
       "inputs": {
-        "dav-server": "dav-server",
         "disko": "disko",
         "llm-agents": "llm-agents",
-        "minecraft": "minecraft",
-        "nixpi": "nixpi",
         "nixpkgs": "nixpkgs_2"
       }
     },

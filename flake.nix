@@ -17,28 +17,12 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    minecraft = {
-      url = "path:./services/minecraft";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    dav-server = {
-      url = "path:./services/dav-server";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    nixpi = {
-      url = "path:./services/nixpi";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =
     inputs@{
       self,
       nixpkgs,
-      disko,
       ...
     }:
     let
@@ -46,6 +30,54 @@
       pkgs = nixpkgs.legacyPackages.${system};
       pi = pkgs.callPackage ./nix/packages/pi { };
       fleet = import ./nix/fleet/vms.nix;
+
+      aspectModule = rel: import (./nix/aspects + "/${rel}/default.nix");
+      nixosModules = {
+        "system-base" = aspectModule "system/base";
+        "guest-base" = aspectModule "system/guest-base";
+        "development-tools" = aspectModule "development/tools";
+
+        "admin-users" = aspectModule "users/admin";
+
+        "ssh-host-access" = aspectModule "access/ssh-host";
+        "private-http-access" = aspectModule "access/private-http";
+        "sshuttle-client-access" = aspectModule "access/sshuttle-client";
+
+        "host-networking" = aspectModule "networking/host-uplink";
+        "host-firewall" = aspectModule "networking/firewall";
+        "service-proxy" = aspectModule "networking/service-proxy";
+
+        "pi-default-packages" = aspectModule "agents/pi-default-packages";
+        "host-pi-agent" = aspectModule "agents/pi-agent-host";
+        "guest-pi-agent" = aspectModule "agents/pi-agent-guest";
+        "llm-agents" = aspectModule "agents/llm-agents";
+
+        "nixpi-host-service" = aspectModule "services/nixpi";
+        "code-host-service" = aspectModule "services/code";
+        "dav-server-host-service" = aspectModule "services/dav-server";
+        "minecraft-host-service" = aspectModule "services/minecraft";
+
+        "backup-inventory" = aspectModule "storage/backup";
+        "host-monitoring" = aspectModule "monitoring/mdraid-smart";
+
+        "profile-host-production" = aspectModule "profiles/host-production";
+        "profile-client-alex-laptop" = aspectModule "profiles/client-alex-laptop";
+
+        "dav-server-service" = import ./services/dav-server/nix/modules/dav-server.nix;
+        "nixpi-bun-service" = import ./services/nixpi/nix/modules/nixpi-bun.nix;
+        "minecraft-service" = import ./services/minecraft/nix/modules/minecraft-papermc.nix;
+        "minecraft-web" = import ./services/minecraft/nix/modules/minecraft-web.nix;
+      };
+
+      mkNixosSystem =
+        module:
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = {
+            inherit inputs fleet;
+          };
+          modules = [ module ];
+        };
 
       mkSwitchProgram =
         name:
@@ -86,25 +118,13 @@
       };
     in
     {
-      nixosConfigurations = {
-        nazar = nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = {
-            inherit inputs fleet;
-          };
-          modules = [
-            disko.nixosModules.disko
-            ./nix/hosts/nazar
-          ];
-        };
+      inherit nixosModules;
 
-        alex-laptop = nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = {
-            inherit inputs fleet;
-          };
-          modules = [ ./nix/hosts/alex-laptop ];
-        };
+      modules.nixos = nixosModules;
+
+      nixosConfigurations = {
+        nazar = mkNixosSystem nixosModules."profile-host-production";
+        alex-laptop = mkNixosSystem nixosModules."profile-client-alex-laptop";
       };
 
       packages.${system} = {

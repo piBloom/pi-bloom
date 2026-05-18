@@ -1,8 +1,4 @@
-{
-  inputs,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 let
   pi = pkgs.callPackage ../../packages/pi { };
 
@@ -27,7 +23,7 @@ let
 in
 {
   imports = [
-    inputs.nixpi.nixosModules.nixpi-bun
+    ../../../services/nixpi/nix/modules/nixpi-bun.nix
     ../guest/pi-default-packages.nix
   ];
 
