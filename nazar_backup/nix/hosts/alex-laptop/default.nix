@@ -4,6 +4,22 @@
   pkgs,
   ...
 }:
+let
+  hermesPkgs = inputs.hermes-agent.inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system};
+  hermesAgentWithVoice =
+    inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default.override
+      {
+        extraPythonPackages = with hermesPkgs.python312Packages; [
+          numpy
+          (sounddevice.overridePythonAttrs (old: {
+            dependencies = builtins.filter (dep: (dep.pname or "") != "cffi") (old.dependencies or [ ]);
+            propagatedBuildInputs = builtins.filter (dep: (dep.pname or "") != "cffi") (
+              old.propagatedBuildInputs or [ ]
+            );
+          }))
+        ];
+      };
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -98,11 +114,12 @@
     jq
     nodejs
     prismlauncher
+    ktailctl
     tmux
     vim
     vscodium
     wget
-    inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default
+    hermesAgentWithVoice
   ];
 
   assertions = [

@@ -65,7 +65,7 @@ Import the shared modules from the host configuration:
 }
 ```
 
-The module intentionally keeps Tailscale in client mode. Do not enable subnet routing or exit-node behavior unless it is explicitly designed and reviewed.
+The module intentionally keeps Tailscale in client mode. Do not enable subnet routing or exit-node behavior unless it is explicitly designed and reviewed. The `alex-laptop` host also installs `ktailctl`, a KDE/Qt Tailscale GUI, alongside `tailscale`/`tailscaled` for desktop monitoring and control.
 
 ## Rebuild
 

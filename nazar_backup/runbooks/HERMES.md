@@ -18,6 +18,7 @@ Nazar uses native mode with the services running as `alex`:
 - managed home: `/var/lib/hermes/.hermes`
 - workspace: `/var/lib/hermes/workspace`
 - CLI: `hermes` is on the system PATH with `HERMES_HOME=/var/lib/hermes/.hermes`
+- laptop CLI package: `alex-laptop` uses the upstream Hermes package overridden with Python `numpy` and `sounddevice` so `/voice on` can import the local audio backend in a NixOS shell
 - main model/provider: `openai-codex` with `gpt-5.5`
 
 Running the services as `alex` keeps this private single-user host simple: OAuth, repo edits, and files created by Hermes behave like normal `alex` shell sessions.
