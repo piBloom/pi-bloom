@@ -69,6 +69,7 @@ Snapshot from GitHub/Nixpkgs checks on 2026-05-19.
 | innernet | WireGuard coordination server | `tonarino/innernet`, ~5.5k stars, latest `v1.7.1` | `innernet 1.7.1` | Minimal WireGuard-native option; more experimental. |
 | plain WireGuard / wg-easy | Hub-and-spoke VPN | `wg-easy/wg-easy`, ~25.8k stars, latest `v15.3.0` | WireGuard is native; wg-easy is packaged/container-oriented | Very simple conceptually, but not a mesh/private network product. |
 | ZeroTier self-hosted controller | SDN overlay | `zerotier/ZeroTierOne`, ~16.7k stars; `ztncui`, ~1.8k stars | `zerotierone 1.16.0` | Client is mature; self-host controller story is less aligned with NixOS/simple ops. |
+| OpenZiti | Zero-trust overlay/access fabric | `openziti/ziti`, ~4.2k stars, Apache-2.0 | no `ziti` package found in Nixpkgs; `zrok 2.0.1` exists | Strong zero-trust/dark-service model, but heavier and more framework-like than needed for this phase. |
 | Tinc | Older mesh VPN daemon | `gsliepen/tinc`, ~2.2k stars | `tinc 1.0.36` | Stable old-school option; less modern UX. |
 | Defguard | WireGuard + MFA/access platform | `DefGuard/defguard`, ~2.7k stars | not selected | Security platform, not minimal. |
 | Firezone | WireGuard/zero-trust access platform | `firezone/firezone`, ~8.6k stars | not selected | More enterprise/product-oriented. |
@@ -253,7 +254,35 @@ Fit for Nazar:
 
 Reasonable technology, but not the preferred self-hosted path here.
 
-### 8. Tinc
+### 8. OpenZiti
+
+OpenZiti is an open-source zero-trust networking platform sponsored by NetFoundry. It provides a controller, routers, tunnelers, SDKs, identity-based policy, and end-to-end encrypted overlay connectivity. Its strongest idea is making services “dark”: unauthorized clients cannot even see listening ports, and applications can eventually embed OpenZiti SDKs directly.
+
+Pros:
+
+- Excellent security model for service-level private access: authenticate and authorize before connect.
+- Strong “dark service” posture: internal apps do not need public inbound ports.
+- More granular than a VPN/tailnet: access can be per service rather than “join network, then route IPs”.
+- Supports brownfield access via tunnelers and stronger greenfield access via SDKs.
+- Fully open source under Apache-2.0, with a commercial sponsor behind it.
+
+Cons:
+
+- It is a full zero-trust access fabric, not a small private management VPN.
+- More concepts and components to operate: controller, edge routers/fabric routers, identities, services, policies, tunnelers, enrollment.
+- Client/admin UX is more specialized than Tailscale/Headscale for the simple “laptop reaches Proxmox/private VMs” use case.
+- No `ziti` package was found in the checked Nixpkgs snapshot, so a clean declarative NixOS deployment may require more custom packaging/service work.
+- It pushes us toward service-by-service access design before the infrastructure actually needs that complexity.
+
+Fit for Nazar:
+
+Technically strong, especially if Nazar becomes a multi-user service platform with per-application private access, agent/workload identities, or a need to keep every internal service completely dark. For the next phase, it is too much system for the immediate requirement: one operator needs reliable private access to Proxmox and future internal VMs.
+
+Recommended role:
+
+Do not use OpenZiti as Phase 4’s default private access layer. Revisit it later if requirements shift from “private admin network” to “zero-trust service access platform”.
+
+### 9. Tinc
 
 Tinc is an older mesh VPN daemon.
 
@@ -273,7 +302,7 @@ Fit for Nazar:
 
 Useful as a fallback for old-school mesh, but not a first choice.
 
-### 9. Defguard / Firezone
+### 10. Defguard / Firezone
 
 These are more complete zero-trust/access-management products.
 
@@ -303,6 +332,7 @@ Scale: 1 poor, 5 excellent.
 | Plain WireGuard | 5 | 3 | 5 | 5 | 2 | 4 | 3.8 |
 | innernet | 4 | 3 | 4 | 4 | 3 | 3 | 3.5 |
 | NetBird | 2 | 5 | 3 | 3 | 5 | 3 | 3.5 |
+| OpenZiti | 2 | 3 | 3 | 2 | 5 | 3 | 3.3 |
 | Netmaker | 2 | 4 | 3 | 3 | 4 | 3 | 3.2 |
 | ZeroTier self-host | 3 | 4 | 3 | 3 | 4 | 3 | 3.2 |
 | Tinc | 4 | 2 | 4 | 4 | 2 | 4 | 3.2 |
@@ -318,11 +348,14 @@ Reasoning:
 - It is still small enough for a single-purpose NixOS VM.
 - It provides the features we are likely to need next: MagicDNS, subnet routing, ACLs/policy, and easy client onboarding.
 - It avoids the heavier product-stack complexity of NetBird/Netmaker/Defguard/Firezone.
+- It avoids adopting a full zero-trust access fabric such as OpenZiti before we need service-by-service identity and dark-service policy.
 - It is less bare-metal minimal than Nebula/plain WireGuard, but the UX improvement is worth it for this infrastructure.
 
 Keep **Nebula** as the “suckless fallback” if Headscale feels too product-like during implementation. Nebula is the cleanest minimal alternative: certs, config files, lighthouses, no web platform. The tradeoff is more manual onboarding and weaker consumer-client UX.
 
 Avoid NetBird/Netmaker for now. They are good projects, but they solve a larger problem than we currently have.
+
+Avoid OpenZiti for Phase 4 for the same reason: it is a strong platform, but it solves a service-access/security-architecture problem that is larger than the current private-admin-network requirement.
 
 ## Proposed Phase 4 architecture
 
