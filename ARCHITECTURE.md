@@ -20,10 +20,11 @@ flowchart TB
     vmbr1["vmbr1 private service network\n10.10.10.1/24"]
 
     subgraph edge["VM 100: edge\nNixOS, 10.10.10.10\nTailnet 100.64.0.2"]
-      caddy["Caddy reverse proxy\npublic HTTP/HTTPS"]
+      caddy["Caddy reverse proxy\npublic HTTPS + private tailnet HTTP"]
       tailscaled["Tailscale subnet router\nadvertises 10.10.10.0/24"]
       edgeHealth["nazar.studio\nNazar edge health page"]
       headscaleVhost["headscale.nazar.studio\nreverse_proxy 10.10.10.11:8080"]
+      proxmoxVhost["http://proxmox.nazar.studio\ntailnet/private-source-only reverse_proxy https://10.10.10.1:8006"]
     end
 
     subgraph hs["VM 101: headscale\nNixOS, 10.10.10.11"]
@@ -46,6 +47,7 @@ flowchart TB
   internet -->|"80/443"| publicIP --> vmbr0 --> nft --> caddy
   caddy --> edgeHealth
   caddy --> headscaleVhost --> headscale
+  caddy --> proxmoxVhost --> vmbr1
   headscale --> sqlite
   headscale --> userAlex
   laptop -->|"Tailscale control plane\nHTTPS headscale.nazar.studio"| caddy
@@ -85,7 +87,8 @@ flowchart LR
   hsControl["Headscale control plane\nheadscale.nazar.studio"]
   edgeTs["edge subnet router\n100.64.0.2 / 10.10.10.10"]
   privateNet["vmbr1 private network\n10.10.10.0/24"]
-  proxmox["Proxmox gateway/UI\nproxmox.nazar.studio -> 10.10.10.1"]
+  proxmoxGateway["Private service gateway\nproxmox.nazar.studio -> 10.10.10.10"]
+  proxmox["Proxmox UI upstream\n10.10.10.1:8006"]
   headscaleVm["headscale VM\n10.10.10.11:8080"]
   futureForgejo["planned Forgejo VM\n10.10.10.x"]
 
@@ -93,6 +96,8 @@ flowchart LR
   edgeTs -->|"advertises 10.10.10.0/24"| hsControl
   laptop -->|"private traffic over tailscale0"| edgeTs
   edgeTs --> privateNet
+  laptop -->|"http://proxmox.nazar.studio\nno :8006 in browser"| proxmoxGateway
+  proxmoxGateway -->|"edge Caddy reverse proxy"| proxmox
   privateNet --> proxmox
   privateNet --> headscaleVm
   privateNet -.-> futureForgejo
@@ -135,7 +140,8 @@ sequenceDiagram
 | Headscale state | `/var/lib/headscale`, SQLite database |
 | Enrolled tailnet nodes | `alex-laptop` user device `100.64.0.1`; `edge` subnet router `100.64.0.2` |
 | Private subnet route | `10.10.10.0/24` is advertised by `edge`, approved in Headscale, and accepted by `alex-laptop` |
-| Tailnet-only Proxmox name | `proxmox.nazar.studio` resolves through Headscale DNS to `10.10.10.1` |
+| Tailnet-only Proxmox gateway name | `proxmox.nazar.studio` resolves through Headscale DNS to edge Caddy `10.10.10.10`; Caddy only serves it to private/tailnet source ranges; use `http://proxmox.nazar.studio/` without `:8006` |
+| Tailnet-only Proxmox direct/debug name | `proxmox.tailnet.nazar.studio` resolves through Headscale DNS to Proxmox `10.10.10.1`; use `https://proxmox.tailnet.nazar.studio:8006/` for break-glass/debug |
 | Next planned service | Forgejo on the private service network |
 
 ## Maintenance rule

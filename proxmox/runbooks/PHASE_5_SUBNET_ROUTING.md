@@ -20,7 +20,8 @@ Advertised route: 10.10.10.0/24
 Headscale route status: approved and serving primary
 Operator laptop: alex-laptop, 100.64.0.1
 Laptop route acceptance: enabled
-Tailnet-only Proxmox DNS: proxmox.nazar.studio -> 10.10.10.1
+Tailnet-only Proxmox gateway DNS: proxmox.nazar.studio -> 10.10.10.10
+Tailnet-only Proxmox direct/debug DNS: proxmox.tailnet.nazar.studio -> 10.10.10.1
 ```
 
 Verified from `alex-laptop`:
@@ -75,8 +76,8 @@ edge VM 100
   v
 Proxmox private service network vmbr1
   10.10.10.0/24
-  ├── 10.10.10.1  Proxmox host gateway/UI (proxmox.nazar.studio over tailnet)
-  ├── 10.10.10.10 edge / Caddy
+  ├── 10.10.10.1  Proxmox host gateway/UI (direct/debug: proxmox.tailnet.nazar.studio:8006)
+  ├── 10.10.10.10 edge / Caddy (gateway: http://proxmox.nazar.studio/)
   └── 10.10.10.11 headscale
 ```
 
@@ -226,21 +227,34 @@ Expected route:
 10.10.10.11 dev tailscale0 table 52 src 100.64.0.1
 ```
 
-## Tailnet-only Proxmox DNS
+## Tailnet-only Proxmox gateway DNS
 
-Headscale advertises `proxmox.nazar.studio` as a tailnet DNS record pointing to the Proxmox private bridge IP:
+For maximum simplicity, Headscale advertises `proxmox.nazar.studio` as a tailnet DNS record pointing to edge Caddy, not directly to the Proxmox UI port:
 
 ```text
-proxmox.nazar.studio -> 10.10.10.1
+proxmox.nazar.studio -> 10.10.10.10
+```
+
+Edge Caddy then reverse-proxies the simple private URL to the real Proxmox upstream, but only for private/tailnet source ranges (`100.64.0.0/10` and `10.10.10.0/24`):
+
+```text
+http://proxmox.nazar.studio/ -> https://10.10.10.1:8006/
 ```
 
 This is intended for tailnet clients only. It is not a public Gandi DNS record and does not expose the Proxmox UI publicly. With route acceptance enabled, access the UI from the laptop at:
 
 ```text
-https://proxmox.nazar.studio:8006/
+http://proxmox.nazar.studio/
 ```
 
-The Proxmox UI currently uses its normal Proxmox certificate, so browsers may show a certificate warning unless a proper certificate is configured later.
+This deliberately uses HTTP on the browser-facing tailnet side for now to avoid private CA/certificate setup. The laptop-to-edge path is still carried over the encrypted tailnet. Caddy connects to the Proxmox upstream over HTTPS and skips verification of Proxmox's default self-signed certificate.
+
+The direct/debug tailnet name remains available for bypassing Caddy during troubleshooting:
+
+```text
+proxmox.tailnet.nazar.studio -> 10.10.10.1
+https://proxmox.tailnet.nazar.studio:8006/
+```
 
 ## Operations
 
