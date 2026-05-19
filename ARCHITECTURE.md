@@ -85,7 +85,7 @@ flowchart LR
   hsControl["Headscale control plane\nheadscale.nazar.studio"]
   edgeTs["edge subnet router\n100.64.0.2 / 10.10.10.10"]
   privateNet["vmbr1 private network\n10.10.10.0/24"]
-  proxmox["Proxmox gateway\n10.10.10.1"]
+  proxmox["Proxmox gateway/UI\nproxmox.nazar.studio -> 10.10.10.1"]
   headscaleVm["headscale VM\n10.10.10.11:8080"]
   futureForgejo["planned Forgejo VM\n10.10.10.x"]
 
@@ -135,6 +135,7 @@ sequenceDiagram
 | Headscale state | `/var/lib/headscale`, SQLite database |
 | Enrolled tailnet nodes | `alex-laptop` user device `100.64.0.1`; `edge` subnet router `100.64.0.2` |
 | Private subnet route | `10.10.10.0/24` is advertised by `edge`, approved in Headscale, and accepted by `alex-laptop` |
+| Tailnet-only Proxmox name | `proxmox.nazar.studio` resolves through Headscale DNS to `10.10.10.1` |
 | Next planned service | Forgejo on the private service network |
 
 ## Maintenance rule

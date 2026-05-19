@@ -60,6 +60,11 @@
             value = "10.10.10.1";
           }
           {
+            name = "proxmox.nazar.studio";
+            type = "A";
+            value = "10.10.10.1";
+          }
+          {
             name = "edge.tailnet.nazar.studio";
             type = "A";
             value = "10.10.10.10";

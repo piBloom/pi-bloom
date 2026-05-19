@@ -20,6 +20,7 @@ Advertised route: 10.10.10.0/24
 Headscale route status: approved and serving primary
 Operator laptop: alex-laptop, 100.64.0.1
 Laptop route acceptance: enabled
+Tailnet-only Proxmox DNS: proxmox.nazar.studio -> 10.10.10.1
 ```
 
 Verified from `alex-laptop`:
@@ -74,7 +75,7 @@ edge VM 100
   v
 Proxmox private service network vmbr1
   10.10.10.0/24
-  ├── 10.10.10.1  Proxmox host gateway
+  ├── 10.10.10.1  Proxmox host gateway/UI (proxmox.nazar.studio over tailnet)
   ├── 10.10.10.10 edge / Caddy
   └── 10.10.10.11 headscale
 ```
@@ -224,6 +225,22 @@ Expected route:
 ```text
 10.10.10.11 dev tailscale0 table 52 src 100.64.0.1
 ```
+
+## Tailnet-only Proxmox DNS
+
+Headscale advertises `proxmox.nazar.studio` as a tailnet DNS record pointing to the Proxmox private bridge IP:
+
+```text
+proxmox.nazar.studio -> 10.10.10.1
+```
+
+This is intended for tailnet clients only. It is not a public Gandi DNS record and does not expose the Proxmox UI publicly. With route acceptance enabled, access the UI from the laptop at:
+
+```text
+https://proxmox.nazar.studio:8006/
+```
+
+The Proxmox UI currently uses its normal Proxmox certificate, so browsers may show a certificate warning unless a proper certificate is configured later.
 
 ## Operations
 
