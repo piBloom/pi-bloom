@@ -72,14 +72,14 @@ The module intentionally keeps Tailscale in client mode. Do not enable subnet ro
 From the client checkout:
 
 ```bash
-cd /home/alex/repos/nazar
+cd /home/alex/repos/ownloom/nazar
 sudo nixos-rebuild switch --flake .#alex-laptop
 ```
 
 On Nazar:
 
 ```bash
-cd /home/alex/repos/nazar
+cd /home/alex/repos/ownloom/nazar
 sudo nixos-rebuild switch --flake .#nazar
 ```
 

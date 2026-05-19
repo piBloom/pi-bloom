@@ -357,7 +357,7 @@ git commit -m "feat(life-os): add dashboard capture actions"
 Find where the `life` executable is created. Extend it with another wrapper:
 
 ```bash
-search_files "life-os" path=/home/alex/repos/nazar/flake.nix
+search_files "life-os" path=/home/alex/repos/ownloom/nazar/flake.nix
 ```
 
 **Step 2: Add executable wrapper**
@@ -522,7 +522,7 @@ git commit -m "feat(life-os): polish dashboard layout"
 
 ## Final verification checklist
 
-Run from `/home/alex/repos/nazar`:
+Run from `/home/alex/repos/ownloom/nazar`:
 
 ```bash
 nix fmt

@@ -1,13 +1,13 @@
 # Source repository
 
-Nazar's canonical Git repository is hosted on Codeberg. The canonical local checkout on the Nazar VPS is `/home/alex/repos/nazar`.
+Nazar's canonical Git repository is hosted on Codeberg. The canonical local checkout on the Nazar VPS is `/home/alex/repos/ownloom/nazar`.
 
 Do not use `/repos/nazar`, `/root/nazar`, `/srv/nazar`, or stale checkouts under `/persist/repos` as the source of truth unless this runbook and `nix/fleet/host.nix` are intentionally changed first.
 
 ## Canonical local path
 
 ```text
-/home/alex/repos/nazar
+/home/alex/repos/ownloom/nazar
 ```
 
 This path is declared in `nix/fleet/host.nix` as `repository.localPath` and is the directory from which host switches should be run.

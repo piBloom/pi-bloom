@@ -21,7 +21,7 @@ the tailnet unless a separate public-service design explicitly changes that.
 From the canonical checkout on Nazar:
 
 ```bash
-cd /home/alex/repos/nazar
+cd /home/alex/repos/ownloom/nazar
 nix flake check --no-build
 nix build .#nixosConfigurations.nazar.config.system.build.toplevel --print-build-logs
 sudo nixos-rebuild switch --flake .#nazar
@@ -77,7 +77,7 @@ For the declarative `alex-laptop` NixOS config, Tailscale is enabled through
 that host config and enroll it once:
 
 ```bash
-cd /home/alex/repos/nazar
+cd /home/alex/repos/ownloom/nazar
 sudo nixos-rebuild switch --flake .#alex-laptop
 sudo tailscale up --hostname=alex-laptop --ssh=false
 ```
