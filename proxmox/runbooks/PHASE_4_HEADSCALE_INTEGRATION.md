@@ -52,7 +52,7 @@ headscale VM 101: 10.10.10.11, NixOS + Headscale
   |
   +-- future tailnet clients:
       - operator laptop
-      - optional edge/subnet-router node for 10.10.10.0/24
+      - edge subnet-router node for 10.10.10.0/24
       - optional Proxmox host node
       - future Git/monitoring VMs
 ```
@@ -447,7 +447,15 @@ ssh -i /home/alex/.ssh/proxmox_alex_ed25519 \
   'sudo headscale preauthkeys list --user 1'
 ```
 
-## Remaining work
+## Follow-up work
 
-1. Decide the subnet-router node for `10.10.10.0/24`. Recommended next step: enroll `edge` or a tiny dedicated router VM as the subnet router rather than exposing Proxmox UI publicly.
+Subnet routing for `10.10.10.0/24` was completed in Phase 5. See:
+
+```text
+proxmox/runbooks/PHASE_5_SUBNET_ROUTING.md
+```
+
+Remaining follow-up:
+
+1. Introduce Forgejo on the private service network.
 2. Keep `/home/alex/repos/ownloom/ARCHITECTURE.md` updated whenever infrastructure topology, DNS, routing, or service exposure changes.

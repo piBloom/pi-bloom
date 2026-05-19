@@ -19,8 +19,9 @@ flowchart TB
     nft["nftables DNAT\n80/443 -> 10.10.10.10"]
     vmbr1["vmbr1 private service network\n10.10.10.1/24"]
 
-    subgraph edge["VM 100: edge\nNixOS, 10.10.10.10"]
+    subgraph edge["VM 100: edge\nNixOS, 10.10.10.10\nTailnet 100.64.0.2"]
       caddy["Caddy reverse proxy\npublic HTTP/HTTPS"]
+      tailscaled["Tailscale subnet router\nadvertises 10.10.10.0/24"]
       edgeHealth["nazar.studio\nNazar edge health page"]
       headscaleVhost["headscale.nazar.studio\nreverse_proxy 10.10.10.11:8080"]
     end
@@ -32,8 +33,8 @@ flowchart TB
     end
   end
 
-  laptop["alex-laptop\nTailnet IP: 100.64.0.1"]
-  futureRouter["Future subnet router\nfor 10.10.10.0/24"]
+  laptop["alex-laptop\nTailnet IP: 100.64.0.1\naccept-routes enabled"]
+  subnetRoute["Active subnet route\n10.10.10.0/24 via edge"]
   repo["Git repo\n/home/alex/repos/ownloom"]
   infraFlake["infra/ flake\nedge + headscale NixOS configs"]
   runbooks["proxmox/runbooks/\ninstallation + phase docs"]
@@ -49,7 +50,8 @@ flowchart TB
   headscale --> userAlex
   laptop -->|"Tailscale control plane\nHTTPS headscale.nazar.studio"| caddy
   laptop -.->|"enrolled node"| userAlex
-  futureRouter -.->|"planned route advertisement"| vmbr1
+  tailscaled -->|"routes tailnet clients to"| vmbr1
+  laptop -->|"private service access\n10.10.10.0/24"| subnetRoute --> tailscaled
   repo --> infraFlake
   repo --> runbooks
   infraFlake -->|"nixos-rebuild"| edge
@@ -73,6 +75,27 @@ flowchart LR
   ip -->|"DNAT 80/443"| caddy
   caddy -->|"nazar.studio / www"| site
   caddy -->|"headscale.nazar.studio"| hs
+```
+
+## Active private subnet flow
+
+```mermaid
+flowchart LR
+  laptop["alex-laptop\n100.64.0.1"]
+  hsControl["Headscale control plane\nheadscale.nazar.studio"]
+  edgeTs["edge subnet router\n100.64.0.2 / 10.10.10.10"]
+  privateNet["vmbr1 private network\n10.10.10.0/24"]
+  proxmox["Proxmox gateway\n10.10.10.1"]
+  headscaleVm["headscale VM\n10.10.10.11:8080"]
+  futureForgejo["planned Forgejo VM\n10.10.10.x"]
+
+  laptop -->|"accepts 10.10.10.0/24 route"| hsControl
+  edgeTs -->|"advertises 10.10.10.0/24"| hsControl
+  laptop -->|"private traffic over tailscale0"| edgeTs
+  edgeTs --> privateNet
+  privateNet --> proxmox
+  privateNet --> headscaleVm
+  privateNet -.-> futureForgejo
 ```
 
 ## Headscale enrollment flow
@@ -107,11 +130,12 @@ sequenceDiagram
 | Public ingress | Proxmox nftables forwards `80/tcp` and `443/tcp` to edge VM `10.10.10.10` |
 | SSH ingress | `22/tcp` to Proxmox host |
 | Private bridge | `vmbr1`, host gateway `10.10.10.1/24` |
-| Edge VM | VM 100 `edge`, NixOS, `10.10.10.10`, Caddy |
+| Edge VM | VM 100 `edge`, NixOS, `10.10.10.10`, Caddy, Tailscale subnet router, tailnet IP `100.64.0.2` |
 | Headscale VM | VM 101 `headscale`, NixOS, `10.10.10.11`, Headscale on `8080` |
 | Headscale state | `/var/lib/headscale`, SQLite database |
-| Enrolled tailnet node | `alex-laptop`, user `alex`, tailnet IPv4 `100.64.0.1` |
-| Remaining architecture work | Add a subnet router for `10.10.10.0/24` so private services can be reached over the tailnet without direct public exposure |
+| Enrolled tailnet nodes | `alex-laptop` user device `100.64.0.1`; `edge` subnet router `100.64.0.2` |
+| Private subnet route | `10.10.10.0/24` is advertised by `edge`, approved in Headscale, and accepted by `alex-laptop` |
+| Next planned service | Forgejo on the private service network |
 
 ## Maintenance rule
 
