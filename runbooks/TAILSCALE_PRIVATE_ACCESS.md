@@ -101,18 +101,19 @@ Replace `<tailnet>` with the real tailnet DNS name.
 
 Suggested clients for the current setup:
 
-- NixOS laptop: `nazar.lifeOs.client` installs Obsidian, KDE PIM apps,
-  Thunderbird, and the declarative CLI stack (`vdirsyncer`, `khal`, `khard`,
-  `todoman`). It mounts WebDAV at `/home/alex/LifeOS` and syncs
-  CalDAV/CardDAV from Radicale at `http://100.92.138.94:5232/`.
+- NixOS laptop: `nazar.lifeOs.client` installs Obsidian, Thunderbird, and
+  the declarative CLI stack (`vdirsyncer`, `khal`, `khard`, `todoman`). It
+  mounts WebDAV at `/home/alex/LifeOS` and syncs CalDAV/CardDAV from Radicale
+  at `http://100.92.138.94:5232/`. KDE PIM apps are optional and disabled by
+  default.
 - iOS: a WebDAV-capable Files app integration or third-party file client for
   Life OS files. Calendar/Reminders can use the Radicale CalDAV endpoint once
   the device is on Tailscale.
 - Android: a WebDAV file client for Life OS files. DAVx⁵ + Tasks.org/Etar can
   consume Radicale CalDAV/VTODO/CardDAV once the device is on Tailscale.
-- Desktop: Obsidian over `/home/alex/LifeOS` for Markdown; KDE PIM/Thunderbird
-  for human calendar/contact/task UI; `khal`/`khard`/`todoman` for the fully
-  declarative local vdir layer.
+- Desktop: Obsidian over `/home/alex/LifeOS` for Markdown; Thunderbird for
+  human calendar/contact/task UI; `khal`/`khard`/`todoman` for the fully
+  declarative local vdir layer. KDE PIM can be enabled separately if desired.
 
 See `runbooks/LIFE_OS_CLIENTS.md` for NixOS client setup and verification.
 

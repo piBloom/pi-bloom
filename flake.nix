@@ -268,7 +268,7 @@
           assert_true life-os-client-vdirsyncer-job ${
             toString (self.nixosConfigurations.alex-laptop.config.services.vdirsyncer.jobs ? life-os)
           }
-          assert_true life-os-client-kde-apps-enabled ${toString self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.kdeApps.enable}
+          assert_false life-os-client-kde-apps-enabled ${toString self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.kdeApps.enable}
           assert_true life-os-client-thunderbird-enabled ${toString self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.thunderbird.enable}
           assert_equals life-os-client-mount-fstype ${
             self.nixosConfigurations.alex-laptop.config.fileSystems."/home/alex/LifeOS".fsType

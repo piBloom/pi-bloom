@@ -87,8 +87,8 @@ in
 
     kdeApps.enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
-      description = "Install KDE PIM applications for CalDAV/CardDAV calendars, contacts, tasks, and reminders.";
+      default = false;
+      description = "Install KDE PIM applications for CalDAV/CardDAV calendars, contacts, tasks, and reminders. Disabled by default to keep the laptop app set small; Thunderbird is the preferred GUI DAV client.";
     };
 
     thunderbird.enable = lib.mkOption {

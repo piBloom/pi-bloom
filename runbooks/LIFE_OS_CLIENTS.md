@@ -25,7 +25,7 @@ Client machines enable `nazar.lifeOs.client`, which provides:
 - Obsidian for browsing the mounted Markdown/filesystem view.
 - `services.vdirsyncer` for declarative CalDAV/CardDAV sync.
 - CLI consumers: `khal` for calendars, `todoman` for VTODO tasks/reminders, and `khard` for contacts.
-- Human GUI clients: KDE PIM apps and Thunderbird.
+- Human GUI clients: Obsidian for files/notes and Thunderbird for DAV calendar/contact/task UI.
 
 ## Declarative app choice
 
@@ -40,10 +40,11 @@ The declarative NixOS split is:
 | Laptop CLI calendar | `khal` | Package + declarative XDG config |
 | Laptop CLI contacts | `khard` | Package + declarative XDG config |
 | Laptop CLI tasks/reminders | `todoman` | Package + declarative XDG config |
-| Laptop GUI calendar/contact/task | KDE PIM / Thunderbird | Declarative install; account state may still require UI confirmation |
+| Laptop GUI calendar/contact/task | Thunderbird | Declarative install; account state may still require UI confirmation |
+| Optional KDE-native GUI | KDE PIM | Available behind `nazar.lifeOs.client.kdeApps.enable`, disabled by default |
 | Laptop notes/journal UI | Obsidian | Declarative install; vault is `/home/alex/LifeOS` |
 
-KDE Akonadi and Thunderbird account internals are user-session state, not clean stable NixOS options. The clean declarative layer is therefore Radicale + vdirsyncer + local vdir stores, with GUI clients installed as human-friendly consumers/debuggers.
+Thunderbird account internals are user-session state, not clean stable NixOS options. The clean declarative layer is therefore Radicale + vdirsyncer + local vdir stores, with Thunderbird installed as the preferred human-friendly DAV consumer/debugger. KDE PIM/Akonadi remains optional but is disabled by default to avoid bloat.
 
 ## Enable on a NixOS client
 
@@ -181,21 +182,9 @@ Open Obsidian and use one of these as a vault depending on how you want to brows
 
 For now this is a direct WebDAV-backed mount. If Obsidian becomes slow or has file-locking issues, switch the module later to local sync instead of direct mount.
 
-### KDE PIM
-
-Use KOrganizer, KAddressBook, Kontact, or Merkuro for human calendar/contact/task UI.
-
-Radicale URL:
-
-```text
-http://100.92.138.94:5232/
-```
-
-The GUI apps are installed declaratively, but KDE Akonadi DAV account provisioning is not currently generated declaratively because it is user-session state. If the local vdirsyncer/CLI layer works but KDE does not auto-detect accounts, add the DAV source manually in KDE using the Radicale URL above.
-
 ### Thunderbird
 
-Thunderbird is installed as a reliable CalDAV/CardDAV client and debugging fallback.
+Thunderbird is the default GUI CalDAV/CardDAV client.
 
 Use the Radicale URL:
 
@@ -204,6 +193,16 @@ http://100.92.138.94:5232/
 ```
 
 Do not point Thunderbird calendar/address-book setup at the generic WebDAV `/life/` endpoint.
+
+### Optional KDE PIM
+
+KOrganizer, KAddressBook, Kontact, and Merkuro are available but disabled by default. Enable only if you want a KDE-native calendar/contact/task UI:
+
+```nix
+nazar.lifeOs.client.kdeApps.enable = true;
+```
+
+KDE Akonadi DAV account provisioning is not currently generated declaratively because it is user-session state. If enabled, add the DAV source manually in KDE using the Radicale URL above.
 
 ## Protocol verification
 
