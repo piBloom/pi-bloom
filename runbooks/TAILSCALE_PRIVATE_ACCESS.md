@@ -13,7 +13,7 @@ the tailnet unless a separate public-service design explicitly changes that.
 - Secrets: do not place Tailscale auth keys, OAuth credentials, or certificate
   private keys in Nix expressions.
 - Life OS note: Tailscale provides private reachability for the current private
-  WebDAV endpoint at `http://100.92.138.94/life/`. CalDAV/VTODO/CardDAV can be
+  WebDAV endpoint at `http://nazar.ojos-sargas.ts.net/life/`. CalDAV/VTODO/CardDAV can be
   added separately when calendar/task/contact sync is wired end-to-end.
 
 ## Deploy The Declarative Config
@@ -87,15 +87,15 @@ For other client devices:
 1. Install Tailscale on the client device.
 2. Join the same tailnet.
 3. Enable MagicDNS in the Tailscale admin UI if desired.
-4. Use Nazar's MagicDNS hostname or tailnet IP for private endpoints.
+4. Use Nazar's MagicDNS hostname for private endpoints.
 
 Example placeholder URL once a private HTTPS vhost exists:
 
 ```text
-https://nazar.<tailnet>.ts.net/
+https://nazar.ojos-sargas.ts.net/
 ```
 
-Replace `<tailnet>` with the real tailnet DNS name.
+Replace `ojos-sargas` with the real tailnet DNS name.
 
 ## Human Apps
 
@@ -104,7 +104,7 @@ Suggested clients for the current setup:
 - NixOS laptop: `nazar.lifeOs.client` installs Obsidian, Thunderbird, and
   the declarative CLI stack (`vdirsyncer`, `khal`, `khard`, `todoman`). It
   mounts WebDAV at `/home/alex/LifeOS` and syncs CalDAV/CardDAV from Radicale
-  at `http://100.92.138.94:5232/`. KDE PIM apps are optional and disabled by
+  at `http://nazar.ojos-sargas.ts.net:5232/`. KDE PIM apps are optional and disabled by
   default.
 - iOS: a WebDAV-capable Files app integration or third-party file client for
   Life OS files. Calendar/Reminders can use the Radicale CalDAV endpoint once
@@ -126,7 +126,7 @@ Tailscale certificates can be generated at runtime after HTTPS support is
 enabled for the tailnet:
 
 ```bash
-sudo tailscale cert nazar.<tailnet>.ts.net
+sudo tailscale cert nazar.ojos-sargas.ts.net
 ```
 
 Certificate automation should be designed separately. Store generated
@@ -156,8 +156,8 @@ switch to the previous or updated NixOS configuration.
 
 The current private services expose:
 
-- `/srv/life` as WebDAV files over Tailscale at `http://100.92.138.94/life/`.
-- Radicale CalDAV/CardDAV/VTODO over Tailscale at `http://100.92.138.94:5232/`.
+- `/srv/life` as WebDAV files over Tailscale at `http://nazar.ojos-sargas.ts.net/life/`.
+- Radicale CalDAV/CardDAV/VTODO over Tailscale at `http://nazar.ojos-sargas.ts.net:5232/`.
 
 Still to design separately:
 

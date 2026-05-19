@@ -6,7 +6,7 @@
 }:
 let
   port = 8080;
-  tailnetIp = "100.92.138.94";
+  tailnetHost = "nazar.ojos-sargas.ts.net";
   siteRoot = pkgs.writeTextDir "index.html" ''
     <!doctype html>
     <html lang="en">
@@ -186,7 +186,7 @@ let
                 Private directory for web services running on Nazar. This page is intended for Tailscale access only.
               </p>
             </div>
-            <div class="badge">nazar · ${tailnetIp}:${toString port}</div>
+            <div class="badge">nazar · ${tailnetHost}:${toString port}</div>
           </header>
 
           <section class="grid" aria-label="Available Nazar web apps">
@@ -199,22 +199,22 @@ let
               <div class="url">http://127.0.0.1:9119/</div>
             </a>
 
-            <a class="card files" href="http://${tailnetIp}/life/">
+            <a class="card files" href="http://${tailnetHost}/life/">
               <div>
                 <span class="eyebrow files">webdav</span>
                 <h2>Life OS Files</h2>
                 <p>Browse the WebDAV-backed Life OS file root. Obsidian and DAV clients use this same standards-first storage.</p>
               </div>
-              <div class="url">http://${tailnetIp}/life/</div>
+              <div class="url">http://${tailnetHost}/life/</div>
             </a>
 
-            <a class="card" href="http://${tailnetIp}:5232/">
+            <a class="card" href="http://${tailnetHost}:5232/">
               <div>
                 <span class="eyebrow files">caldav/carddav</span>
                 <h2>Radicale</h2>
                 <p>CalDAV/CardDAV endpoint for calendars, contacts, and VTODO reminders consumed by Thunderbird and vdirsyncer.</p>
               </div>
-              <div class="url">http://${tailnetIp}:5232/</div>
+              <div class="url">http://${tailnetHost}:5232/</div>
             </a>
 
             <div class="card disabled" aria-disabled="true">
@@ -223,7 +223,7 @@ let
                 <h2>Life OS Web Dashboard</h2>
                 <p>Planned single-page human dashboard over the canonical <code>/srv/life</code> files. The implementation plan is in the repo.</p>
               </div>
-              <div class="url">future: http://${tailnetIp}:9120/</div>
+              <div class="url">future: http://${tailnetHost}:9120/</div>
             </div>
           </section>
 

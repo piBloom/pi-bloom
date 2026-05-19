@@ -28,7 +28,7 @@
   - log habit.
 - Use existing CLI/library code paths where possible so dashboard and CLI behavior stay consistent.
 - NixOS service deployed declaratively on Nazar.
-- Private by network: bind to `100.92.138.94` or localhost plus a Tailscale-only reverse proxy/firewall rule.
+- Private by network: bind to localhost/Tailscale-only reverse proxy/firewall rules and expose user-facing URLs through MagicDNS, e.g. `http://nazar.ojos-sargas.ts.net:9120/`.
 
 ### Explicitly out of scope for v1
 
@@ -471,7 +471,7 @@ nix build .#nixosConfigurations.nazar.config.system.build.toplevel --print-build
 sudo nixos-rebuild switch --flake .#nazar
 systemctl is-active life-os-dashboard
 curl -fsS http://127.0.0.1:9120/healthz
-curl -fsS http://100.92.138.94:9120/ | grep 'Life OS'
+curl -fsS http://nazar.ojos-sargas.ts.net:9120/ | grep 'Life OS'
 ```
 
 **Step 6: Commit**
@@ -533,7 +533,7 @@ nix build .#nixosConfigurations.nazar.config.system.build.toplevel --print-build
 sudo nixos-rebuild switch --flake .#nazar
 systemctl is-active life-os-dashboard
 curl -fsS http://127.0.0.1:9120/healthz
-curl -fsS http://100.92.138.94:9120/ | grep 'Life OS'
+curl -fsS http://nazar.ojos-sargas.ts.net:9120/ | grep 'Life OS'
 ```
 
 ## Open design questions before implementation

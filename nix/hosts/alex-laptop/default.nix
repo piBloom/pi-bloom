@@ -18,8 +18,8 @@
   nazar.access.tunnel.enable = true;
   nazar.lifeOs.client = {
     enable = true;
-    davUrl = "http://100.92.138.94/life/";
-    caldav.url = "http://100.92.138.94:5232/";
+    davUrl = "http://nazar.ojos-sargas.ts.net/life/";
+    caldav.url = "http://nazar.ojos-sargas.ts.net:5232/";
   };
 
   boot.loader.systemd-boot.enable = true;

@@ -17,7 +17,7 @@ The root flake owns deployment, SSH-only operator access, the Hermes services, o
 ## Services
 
 - Host Hermes Agent: `hermes-agent.service` managed declaratively by NixOS; use `hermes` from SSH.
-- Nazar App Directory: `http://100.92.138.94:8080/` over Tailscale, backed by Nginx static HTML.
+- Nazar App Directory: `http://nazar.ojos-sargas.ts.net:8080/` over Tailscale, backed by Nginx static HTML.
 - Hermes Dashboard: `http://127.0.0.1:9119/` through the laptop SSH tunnel, backed by `hermes-dashboard.service`.
 - Tailscale private access: `tailscaled.service` joins Nazar to a tailnet so phone/desktop apps can reach future private CalDAV/WebDAV endpoints without public HTTP exposure.
 
@@ -54,7 +54,7 @@ nix build .#hermes-agent
 ```bash
 systemctl is-active sshd systemd-networkd hermes-agent hermes-dashboard nginx
 systemctl status nazar-tunnel
-curl -I http://100.92.138.94:8080/
+curl -I http://nazar.ojos-sargas.ts.net:8080/
 curl -I http://127.0.0.1:9119/
 ```
 

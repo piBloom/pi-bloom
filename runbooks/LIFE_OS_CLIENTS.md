@@ -7,8 +7,8 @@ This runbook describes how NixOS laptops and future clients consume Life OS over
 Life OS data lives on Nazar under `/srv/life`. Nazar exposes two private DAV services to Tailscale clients:
 
 ```text
-WebDAV files/Markdown:      http://100.92.138.94/life/
-Radicale CalDAV/CardDAV:   http://100.92.138.94:5232/
+WebDAV files/Markdown:      http://nazar.ojos-sargas.ts.net/life/
+Radicale CalDAV/CardDAV:   http://nazar.ojos-sargas.ts.net:5232/
 ```
 
 Both endpoints are intended for Tailscale clients only:
@@ -59,8 +59,8 @@ Import the shared modules from the host configuration:
 
   nazar.lifeOs.client = {
     enable = true;
-    davUrl = "http://100.92.138.94/life/";
-    caldav.url = "http://100.92.138.94:5232/";
+    davUrl = "http://nazar.ojos-sargas.ts.net/life/";
+    caldav.url = "http://nazar.ojos-sargas.ts.net:5232/";
   };
 }
 ```
@@ -97,7 +97,7 @@ Verify:
 systemctl is-active tailscaled
 sudo tailscale status
 sudo tailscale ip -4
-ping 100.92.138.94
+ping nazar.ojos-sargas.ts.net
 ```
 
 Future clients can use `services.tailscale.authKeyFile` for declarative auto-enrollment, but the auth key must be supplied by a runtime secret mechanism such as agenix or sops-nix, never directly in Nix.
@@ -123,7 +123,7 @@ If the mount fails, inspect:
 ```bash
 journalctl -u home-alex-LifeOS.mount --no-pager -l
 journalctl -u home-alex-LifeOS.automount --no-pager -l
-curl -I http://100.92.138.94/life/
+curl -I http://nazar.ojos-sargas.ts.net/life/
 ```
 
 ## Radicale verification
@@ -131,8 +131,8 @@ curl -I http://100.92.138.94/life/
 From the laptop, Radicale should be reachable over Tailscale:
 
 ```bash
-curl -I http://100.92.138.94:5232/
-curl -X PROPFIND -H 'Depth: 0' -i http://100.92.138.94:5232/
+curl -I http://nazar.ojos-sargas.ts.net:5232/
+curl -X PROPFIND -H 'Depth: 0' -i http://nazar.ojos-sargas.ts.net:5232/
 ```
 
 Expected result: Radicale responds on TCP/5232. `PROPFIND` should not be a generic Nginx `/life/` response.
@@ -189,7 +189,7 @@ Thunderbird is the default GUI CalDAV/CardDAV client.
 Use the Radicale URL:
 
 ```text
-http://100.92.138.94:5232/
+http://nazar.ojos-sargas.ts.net:5232/
 ```
 
 Do not point Thunderbird calendar/address-book setup at the generic WebDAV `/life/` endpoint.
@@ -209,9 +209,9 @@ KDE Akonadi DAV account provisioning is not currently generated declaratively be
 From the laptop, generic WebDAV is healthy if these checks pass:
 
 ```bash
-curl -I http://100.92.138.94/life/
-curl -X OPTIONS -i http://100.92.138.94/life/
-curl -X PROPFIND -H 'Depth: 0' -i http://100.92.138.94/life/
+curl -I http://nazar.ojos-sargas.ts.net/life/
+curl -X OPTIONS -i http://nazar.ojos-sargas.ts.net/life/
+curl -X PROPFIND -H 'Depth: 0' -i http://nazar.ojos-sargas.ts.net/life/
 ```
 
 Expected WebDAV result: `PROPFIND` returns `207 Multi-Status`.
@@ -219,8 +219,8 @@ Expected WebDAV result: `PROPFIND` returns `207 Multi-Status`.
 CalDAV/CardDAV is served separately by Radicale:
 
 ```bash
-curl -I http://100.92.138.94:5232/
-curl -X PROPFIND -H 'Depth: 0' -i http://100.92.138.94:5232/
+curl -I http://nazar.ojos-sargas.ts.net:5232/
+curl -X PROPFIND -H 'Depth: 0' -i http://nazar.ojos-sargas.ts.net:5232/
 ```
 
 ## Security notes

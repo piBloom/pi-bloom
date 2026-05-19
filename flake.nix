@@ -263,6 +263,16 @@
             fi
           }
 
+          assert_false() {
+            name="$1"
+            value="$2"
+            echo "$value" > "$out/$name"
+            if [ "$value" != "" ]; then
+              echo "alex-laptop-tunnel-module-eval failed: $name expected false/empty, got $value" >&2
+              exit 1
+            fi
+          }
+
           assert_true nazar-tunnel-option-enabled ${toString self.nixosConfigurations.alex-laptop.config.nazar.access.tunnel.enable}
           assert_true nazar-tunnel-service-enabled ${
             toString (self.nixosConfigurations.alex-laptop.config.systemd.services.nazar-tunnel.enable or false)
@@ -280,8 +290,8 @@
           assert_equals tailscale-routing-features ${self.nixosConfigurations.alex-laptop.config.services.tailscale.useRoutingFeatures} client
           assert_true life-os-client-enabled ${toString self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.enable}
           assert_true life-os-client-davfs2-enabled ${toString self.nixosConfigurations.alex-laptop.config.services.davfs2.enable}
-          assert_equals life-os-client-dav-url ${self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.davUrl} http://100.92.138.94/life/
-          assert_equals life-os-client-caldav-url ${self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.caldav.url} http://100.92.138.94:5232/
+          assert_equals life-os-client-dav-url ${self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.davUrl} http://nazar.ojos-sargas.ts.net/life/
+          assert_equals life-os-client-caldav-url ${self.nixosConfigurations.alex-laptop.config.nazar.lifeOs.client.caldav.url} http://nazar.ojos-sargas.ts.net:5232/
           assert_true life-os-client-vdirsyncer-enabled ${toString self.nixosConfigurations.alex-laptop.config.services.vdirsyncer.enable}
           assert_true life-os-client-vdirsyncer-job ${
             toString (self.nixosConfigurations.alex-laptop.config.services.vdirsyncer.jobs ? life-os)
